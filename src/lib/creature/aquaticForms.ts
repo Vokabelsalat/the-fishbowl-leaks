@@ -63,9 +63,11 @@ export function creatureSizeScale(seed: string | number) {
 
 /** How fast a visitor's creature swims compared with others of its kind. */
 export const creatureSpeedLevels = [
-  { name: "drifting", factor: 0.55 },
-  { name: "steady", factor: 1 },
-  { name: "darting", factor: 1.6 },
+  { name: "drifting", factor: 0.4, weight: 0.24 },
+  { name: "cruising", factor: 0.75, weight: 0.22 },
+  { name: "steady", factor: 1.1, weight: 0.22 },
+  { name: "darting", factor: 1.8, weight: 0.18 },
+  { name: "sprinting", factor: 3.4, weight: 0.14 },
 ] as const;
 
 function mixedUnit(value: string) {
@@ -89,11 +91,24 @@ function mixedUnit(value: string) {
  * multiplies the creature's swimming speed.
  */
 export function creatureSpeedFactor(seed: string | number, change = 0) {
-  const level = creatureSpeedLevels[Math.floor(mixedUnit(`${seed}:speed-level:${change}`) * creatureSpeedLevels.length)];
+  const level = creatureSpeedLevel(seed, change);
   return level.factor * (0.9 + mixedUnit(`${seed}:speed-jitter:${change}`) * 0.2);
 }
 
-/** Seconds a creature keeps its pace after its `change`-th change, between 6 and 18. */
+/** Picks a weighted level; nobody starts out sprinting, sprints only come as a later change of pace. */
+export function creatureSpeedLevel(seed: string | number, change = 0) {
+  const levels = change === 0 ? creatureSpeedLevels.filter((level) => level.name !== "sprinting") : creatureSpeedLevels;
+  const total = levels.reduce((sum, level) => sum + level.weight, 0);
+  let pick = mixedUnit(`${seed}:speed-level:${change}`) * total;
+  for (const level of levels) {
+    pick -= level.weight;
+    if (pick < 0) return level;
+  }
+  return levels[levels.length - 1];
+}
+
+/** Seconds a creature keeps its pace after its `change`-th change: 6 to 18, but sprints last only 2 to 4.5. */
 export function creatureSpeedHoldSeconds(seed: string | number, change: number) {
-  return 6 + mixedUnit(`${seed}:speed-hold:${change}`) * 12;
+  const hold = mixedUnit(`${seed}:speed-hold:${change}`);
+  return creatureSpeedLevel(seed, change).name === "sprinting" ? 2 + hold * 2.5 : 6 + hold * 12;
 }

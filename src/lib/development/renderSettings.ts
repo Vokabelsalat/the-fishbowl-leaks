@@ -48,3 +48,39 @@ export function useMergeStaticMeshes() {
 export function useReduceGeometryDetail() {
   return useBrowserSwitch(REDUCE_GEOMETRY_DETAIL_KEY);
 }
+
+const MESH_QUALITY_KEY = "after-augmented-reality:mesh-quality";
+const meshQualityFallback = { value: 1 };
+
+/** The named mesh qualities; each is the share of a shape's full segments it keeps. */
+export const meshQualityPresets = [
+  { name: "High", quality: 1 },
+  { name: "Medium", quality: 0.5 },
+  { name: "Low", quality: 0.25 },
+] as const;
+
+export const minimumMeshQuality = 0.1;
+
+function readMeshQuality() {
+  try {
+    const stored = Number(window.localStorage.getItem(MESH_QUALITY_KEY));
+    return stored >= minimumMeshQuality && stored <= 1 ? stored : 1;
+  } catch {
+    return meshQualityFallback.value;
+  }
+}
+
+/** How much of their full segment count the aquarium's creatures keep, from 0.1 to 1 (the full model). */
+export function useMeshQuality() {
+  const quality = useSyncExternalStore(subscribe, readMeshQuality, () => 1);
+  const setQuality = useCallback((next: number) => {
+    meshQualityFallback.value = next;
+    try {
+      window.localStorage.setItem(MESH_QUALITY_KEY, String(next));
+    } catch {
+      // The fallback above carries the choice.
+    }
+    window.dispatchEvent(new Event(changeEvent));
+  }, []);
+  return [quality, setQuality] as const;
+}

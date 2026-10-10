@@ -12,7 +12,7 @@ import { FitText } from "@/components/ui/FitText";
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 import { creatureFitMargin } from "@/components/creature/CreatureCanvas";
 import { formatRenderStats, type RenderStatsReport } from "@/components/development/RenderStats";
-import { useMergeStaticMeshes, useReduceGeometryDetail } from "@/lib/development/renderSettings";
+import { meshQualityPresets, minimumMeshQuality, useMeshQuality, useMergeStaticMeshes, useReduceGeometryDetail } from "@/lib/development/renderSettings";
 import { activeVisualizationCopy, collectiveCapacity } from "@/config/visualization";
 import { artifacts } from "@/data/artifacts";
 import { aggregateContributionDwellTimes } from "@/lib/contributions/heatmap";
@@ -70,6 +70,46 @@ function RenderSwitch({ label, checked, onChange }: { label: string; checked: bo
   );
 }
 
+function MeshQualityControl({ quality, onChange }: { quality: number; onChange: (quality: number) => void }) {
+  return (
+    <div className="flex items-center gap-4" role="group" aria-label="Mesh quality">
+      {meshQualityPresets.map((preset) => {
+        const checked = Math.abs(quality - preset.quality) < 0.001;
+        return (
+          <label key={preset.name} className="flex cursor-pointer items-center gap-2 transition-colors hover:text-white/70">
+            <input
+              type="radio"
+              name="mesh-quality"
+              className="sr-only"
+              checked={checked}
+              onChange={() => onChange(preset.quality)}
+            />
+            <span
+              className={`grid size-3.5 place-items-center rounded-full border transition-colors ${checked ? "border-[var(--phosphor)]" : "border-white/30"}`}
+              aria-hidden="true"
+            >
+              <span className={`size-1.5 rounded-full transition-colors ${checked ? "bg-[var(--phosphor)]" : "bg-transparent"}`} />
+            </span>
+            {preset.name}
+          </label>
+        );
+      })}
+      <input
+        type="range"
+        className="w-24 accent-[var(--phosphor)]"
+        aria-label="Mesh quality"
+        aria-valuetext={`${Math.round(quality * 100)}% of full segments`}
+        min={minimumMeshQuality}
+        max="1"
+        step="0.05"
+        value={quality}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+      <span className="w-9 tabular-nums">{Math.round(quality * 100)}%</span>
+    </div>
+  );
+}
+
 export function CollectiveWall() {
   const [contributions, setContributions] = useState<ExhibitionContribution[]>([]);
   const [heatmap, setHeatmap] = useState<CollectiveHeatDatum[]>([]);
@@ -94,6 +134,7 @@ export function CollectiveWall() {
   const renderStatsRef = useRef<HTMLSpanElement>(null);
   const [mergeStaticMeshes, setMergeStaticMeshes] = useMergeStaticMeshes();
   const [reduceGeometryDetail, setReduceGeometryDetail] = useReduceGeometryDetail();
+  const [meshQuality, setMeshQuality] = useMeshQuality();
   // Written straight into the element, so the readout never re-renders the wall.
   const showRenderStatsReport = useCallback((report: RenderStatsReport) => {
     if (renderStatsRef.current) renderStatsRef.current.textContent = formatRenderStats(report);
@@ -263,6 +304,7 @@ export function CollectiveWall() {
             onRenderStats={showRenderStats ? showRenderStatsReport : undefined}
             mergeStaticMeshes={mergeStaticMeshes}
             reduceGeometryDetail={reduceGeometryDetail}
+            meshQuality={meshQuality}
           />
         </div>
       ) : (
@@ -298,6 +340,7 @@ export function CollectiveWall() {
             <div className="absolute right-8 top-20 flex items-center gap-6">
               <RenderSwitch label="Merged meshes" checked={mergeStaticMeshes} onChange={setMergeStaticMeshes} />
               <RenderSwitch label="Reduced detail" checked={reduceGeometryDetail} onChange={setReduceGeometryDetail} />
+              <MeshQualityControl quality={meshQuality} onChange={setMeshQuality} />
               <span ref={renderStatsRef} aria-hidden="true" />
             </div>
           )}

@@ -183,6 +183,7 @@ type FloatingCreatureProps = {
   onSelect?: (contribution: ExhibitionContribution) => void;
   mergeStaticMeshes?: boolean;
   reduceGeometryDetail?: boolean;
+  meshQuality?: number;
 };
 
 // Re-renders only when its own props change, not whenever a baby joins or the field updates.
@@ -198,6 +199,7 @@ const FloatingCreature = memo(function FloatingCreature({
   onSelect,
   mergeStaticMeshes = false,
   reduceGeometryDetail = false,
+  meshQuality = 1,
 }: FloatingCreatureProps) {
   const canvas = useThree((state) => state.gl.domElement);
   const swimRef = useRef<THREE.Group>(null);
@@ -229,7 +231,7 @@ const FloatingCreature = memo(function FloatingCreature({
       ? (seededUnit(contribution.id * 19) > 0.5 ? 0 : Math.PI)
       : seededUnit(contribution.id * 19) * Math.PI * 2,
   }), [contribution.id, formSpeed, isWhale]);
-  // Every creature changes its pace from time to time, easing between drifting, steady and darting.
+  // Every creature changes its pace from time to time, easing between drifting and darting, with a short sprint now and then.
   const pace = useRef({
     factor: creatureSpeedFactor(contribution.publicId),
     target: creatureSpeedFactor(contribution.publicId),
@@ -378,8 +380,9 @@ const FloatingCreature = memo(function FloatingCreature({
       currentPace.target = creatureSpeedFactor(contribution.publicId, currentPace.change);
       currentPace.nextChangeAt = elapsed + creatureSpeedHoldSeconds(contribution.publicId, currentPace.change);
     }
-    // Speeding up and slowing down take a couple of seconds rather than a jump.
-    currentPace.factor = THREE.MathUtils.damp(currentPace.factor, currentPace.target, 0.9, delta);
+    // Speeding up and slowing down take a couple of seconds rather than a jump; bursts kick in quicker.
+    const paceEasing = currentPace.target > currentPace.factor + 1 ? 2.6 : 0.9;
+    currentPace.factor = THREE.MathUtils.damp(currentPace.factor, currentPace.target, paceEasing, delta);
     // Whales stay slow travellers, so their pace only nudges them.
     const paceFactor = isWhale ? Math.sqrt(currentPace.factor) : currentPace.factor;
     const swimSpeed = placement.speed * paceFactor;
@@ -550,7 +553,7 @@ const FloatingCreature = memo(function FloatingCreature({
     >
       <group ref={directionRef} rotation={[0, startsFacingLeft ? Math.PI : 0, 0]}>
         <StaticMeshMerger enabled={mergeStaticMeshes}>
-          <GeometryDetailReducer enabled={reduceGeometryDetail} isHeld={isShownLarge}>
+          <GeometryDetailReducer enabled={reduceGeometryDetail} quality={meshQuality} isHeld={isShownLarge}>
             <AquaticCreatureModel
               form={contribution.creatureForm}
               pieces={contribution.parts}
@@ -858,6 +861,7 @@ export function CollectiveCreatureField({
   onRenderStats,
   mergeStaticMeshes = false,
   reduceGeometryDetail = false,
+  meshQuality = 1,
 }: {
   contributions: ExhibitionContribution[];
   progress?: number;
@@ -869,6 +873,8 @@ export function CollectiveCreatureField({
   mergeStaticMeshes?: boolean;
   /** Builds rounded shapes with only as many segments as their size on screen needs. */
   reduceGeometryDetail?: boolean;
+  /** The share of their full segments the creatures' rounded shapes keep, from 0.1 to 1. */
+  meshQuality?: number;
 }) {
   const [babies, setBabies] = useState<BabyCreature[]>([]);
   const actorRegistry = useRef(new Map<number, MutableRefObject<CreatureMotion>>());
@@ -906,6 +912,7 @@ export function CollectiveCreatureField({
           progress={progress}
           mergeStaticMeshes={mergeStaticMeshes}
           reduceGeometryDetail={reduceGeometryDetail}
+          meshQuality={meshQuality}
           arrival={arrival?.id === contribution.id ? arrival : undefined}
           onSelect={onSelectContribution}
         />
@@ -933,6 +940,7 @@ export function CollectiveCreatureField({
           progress={progress}
           mergeStaticMeshes={mergeStaticMeshes}
           reduceGeometryDetail={reduceGeometryDetail}
+          meshQuality={meshQuality}
           actorRegistry={actorRegistry}
           pairingRef={pairingRef}
           schoolingRef={schoolingRef}
@@ -947,6 +955,7 @@ export function CollectiveCreatureField({
           progress={progress}
           mergeStaticMeshes={mergeStaticMeshes}
           reduceGeometryDetail={reduceGeometryDetail}
+          meshQuality={meshQuality}
           juvenile
           spawnPosition={baby.spawnPosition}
         />

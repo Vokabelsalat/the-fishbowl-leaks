@@ -141,21 +141,29 @@ function isPristine(geometry: DetailedGeometry, key: string) {
 
 const worldScale = new THREE.Vector3();
 
-/** A geometry with only as many segments as the mesh's size on screen needs, or null to keep it. */
-function reducedGeometryFor(mesh: THREE.Mesh, pixelsPerUnit: number) {
+/**
+ * A geometry with only as many segments as the mesh's size on screen needs (when `fitToScreen`),
+ * and at most `quality` of its full segments, or null to keep it.
+ */
+function reducedGeometryFor(mesh: THREE.Mesh, pixelsPerUnit: number, fitToScreen: boolean, quality: number) {
   const geometry = mesh.geometry as DetailedGeometry;
   if (reducedGeometries.has(geometry)) return null;
   const recipe = detailRecipeOf(geometry);
   const around = recipe ? recipe.segmentsAround : geometry.parameters ? segmentsAround(geometry) : null;
   if (!around) return null;
 
-  if (!geometry.boundingSphere) geometry.computeBoundingSphere();
-  mesh.getWorldScale(worldScale);
-  const largestScale = Math.max(Math.abs(worldScale.x), Math.abs(worldScale.y), Math.abs(worldScale.z));
-  const diameter = 2 * geometry.boundingSphere!.radius * largestScale * pixelsPerUnit * growthAllowance;
-  const neededAround = Math.max(6, Math.ceil((Math.PI * diameter) / pixelsPerSegment));
-  // Snap to quarters, so creatures of similar size share the same reduced shapes.
-  const factor = Math.ceil(Math.min(1, neededAround / around) * 4) / 4;
+  let screenFactor = 1;
+  if (fitToScreen) {
+    if (!geometry.boundingSphere) geometry.computeBoundingSphere();
+    mesh.getWorldScale(worldScale);
+    const largestScale = Math.max(Math.abs(worldScale.x), Math.abs(worldScale.y), Math.abs(worldScale.z));
+    const diameter = 2 * geometry.boundingSphere!.radius * largestScale * pixelsPerUnit * growthAllowance;
+    const neededAround = Math.max(6, Math.ceil((Math.PI * diameter) / pixelsPerSegment));
+    // Snap to quarters, so creatures of similar size share the same reduced shapes.
+    screenFactor = Math.ceil(Math.min(1, neededAround / around) * 4) / 4;
+  }
+  // Snap to twentieths, so a quality slider shares reduced shapes between nearby positions.
+  const factor = Math.round(Math.min(screenFactor, quality) * 20) / 20;
   if (factor >= 1) return null;
   if (recipe) return rebuiltFromRecipe(geometry, recipe, factor);
 
@@ -185,28 +193,32 @@ function restore(swaps: Swap[]) {
 
 /**
  * Rebuilds the rounded shapes of its children with only as many segments as their size on
- * screen needs. Shapes that were reshaped after they were built are left alone, and turning
- * `enabled` off restores the original geometry. `isHeld` delays it, for example while a
- * creature is still shown large.
+ * screen needs, and with `quality` (0–1) of their full segments at most. Shapes that were
+ * reshaped after they were built are left alone, and turning `enabled` off with full quality
+ * restores the original geometry. `isHeld` delays it, for example while a creature is still
+ * shown large.
  */
 export function GeometryDetailReducer({
   enabled,
+  quality = 1,
   isHeld,
   children,
 }: {
   enabled: boolean;
+  quality?: number;
   isHeld?: (elapsed: number) => boolean;
   children: ReactNode;
 }) {
   const rootRef = useRef<THREE.Group>(null);
   const swapsRef = useRef<Swap[]>([]);
   const appliedRef = useRef(false);
+  const active = enabled || quality < 1;
 
+  // Any change starts over from the original geometry, which the next frame reduces again.
   useEffect(() => {
-    if (enabled) return;
     restore(swapsRef.current);
     appliedRef.current = false;
-  }, [enabled]);
+  }, [enabled, quality]);
 
   useEffect(() => {
     const swaps = swapsRef.current;
@@ -215,13 +227,13 @@ export function GeometryDetailReducer({
 
   useFrame(({ camera, clock }) => {
     const root = rootRef.current;
-    if (!enabled || appliedRef.current || !root || !(camera instanceof THREE.OrthographicCamera)) return;
+    if (!active || appliedRef.current || !root || !(camera instanceof THREE.OrthographicCamera)) return;
     if (isHeld?.(clock.elapsedTime) || !takeBudget(clock.elapsedTime)) return;
     root.updateWorldMatrix(true, true);
     root.traverse((object) => {
       const mesh = object as THREE.Mesh;
       if (!mesh.isMesh || mesh.userData.mergedStaticMesh) return;
-      const reduced = reducedGeometryFor(mesh, camera.zoom);
+      const reduced = reducedGeometryFor(mesh, camera.zoom, enabled, quality);
       if (!reduced) return;
       swapsRef.current.push({ mesh, original: mesh.geometry, reduced });
       mesh.geometry = reduced;

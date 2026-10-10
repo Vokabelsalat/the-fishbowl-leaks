@@ -101,6 +101,7 @@ function VisualizationField({
   onRenderStats,
   mergeStaticMeshes = false,
   reduceGeometryDetail = false,
+  meshQuality = 1,
 }: {
   contributions: ExhibitionContribution[];
   progress?: number;
@@ -110,6 +111,7 @@ function VisualizationField({
   mergeStaticMeshes?: boolean;
   /** Builds rounded shapes in the 3D aquarium with only as many segments as their size needs. */
   reduceGeometryDetail?: boolean;
+  meshQuality?: number;
   /** When set, the 3D aquarium reports its frame rate and mesh counts twice a second. */
   onRenderStats?: (report: RenderStatsReport) => void;
 }) {
@@ -128,6 +130,7 @@ function VisualizationField({
       onRenderStats={onRenderStats}
       mergeStaticMeshes={mergeStaticMeshes}
       reduceGeometryDetail={reduceGeometryDetail}
+      meshQuality={meshQuality}
     />
   );
 }

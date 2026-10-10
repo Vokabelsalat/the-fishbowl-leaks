@@ -4,6 +4,7 @@ import {
   creatureSizeScale,
   creatureSpeedFactor,
   creatureSpeedHoldSeconds,
+  creatureSpeedLevel,
   isAquaticForm,
   pickAquaticForm,
 } from "@/lib/creature/aquaticForms";
@@ -47,12 +48,19 @@ describe("creatureSpeedFactor", () => {
     expect(creatureSpeedFactor("public-1")).toBe(creatureSpeedFactor("public-1"));
   });
 
-  it("spreads visitors over all three speed levels", () => {
+  it("spreads visitors over the starting speed levels without sprinting", () => {
     const factors = ids.map((id) => creatureSpeedFactor(id));
-    expect(factors.some((factor) => factor < 0.62)).toBe(true);
-    expect(factors.some((factor) => factor > 0.88 && factor < 1.12)).toBe(true);
-    expect(factors.some((factor) => factor > 1.42)).toBe(true);
-    expect(factors.every((factor) => factor >= 0.55 * 0.9 && factor <= 1.6 * 1.1)).toBe(true);
+    expect(factors.some((factor) => factor < 0.45)).toBe(true);
+    expect(factors.some((factor) => factor > 0.99 && factor < 1.21)).toBe(true);
+    expect(factors.some((factor) => factor > 1.62)).toBe(true);
+    expect(factors.every((factor) => factor >= 0.4 * 0.9 && factor <= 1.8 * 1.1)).toBe(true);
+  });
+
+  it("sprints now and then after the first change of pace", () => {
+    const levels = ids.map((id) => creatureSpeedLevel(id, 3).name);
+    const sprints = levels.filter((name) => name === "sprinting").length;
+    expect(sprints).toBeGreaterThan(ids.length * 0.08);
+    expect(sprints).toBeLessThan(ids.length * 0.22);
   });
 
   it("does not tie speed to size", () => {
@@ -65,13 +73,18 @@ describe("creatureSpeedFactor", () => {
 describe("changing pace", () => {
   it("moves each creature through different speed levels over time", () => {
     const levels = Array.from({ length: 12 }, (_, change) => creatureSpeedFactor("public-7", change));
-    expect(new Set(levels.map((factor) => (factor < 0.7 ? "drifting" : factor > 1.3 ? "darting" : "steady"))).size).toBeGreaterThan(1);
+    expect(new Set(levels.map((factor) => (factor < 0.7 ? "drifting" : factor > 1.5 ? "darting" : "steady"))).size).toBeGreaterThan(1);
     expect(creatureSpeedFactor("public-7", 3)).toBe(creatureSpeedFactor("public-7", 3));
   });
 
-  it("holds each pace for 6 to 18 seconds", () => {
-    const holds = Array.from({ length: 200 }, (_, change) => creatureSpeedHoldSeconds("public-7", change));
+  it("holds each pace for 6 to 18 seconds and sprints for only a few", () => {
+    const changes = Array.from({ length: 200 }, (_, change) => change);
+    const isSprint = (change: number) => creatureSpeedLevel("public-7", change).name === "sprinting";
+    const holds = changes.filter((change) => !isSprint(change)).map((change) => creatureSpeedHoldSeconds("public-7", change));
+    const sprints = changes.filter(isSprint).map((change) => creatureSpeedHoldSeconds("public-7", change));
     expect(holds.every((seconds) => seconds >= 6 && seconds <= 18)).toBe(true);
     expect(Math.max(...holds) - Math.min(...holds)).toBeGreaterThan(8);
+    expect(sprints.length).toBeGreaterThan(0);
+    expect(sprints.every((seconds) => seconds >= 2 && seconds <= 4.5)).toBe(true);
   });
 });

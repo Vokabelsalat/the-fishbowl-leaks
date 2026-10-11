@@ -2,7 +2,7 @@
 
 import { PerformanceMonitor, type PerformanceMonitorApi } from "@react-three/drei";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { AquaticCreatureModel } from "@/components/creature/AquaticCreatureModel";
 import { GeometryDetailReducer } from "@/components/creature/GeometryDetailReducer";
@@ -61,32 +61,32 @@ const collectiveFormSpeed: Record<AquaticForm, number> = {
   pufferfish: 1.08,
 };
 
-const depthHazeLayers = [
-  { z: 1.18, color: "#123a3d", opacity: 0.045 },
-  { z: 0.48, color: "#0d3038", opacity: 0.06 },
-  { z: -0.22, color: "#092731", opacity: 0.075 },
-  { z: -0.92, color: "#061f2b", opacity: 0.1 },
-] as const;
+/** The haze's colour, and how much of it covers whatever lies deep enough: what four see-through haze planes used to add up to. */
+const hazeColor = "#0b2a33";
+const hazeStrength = 0.253;
+/** The haze begins at the first depth and is complete at the second, thickening smoothly in between. */
+const hazeStartDepth = 1.18;
+const hazeFullDepth = -0.92;
+const cameraDepth = 10;
 
-function DepthHazeLayers() {
-  const viewport = useThree((state) => state.viewport);
+const fogMix = "smoothstep( fogNear, fogFar, vFogDepth )";
 
-  return (
-    <group>
-      {depthHazeLayers.map((layer) => (
-        <mesh key={layer.z} position={[0, 0, layer.z]}>
-          <planeGeometry args={[viewport.width + 2, viewport.height + 2]} />
-          <meshBasicMaterial
-            color={layer.color}
-            transparent
-            opacity={layer.opacity}
-            depthWrite={false}
-            toneMapped={false}
-          />
-        </mesh>
-      ))}
-    </group>
-  );
+/**
+ * Hazes creatures by their depth while they are drawn, instead of covering the whole screen with
+ * see-through planes. The whale veil behind the tank is hazed too, which carries the haze over the backdrop.
+ */
+function DepthHaze() {
+  // three's linear fog fades all the way into its colour; the aquarium's stops at `hazeStrength`, so the
+  // whales far behind the tank stay visible. Shaders compiled while it is shown pick this up; the poster's fog does not.
+  useLayoutEffect(() => {
+    const original = THREE.ShaderChunk.fog_fragment;
+    THREE.ShaderChunk.fog_fragment = original.replace(fogMix, `${fogMix} * ${hazeStrength.toFixed(3)}`);
+    return () => {
+      THREE.ShaderChunk.fog_fragment = original;
+    };
+  }, []);
+
+  return <fog attach="fog" args={[hazeColor, cameraDepth - hazeStartDepth, cameraDepth - hazeFullDepth]} />;
 }
 
 function WhaleDepthVeil() {
@@ -966,12 +966,13 @@ export function CollectiveCreatureField({
   return (
     <Canvas
       orthographic
-      camera={{ position: [0, 0, 10], zoom: 82, near: 0.1, far: 30 }}
+      camera={{ position: [0, 0, cameraDepth], zoom: 82, near: 0.1, far: 30 }}
       dpr={pixelRatio}
       gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
     >
       <PerformanceMonitor factor={1} onChange={adjustPixelRatio} onFallback={settleOnLowestPixelRatio} />
       {onRenderStats && <RenderStats onReport={onRenderStats} />}
+      <DepthHaze />
       <ambientLight intensity={1.4} />
       <directionalLight position={[2, 5, 8]} intensity={2.4} color="#FFF4DF" />
       <pointLight position={[-5, 1, 5]} intensity={2.2} color="#58D6FF" />
@@ -1031,7 +1032,6 @@ export function CollectiveCreatureField({
           spawnPosition={baby.spawnPosition}
         />
       ))}
-      <DepthHazeLayers />
       <AquariumDioramaPlants layer="front" />
     </Canvas>
   );

@@ -631,6 +631,10 @@ a:focus-visible {
   bottom: var(--collective-recents-height);
 }
 
+.collective-swim-field-arriving {
+  bottom: 0;
+}
+
 .collective-wall {
   --collective-recents-height: clamp(12rem, 23vh, 16rem);
   --collective-qr-size: clamp(6rem, 12vh, 9rem);
@@ -716,48 +720,30 @@ a:focus-visible {
 }
 
 @keyframes arrival-stage {
-  0% { opacity: 0; }
-  8%, 90% { opacity: 1; }
+  0%, 90% { opacity: 1; }
   100% { opacity: 0; }
 }
 
-/* At 80% the tank takes over the creature at the overlay's current size and position (see ARRIVAL_RELEASE_MS). */
-@keyframes arrival-graph {
-  0% { opacity: 0; transform: translateY(0) scale(0.12) rotate(-16deg); filter: blur(18px); }
-  11% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); filter: blur(0); }
-  64% { transform: translateY(0) scale(1) rotate(0deg); filter: blur(0); animation-timing-function: cubic-bezier(0.45, 0, 0.25, 1); }
-  78%, 100% { transform: translateY(-12vh) scale(0.55) rotate(0deg); filter: blur(0); }
-}
-
 @keyframes arrival-story {
-  0%, 12% { opacity: 0; transform: translateY(28px); filter: blur(8px); }
-  20%, 60% { opacity: 1; transform: translateY(0); filter: blur(0); }
-  70%, 100% { opacity: 0; transform: translateY(-18px); filter: blur(8px); }
-}
-
-/* The dimming lifts before the hand-over so the tank creature is lit like the overlay one. */
-@keyframes arrival-glow {
-  0%, 64% { opacity: 1; }
-  78%, 100% { opacity: 0; }
+  0% { opacity: 0; transform: translateY(16px); }
+  10%, 100% { opacity: 1; transform: translateY(0); }
 }
 
 .collective-arrival {
   animation: arrival-stage 17s ease-in-out both;
+  pointer-events: none;
 }
 
-.collective-arrival-creature {
-  animation: arrival-graph 17s cubic-bezier(0.22, 1, 0.36, 1) both;
-  overflow: visible;
+.collective-arrival-habitat {
+  background: linear-gradient(90deg, transparent 55%, rgba(3, 16, 21, 0.28));
 }
 
 .collective-story {
   animation: arrival-story 17s ease-in-out both;
-}
-
-.collective-arrival-glow {
-  background: radial-gradient(circle at 32% 50%, rgba(255, 255, 255, 0.11), transparent 38%);
-  backdrop-filter: blur(2px) brightness(0.58);
-  animation: arrival-glow 17s ease-in-out both;
+  pointer-events: auto;
+  border-left: 1px solid rgba(232, 245, 239, 0.32);
+  background: rgba(3, 16, 21, 0.78);
+  backdrop-filter: blur(14px);
 }
 
 .collective-plan-stage {
@@ -946,17 +932,32 @@ a:focus-visible {
     --collective-recents-height: 11rem;
   }
 
-  .collective-arrival .collective-story {
-    align-self: end;
-    margin: 0 auto 2rem;
-    text-align: center;
-    width: calc(100vw - 2rem);
+  .collective-arrival {
+    grid-template-columns: 43% 57%;
   }
 
-  .collective-arrival-creature {
-    inset: 0;
-    height: 68vh;
-    width: 100vw;
+  .collective-arrival-origin {
+    left: 2%;
+    top: 17%;
+    width: 94%;
+    height: 62%;
+  }
+
+  .collective-story {
+    padding: 7rem 1.25rem 1.25rem;
+  }
+
+  .collective-story-heading {
+    padding-bottom: 1rem;
+  }
+
+  .collective-story-status {
+    padding-block: 1rem;
+    font-size: 0.7rem;
+  }
+
+  .collective-story-narrative {
+    padding-top: 1rem;
   }
 
   .collective-recents {

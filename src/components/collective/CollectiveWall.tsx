@@ -19,9 +19,7 @@ import { aggregateContributionDwellTimes } from "@/lib/contributions/heatmap";
 import type { CollectiveHeatDatum, ExhibitionContribution } from "@/types/contribution";
 
 const ARRIVAL_DURATION_MS = 17_000;
-// Matches the 80% keyframe of arrival-graph, where the overlay creature hands over to the tank.
-const ARRIVAL_RELEASE_MS = ARRIVAL_DURATION_MS * 0.8;
-const ARRIVAL_FIT_SCALE = 1.25;
+const ARRIVAL_FIT_SCALE = 0.72;
 const MINUTES_IN_DAY = 24 * 60 - 1;
 // The largest page the contributions API returns.
 const pageSize = 100;
@@ -130,7 +128,6 @@ export function CollectiveWall() {
   const syntheticCountRef = useRef<number | null>(null);
   const arrivalCreatureRef = useRef<HTMLDivElement>(null);
   const [releasedArrival, setReleasedArrival] = useState<CreatureArrival | null>(null);
-  const [takenOverId, setTakenOverId] = useState<number | null>(null);
   const renderStatsRef = useRef<HTMLSpanElement>(null);
   const [mergeStaticMeshes, setMergeStaticMeshes] = useMergeStaticMeshes();
   const [reduceGeometryDetail, setReduceGeometryDetail] = useReduceGeometryDetail();
@@ -245,22 +242,18 @@ export function CollectiveWall() {
 
   useEffect(() => {
     if (!active) return;
-    const release = window.setTimeout(() => {
-      const rect = arrivalCreatureRef.current?.getBoundingClientRect();
-      setReleasedArrival({
-        id: active.id,
-        rect: rect && { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
-        fill: creatureFitMargin * ARRIVAL_FIT_SCALE,
-        onTakeover: () => setTakenOverId(active.id),
-      });
-    }, ARRIVAL_RELEASE_MS);
+    const rect = arrivalCreatureRef.current?.getBoundingClientRect();
+    setReleasedArrival({
+      id: active.id,
+      rect: rect && { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+      fill: creatureFitMargin * ARRIVAL_FIT_SCALE,
+    });
     const timeout = window.setTimeout(() => {
       const next = queueRef.current.shift() ?? null;
       activeRef.current = next;
       setActive(next);
     }, ARRIVAL_DURATION_MS);
     return () => {
-      window.clearTimeout(release);
       window.clearTimeout(timeout);
     };
   }, [active]);
@@ -295,7 +288,7 @@ export function CollectiveWall() {
     <main className="collective-wall biome-field film-grain relative h-screen overflow-hidden bg-[var(--abyss)] text-[var(--foam)]" style={wallStyle} aria-label={`Collective exhibition ${activeVisualizationCopy.collectivePlace}`}>
       <BiomeBackdrop progress={dayProgress} surfaceRays />
       {view === "collective" ? (
-        <div className="collective-swim-field absolute" aria-live="polite">
+        <div className={`collective-swim-field absolute ${visibleActive ? "collective-swim-field-arriving" : ""}`} aria-live="polite">
           <CollectiveVisualizationField
             contributions={habitatCreatures}
             progress={dayProgress}
@@ -353,7 +346,7 @@ export function CollectiveWall() {
         </div>
       </header>
 
-      <input
+      {!visibleActive && <input
         className="tank-time-slider absolute inset-x-0 bottom-[var(--collective-recents-height)] z-40 w-full translate-y-1/2"
         type="range"
         aria-label="Test time of day"
@@ -368,7 +361,7 @@ export function CollectiveWall() {
           setClockMinutes(Number(event.target.value));
         }}
         onDoubleClick={() => setLiveTime(true)}
-      />
+      />}
 
       {view === "collective" && visibleContributions.length === 0 && ready && (
         <div className="absolute inset-0 flex items-center justify-center text-center">
@@ -381,37 +374,30 @@ export function CollectiveWall() {
       )}
 
       {view === "collective" && visibleActive && (
-        <section key={visibleActive.id} className="collective-arrival absolute inset-0 z-20 grid place-items-center" aria-label={`A new visitor ${activeVisualizationCopy.singular} has arrived`}>
-          <div className="collective-arrival-glow absolute inset-0" aria-hidden="true" />
-          <div ref={arrivalCreatureRef} className="collective-arrival-creature absolute inset-y-0 left-0 w-[68vw]">
-            <div className="size-full transition-opacity duration-300" style={{ opacity: takenOverId === visibleActive.id ? 0 : 1 }}>
-              <PathVisualization
-                artifactIds={visibleActive.parts.map((part) => part.artifactId)}
-                contribution={visibleActive}
-                fitToView
-                fitScale={ARRIVAL_FIT_SCALE}
-                label={`New ${activeVisualizationCopy.singular} with ${visibleActive.parts.length} parts`}
-              />
-            </div>
+        <section key={visibleActive.id} className="collective-arrival absolute inset-0 z-20 grid grid-cols-[58%_42%]" aria-label={`A new visitor ${activeVisualizationCopy.singular} has arrived`}>
+          <div className="collective-arrival-habitat relative min-w-0" aria-label={`New ${activeVisualizationCopy.singular} entering the aquarium`}>
+            <div ref={arrivalCreatureRef} className="collective-arrival-origin absolute left-[7%] top-[16%] h-[65%] w-[78%]" aria-hidden="true" />
           </div>
-          <div className="collective-story relative z-10 ml-auto mr-[6vw] w-[min(34vw,36rem)]">
-            <p className="mb-3 text-base text-[var(--phosphor)]">A new specimen has entered the tank</p>
-            <p className="mb-6 text-sm text-white/45">
-              Made from {visibleActive.parts.length} exhibition {visibleActive.parts.length === 1 ? "encounter" : "encounters"}
-            </p>
-            <p className="mb-7 font-mono text-sm text-white/55">
+          <div className="collective-story relative min-h-0 min-w-0 overflow-y-auto px-[clamp(1.25rem,3vw,3.5rem)] pb-[clamp(1.5rem,5vh,3.5rem)] pt-[clamp(7rem,17vh,11rem)]">
+            <div className="collective-story-heading border-b border-white/25 pb-5">
+              <h2 className="font-display text-[clamp(1.5rem,2.3vw,2.7rem)] leading-tight tracking-[-0.03em]">A new specimen has entered the tank</h2>
+              <p className="mt-3 text-base text-white/75">
+                Made from {visibleActive.parts.length} exhibition {visibleActive.parts.length === 1 ? "encounter" : "encounters"}
+              </p>
+            </div>
+            <div className="collective-story-status border-b border-white/25 py-5 font-mono text-sm leading-relaxed text-white/75">
               Specimen {String(visibleActive.id).padStart(3, "0")} has been successfully <s>classified</s> <s>contained</s> <s>understood</s>
-            </p>
-            <div className="font-display text-[clamp(1.35rem,1.9vw,2.15rem)] leading-[1.16] tracking-[-0.025em]">
+            </div>
+            <div className="collective-story-narrative pt-6 font-display text-[clamp(1.3rem,1.8vw,2rem)] leading-[1.22] tracking-[-0.025em]">
               {visibleActive.narrative.map((line, index) => (
-                <p key={`${index}-${line}`} className="my-1.5">{line}</p>
+                <p key={`${index}-${line}`} className="mb-4">{line}</p>
               ))}
             </div>
           </div>
         </section>
       )}
 
-      {view === "collective" && latestContribution && (
+      {view === "collective" && !visibleActive && latestContribution && (
         <aside
           className="collective-recents absolute inset-x-0 bottom-0 z-30 pb-6 lg:pb-7"
           aria-label={`Most recently shared stories and ${activeVisualizationCopy.plural}`}
@@ -461,7 +447,7 @@ export function CollectiveWall() {
         </aside>
       )}
 
-      {view === "collective" && (
+      {view === "collective" && !visibleActive && (
         <a
           className="collective-qr absolute z-30 flex flex-col items-center gap-2 text-base text-[var(--foam)]"
           href="https://aar.kusnick.com"

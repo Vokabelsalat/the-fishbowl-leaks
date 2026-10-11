@@ -1,38 +1,15 @@
 "use client";
 
-import { Canvas, type ThreeEvent } from "@react-three/fiber";
+import { Canvas, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { AquaticCreatureModel } from "@/components/creature/AquaticCreatureModel";
 import type { CreaturePiece } from "@/components/creature/CreatureModel";
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 import { artifacts } from "@/data/artifacts";
-import type { AquaticForm } from "@/lib/creature/aquaticForms";
 import { creaturePattern, patternForTraitCount } from "@/lib/creature/patterns";
-
-/** One creature in the ensemble: where it stands, how large it is and which way it looks. */
-type Role = { form: AquaticForm; position: [number, number, number]; scale: number; turn: number; tilt?: number; traits: [number, number] };
-
-// The billing order of a movie poster: a looming antagonist above, the hero in the middle,
-// supporting cast around it and the bottom dwellers along the floor.
-// Turning by -π/2 brings a creature's head (+x) round to face the camera, like a cast lined up for its portrait.
-const facing = -Math.PI / 2;
-
-const cast: Role[] = [
-  { form: "whale", position: [1.5, 4.3, -10], scale: 2.6, turn: facing - 0.4, traits: [3, 5] },
-  { form: "octopus", position: [-2.45, 3.1, -4], scale: 1, turn: 0.2, tilt: -0.1, traits: [3, 5] },
-  { form: "narwhal", position: [2.5, 1.7, -2], scale: 0.72, turn: facing - 0.5, traits: [2, 4] },
-  { form: "jellyfish", position: [-2.55, 0.45, -1], scale: 0.6, turn: 0.2, traits: [2, 3] },
-  { form: "fish", position: [-0.05, 0.45, 1.5], scale: 1.6, turn: facing + 0.42, traits: [4, 6] },
-  { form: "seal", position: [2.3, -0.65, 0], scale: 0.62, turn: facing - 0.4, traits: [2, 3] },
-  { form: "seahorse", position: [-2.05, -1.05, 1], scale: 0.5, turn: facing + 0.55, traits: [2, 3] },
-  { form: "pufferfish", position: [-0.75, -1.6, 2.2], scale: 0.38, turn: facing + 0.3, traits: [2, 3] },
-  { form: "dolphin", position: [1.05, -1.6, 1.6], scale: 0.48, turn: facing - 0.5, traits: [2, 3] },
-  { form: "crab", position: [-1.95, -2.08, 1.8], scale: 0.42, turn: 0.3, traits: [2, 3] },
-  { form: "clam", position: [0.2, -2.08, 2.0], scale: 0.44, turn: 0, traits: [1, 2] },
-  { form: "starfish", position: [2.2, -2.05, 1.6], scale: 0.3, turn: 0, tilt: 0.9, traits: [1, 2] },
-];
+import { cast } from "@/components/poster/posterCast";
 
 function seededRandom(seed: string) {
   let hash = 2166136261;
@@ -52,23 +29,35 @@ function randomPieces(random: () => number, [fewest, most]: [number, number]): C
   return shuffled.slice(0, count).map((artifact) => ({ artifactId: artifact.id, partId: artifact.creaturePart.id, color: artifact.color }));
 }
 
-/** Extra rotation dragged onto a creature: `turn` around the vertical axis, `pitch` tipping it toward the viewer. */
-export type Pose = { turn: number; pitch: number };
+/**
+ * What was dragged onto a creature: `turn` around the vertical axis, `pitch` tipping it toward the
+ * viewer, and `x` and `y` moving it across the poster from its place in the cast.
+ */
+export type Pose = { turn: number; pitch: number; x: number; y: number };
 
-/** Poses travel in the URL as `key:turn:pitch` entries joined by `;`, for example `fish-4:0.35:-0.1`. */
+const restingPose: Pose = { turn: 0, pitch: 0, x: 0, y: 0 };
+
+/**
+ * Poses travel in the URL as `key:turn:pitch:x:y` entries joined by `;`, for example
+ * `fish-4:0.35:-0.1:0.2:0`. Older links without `x` and `y` leave the creature in its place.
+ */
 export function parsePoses(value: string | undefined) {
   const poses: Record<string, Pose> = {};
   for (const entry of value?.split(";") ?? []) {
-    const [key, turn, pitch] = entry.split(":");
-    if (key && Number.isFinite(Number(turn)) && Number.isFinite(Number(pitch))) poses[key] = { turn: Number(turn), pitch: Number(pitch) };
+    const [key, ...numbers] = entry.split(":");
+    const [turn, pitch, x = 0, y = 0] = numbers.map(Number);
+    if (key && [turn, pitch, x, y].every(Number.isFinite)) poses[key] = { turn, pitch, x, y };
   }
   return poses;
 }
 
 function formatPoses(poses: Record<string, Pose>) {
   return Object.entries(poses)
-    .filter(([, pose]) => pose.turn !== 0 || pose.pitch !== 0)
-    .map(([key, pose]) => `${key}:${pose.turn.toFixed(2)}:${pose.pitch.toFixed(2)}`)
+    .filter(([, pose]) => pose.turn !== 0 || pose.pitch !== 0 || pose.x !== 0 || pose.y !== 0)
+    .map(([key, pose]) => {
+      const values = [pose.turn, pose.pitch, ...(pose.x !== 0 || pose.y !== 0 ? [pose.x, pose.y] : [])];
+      return [key, ...values.map((value) => value.toFixed(2))].join(":");
+    })
     .join(";");
 }
 
@@ -89,32 +78,52 @@ function setCursor(cursor: string) {
 
 /** Radians a creature turns per pixel dragged. */
 const dragTurnRate = 0.012;
+const cameraPosition: [number, number, number] = [0, 0.4, 13];
+const cameraFov = 42;
+/**
+ * A landscape poster shows the same height of sea, only wider, so the cast spreads out sideways
+ * by this much from its portrait places.
+ */
+const landscapeSpread = 2;
 
-function Ensemble({ seed, initialPoses }: { seed: string; initialPoses: Record<string, Pose> }) {
+type Drag = { key: string; group: THREE.Group; base: [number, number, number]; place: [number, number, number]; moving: boolean; x: number; y: number; start: Pose };
+
+function Ensemble({ seed, initialPoses, animated, landscape }: { seed: string; initialPoses: Record<string, Pose>; animated: boolean; landscape: boolean }) {
   const posesRef = useRef<Record<string, Pose>>(initialPoses);
-  const dragRef = useRef<{ key: string; group: THREE.Group; base: [number, number, number]; x: number; y: number; start: Pose } | null>(null);
+  const dragRef = useRef<Drag | null>(null);
+  const viewHeight = useThree((state) => state.size.height);
 
   useEffect(() => {
     logPosterLink(seed, posesRef.current);
   }, [seed]);
 
-  const startDrag = (event: ThreeEvent<PointerEvent>, key: string, base: [number, number, number]) => {
+  // Dragging turns a creature; dragging with Shift held moves it across the poster instead.
+  const startDrag = (event: ThreeEvent<PointerEvent>, key: string, base: [number, number, number], place: [number, number, number]) => {
     event.stopPropagation();
     (event.target as Element).setPointerCapture(event.pointerId);
     const group = event.eventObject as THREE.Group;
-    dragRef.current = { key, group, base, x: event.clientX, y: event.clientY, start: posesRef.current[key] ?? { turn: 0, pitch: 0 } };
-    setCursor("grabbing");
+    const moving = event.shiftKey;
+    dragRef.current = { key, group, base, place, moving, x: event.clientX, y: event.clientY, start: posesRef.current[key] ?? restingPose };
+    setCursor(moving ? "move" : "grabbing");
   };
 
   const drag = (event: ThreeEvent<PointerEvent>) => {
     const current = dragRef.current;
     if (!current) return;
-    const pose = {
-      turn: current.start.turn + (event.clientX - current.x) * dragTurnRate,
-      pitch: current.start.pitch + (event.clientY - current.y) * dragTurnRate,
-    };
+    const dx = event.clientX - current.x;
+    const dy = event.clientY - current.y;
+    let pose: Pose;
+    if (current.moving) {
+      // The creature follows the pointer at its own depth, so near and far ones keep up alike.
+      const distance = cameraPosition[2] - current.place[2];
+      const unitsPerPixel = (2 * distance * Math.tan(THREE.MathUtils.degToRad(cameraFov / 2))) / viewHeight;
+      pose = { ...current.start, x: current.start.x + dx * unitsPerPixel, y: current.start.y - dy * unitsPerPixel };
+      current.group.position.set(current.place[0] + pose.x, current.place[1] + pose.y, current.place[2]);
+    } else {
+      pose = { ...current.start, turn: current.start.turn + dx * dragTurnRate, pitch: current.start.pitch + dy * dragTurnRate };
+      current.group.rotation.set(current.base[0] + pose.pitch, current.base[1] + pose.turn, current.base[2]);
+    }
     posesRef.current = { ...posesRef.current, [current.key]: pose };
-    current.group.rotation.set(current.base[0] + pose.pitch, current.base[1] + pose.turn, current.base[2]);
   };
 
   const endDrag = (event: ThreeEvent<PointerEvent>) => {
@@ -135,14 +144,16 @@ function Ensemble({ seed, initialPoses }: { seed: string; initialPoses: Record<s
     <>
       {members.map((member) => {
         const base: [number, number, number] = [0, member.turn, member.tilt ?? 0];
-        // Later drags rotate the group directly; rendering only needs the poses from the link.
-        const pose = initialPoses[member.key] ?? { turn: 0, pitch: 0 };
+        const [x, y, z] = member.position;
+        const place: [number, number, number] = landscape ? [x * landscapeSpread, y, z] : [x, y, z];
+        // Later drags move and rotate the group directly; rendering only needs the poses from the link.
+        const pose = initialPoses[member.key] ?? restingPose;
         return (
         <group
           key={member.key}
-          position={member.position}
+          position={[place[0] + pose.x, place[1] + pose.y, place[2]]}
           rotation={[base[0] + pose.pitch, base[1] + pose.turn, base[2]]}
-          onPointerDown={(event) => startDrag(event, member.key, base)}
+          onPointerDown={(event) => startDrag(event, member.key, base, place)}
           onPointerMove={drag}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
@@ -160,7 +171,7 @@ function Ensemble({ seed, initialPoses }: { seed: string; initialPoses: Record<s
             baseSeed={member.creatureSeed}
             pattern={patternForTraitCount(creaturePattern(member.creatureSeed), member.pieces.length)}
             scale={member.scale}
-            animated={false}
+            animated={animated}
           />
         </group>
         );
@@ -191,25 +202,31 @@ function MarineSnow({ seed }: { seed: string }) {
   );
 }
 
-/** `width` fixes the poster's size in pixels for exports; without it the poster fits the window. */
-export function CreaturePoster({ seed, width, pose }: { seed: string; width?: number; pose?: string }) {
+/**
+ * `width` fixes the poster's size in pixels for exports; without it the poster fits the window.
+ * `landscape` lays it out 3:2 wide instead of 2:3 tall.
+ */
+export function CreaturePoster({ seed, width, pose, landscape = false }: { seed: string; width?: number; pose?: string; landscape?: boolean }) {
   const initialPoses = useMemo(() => parsePoses(pose), [pose]);
   const router = useRouter();
+  const [paused, setPaused] = useState(false);
+  const ratio = landscape ? 2 / 3 : 3 / 2;
+  const fitToWindow = landscape ? "w-[min(100vw,150dvh)]" : "h-[min(100dvh,150vw)]";
 
   return (
     <main className="grid min-h-dvh place-items-center bg-black">
       {/* Keeps the development badge out of poster captures. */}
       <style>{"nextjs-portal { display: none; }"}</style>
       <article
-        className={`creature-poster film-grain relative aspect-[2/3] ${width ? "" : "h-[min(100dvh,150vw)]"} overflow-hidden bg-[var(--abyss)] text-[var(--foam)]`}
-        style={width ? { width, height: width * 1.5 } : undefined}
+        className={`creature-poster film-grain relative ${landscape ? "aspect-[3/2]" : "aspect-[2/3]"} ${width ? "" : fitToWindow} overflow-hidden bg-[var(--abyss)] text-[var(--foam)]`}
+        style={width ? { width, height: width * ratio } : undefined}
         aria-label="The Fishbowl Leaks poster"
       >
         <BiomeBackdrop progress={0.82} quiet />
         <div className="creature-poster-light absolute inset-0" aria-hidden="true" />
         <div className="absolute inset-0">
           <Canvas
-            camera={{ position: [0, 0.4, 13], fov: 42, near: 0.1, far: 60 }}
+            camera={{ position: cameraPosition, fov: cameraFov, near: 0.1, far: 60 }}
             dpr={[1, 2]}
             resize={{ debounce: 0 }}
             gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
@@ -222,7 +239,8 @@ export function CreaturePoster({ seed, width, pose }: { seed: string; width?: nu
             <directionalLight position={[8, 1, -2]} intensity={3.2} color="#58D6FF" />
             <pointLight position={[0, 1.4, 5]} intensity={6} distance={9} color="#B9FFDC" />
             <MarineSnow seed={seed} />
-            <Ensemble seed={seed} initialPoses={initialPoses} />
+            {/* The cast swims as it does in the collective tank, but holds still for fixed-size exports. */}
+            <Ensemble seed={seed} initialPoses={initialPoses} animated={!width && !paused} landscape={landscape} />
           </Canvas>
         </div>
         <div className="creature-poster-fade pointer-events-none absolute inset-x-0 bottom-0 h-[34%]" aria-hidden="true" />
@@ -234,16 +252,26 @@ export function CreaturePoster({ seed, width, pose }: { seed: string; width?: nu
           </h1>
         </header>
       </article>
-      {/* Exports set a fixed width; the button stays out of those captures. */}
+      {/* Exports set a fixed width; the buttons stay out of those captures. */}
       {!width && (
-        <button
-          type="button"
-          className="fixed right-6 bottom-6 z-10 flex min-h-12 items-center gap-4 border border-white/40 bg-[var(--abyss)] px-5 text-base text-[var(--foam)] transition-colors hover:border-white"
-          onClick={() => router.push(`/poster?seed=${crypto.randomUUID().slice(0, 8)}`)}
-        >
-          New poster
-          <span aria-hidden="true">→</span>
-        </button>
+        <div className="fixed right-6 bottom-6 z-10 flex gap-3">
+          <button
+            type="button"
+            aria-pressed={paused}
+            className="flex min-h-12 items-center border border-white/40 bg-[var(--abyss)] px-5 text-base text-[var(--foam)] transition-colors hover:border-white"
+            onClick={() => setPaused((current) => !current)}
+          >
+            {paused ? "Play animation" : "Stop animation"}
+          </button>
+          <button
+            type="button"
+            className="flex min-h-12 items-center gap-4 border border-white/40 bg-[var(--abyss)] px-5 text-base text-[var(--foam)] transition-colors hover:border-white"
+            onClick={() => router.push(`/poster?seed=${crypto.randomUUID().slice(0, 8)}${landscape ? "&format=landscape" : ""}`)}
+          >
+            New poster
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
       )}
     </main>
   );

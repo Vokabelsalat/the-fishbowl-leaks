@@ -92,20 +92,16 @@ const mouthPartIds = new Set<CreaturePartId>(["cockatoo-beak"]);
 // Volumetric traits stand off the flanks; flat ones fold down so their face turns toward the viewer.
 const volumetricPartIds = new Set<CreaturePartId>(["inner-eye", "heart-plume", "helping-arms"]);
 const traitSides: TraitMount[] = ["top", "bottom", "left", "right"];
-// Fins that grow as a pair, one on each flank just behind the head, like extra pectoral fins.
-const pairedFinPartIds = new Set<CreaturePartId>(["glass-wings"]);
-/** Where paired fins sit along the body, as a share of its half length toward the head. */
-const pairedFinAlong = 0.05;
 
 // Lets the creature editor reshuffle trait positions or pin every trait to one side.
 export const TraitPreviewContext = createContext<{ seed?: string; side?: TraitMount }>({});
 
 // Each creature spreads its traits over the four sides, starting from a seeded preference
 // and moving to the least crowded side, then spaces the traits on each side from tail to head.
-function assignMounts(pieces: CreaturePiece[], signature: string, forcedSide?: TraitMount, pairsFins = false) {
+function assignMounts(pieces: CreaturePiece[], signature: string, forcedSide?: TraitMount) {
   const bySide = new Map<TraitMount, CreaturePiece[]>(traitSides.map((side) => [side, []]));
   const ordered = pieces
-    .filter((piece) => !mouthPartIds.has(piece.partId) && !(pairsFins && pairedFinPartIds.has(piece.partId)))
+    .filter((piece) => !mouthPartIds.has(piece.partId))
     .sort((a, b) => hashUnit(`${signature}:${a.artifactId}:order`) - hashUnit(`${signature}:${b.artifactId}:order`));
   for (const piece of ordered) {
     const preferred = Math.floor(hashUnit(`${signature}:${piece.artifactId}:side`) * traitSides.length);
@@ -127,25 +123,6 @@ function assignMounts(pieces: CreaturePiece[], signature: string, forcedSide?: T
     });
   }
   return mounts;
-}
-
-type TraitMark = { key: string; piece: CreaturePiece; index: number; mount: { mount: TraitMount; along: number } | null; pairedFin: boolean };
-
-/** Every trait drawn on the body: one per piece, except paired fins, which get one on each flank. */
-function traitMarksFor(pieces: CreaturePiece[], mounts: ReturnType<typeof assignMounts>, pairsFins: boolean): TraitMark[] {
-  return pieces.flatMap((piece, index): TraitMark[] => {
-    if (mouthPartIds.has(piece.partId)) return [{ key: piece.artifactId, piece, index, mount: null, pairedFin: false }];
-    if (pairsFins && pairedFinPartIds.has(piece.partId)) {
-      return (["right", "left"] as const).map((mount) => ({
-        key: `${piece.artifactId}:${mount}`,
-        piece,
-        index,
-        mount: { mount, along: pairedFinAlong },
-        pairedFin: true,
-      }));
-    }
-    return [{ key: piece.artifactId, piece, index, mount: mounts[piece.artifactId], pairedFin: false }];
-  });
 }
 
 function shapeFrom(points: Array<[number, number]>) {
@@ -643,15 +620,6 @@ function mountRotation(layout: TraitLayout, mount: TraitMount, along: number, vo
   return mount === "top" ? new THREE.Euler(0, 0, 0) : new THREE.Euler(Math.PI, 0, 0);
 }
 
-/**
- * A paired fin sweeps back along the body from its root, tipped a little down and swung out
- * from the flank, so it stands off the body like a pectoral fin instead of lying flat on it.
- * Upright bodies sweep it down their length instead.
- */
-function pairedFinRotation(vertical: boolean | undefined) {
-  return new THREE.Euler(0, 0.6, vertical ? Math.PI - 0.3 : Math.PI / 2 + 0.3, "YZX");
-}
-
 function mountMirror(mount: TraitMount): [number, number, number] {
   return mount === "left" ? [1, 1, -1] : [1, 1, 1];
 }
@@ -763,10 +731,8 @@ export function TraitMarks({
   const palette = creatureColorPalette(signature);
   const layout = layoutOverride ?? (form === "fish" ? traitLayouts.seal : traitLayouts[form]);
   const pieceKey = pieces.map((piece) => `${piece.artifactId}/${piece.partId}`).join(",");
-  const pairsFins = !layout.radial;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const mounts = useMemo(() => assignMounts(pieces, traitSignature, preview.side, pairsFins), [pieceKey, traitSignature, preview.side, pairsFins]);
-  const marks = traitMarksFor(pieces, mounts, pairsFins);
+  const mounts = useMemo(() => assignMounts(pieces, traitSignature, preview.side), [pieceKey, traitSignature, preview.side]);
   const placementKey = `${form}:${traitSignature}:${preview.side ?? "mixed"}:${JSON.stringify(layout)}:${pieceKey}`;
 
   // Measure where the creature's skin actually is, so each trait grows out of it.
@@ -776,16 +742,17 @@ export function TraitMarks({
     body.updateWorldMatrix(true, true);
     const raycaster = new THREE.Raycaster();
     const next: Record<string, THREE.Vector3> = {};
-    for (const { key, mount } of marks) {
+    for (const piece of pieces) {
+      const atMouth = mouthPartIds.has(piece.partId);
       // If the ray misses the body there, slide toward the middle until it lands on skin.
       for (let step = 0; step <= 10; step += 1) {
         // Mouth parts sit a little deeper, so they stay rooted even on a thin snout's tip.
         const mouth = mouthGeometry(layout, step / 10);
-        const point = !mount
+        const point = atMouth
           ? skinPoint(body, mouth, raycaster, isMouthSkin)?.addScaledVector(mouth.outward, -mouthInset) ?? null
-          : skinPoint(body, mountGeometry(layout, mount.mount, mount.along * (1 - step / 10)), raycaster);
+          : skinPoint(body, mountGeometry(layout, mounts[piece.artifactId].mount, mounts[piece.artifactId].along * (1 - step / 10)), raycaster);
         if (point) {
-          next[key] = point;
+          next[piece.artifactId] = point;
           break;
         }
       }
@@ -796,14 +763,14 @@ export function TraitMarks({
 
   return (
     <group ref={groupRef} userData={{ [traitMarksTag]: true }}>
-      {marks.map(({ key, piece, index, mount, pairedFin }) => {
-        const fallback = mount ? mountGeometry(layout, mount.mount, mount.along) : mouthGeometry(layout);
-        const position = placements[key] ?? fallback.start.addScaledVector(fallback.outward, fallback.reach);
-        const rotation = !mount
-          ? mouthRotations[layout.mouth.facing ?? "forward"]
-          : pairedFin
-            ? pairedFinRotation(layout.vertical)
-            : mountRotation(layout, mount.mount, mount.along, volumetricPartIds.has(piece.partId));
+      {pieces.map((piece, index) => {
+        const atMouth = mouthPartIds.has(piece.partId);
+        const mount = atMouth ? null : mounts[piece.artifactId];
+        const fallback = atMouth ? mouthGeometry(layout) : mountGeometry(layout, mount!.mount, mount!.along);
+        const position = placements[piece.artifactId] ?? fallback.start.addScaledVector(fallback.outward, fallback.reach);
+        const rotation = mount
+          ? mountRotation(layout, mount.mount, mount.along, volumetricPartIds.has(piece.partId))
+          : mouthRotations[layout.mouth.facing ?? "forward"];
         const highlighted = piece.partId === highlightedPart;
         // During a reveal only the newly found trait grows, even if older traits share its part.
         const emerging = piece.artifactId === growth.artifactId;
@@ -811,7 +778,7 @@ export function TraitMarks({
         const color = piece.color || [palette.marking, palette.fin, palette.head, palette.belly][index % 4];
 
         return (
-          <group key={key} name={piece.partId} position={position} scale={mount ? mountMirror(mount.mount) : [1, 1, 1]}>
+          <group key={piece.artifactId} name={piece.partId} position={position} scale={mount ? mountMirror(mount.mount) : [1, 1, 1]}>
             <group rotation={rotation}>
               <GrowingTrait active={grows} held={emerging && !growth.growing}>
                 <group scale={layout.scale * (highlighted ? 1.18 : 1)}>

@@ -157,11 +157,10 @@ type PairingEvent = {
 
 export type CreatureArrival = {
   id: number;
-  /** Screen rect of the arrival overlay's creature canvas at the moment of hand-over. */
+  /** Screen rect of the left arrival area where the aquarium creature begins its descent. */
   rect?: { left: number; top: number; width: number; height: number };
-  /** Share of the overlay canvas the fitted creature fills (see FitCreatureCamera). */
+  /** Share of the arrival area the fitted creature fills. */
   fill: number;
-  onTakeover?: () => void;
 };
 
 type ArrivalMotion = {
@@ -320,29 +319,28 @@ const FloatingCreature = memo(function FloatingCreature({
       state.initialized = true;
 
       if (arrivalPending.current) {
-        // Take over from the arrival overlay at the exact size and position the
-        // creature had there, then shrink and sink it to its first spot in the tank.
+        // Begin in the left arrival area, then shrink and sink into the tank.
         arrivalPending.current = false;
         swimRef.current.position.set(0, 0, 0);
         swimRef.current.scale.setScalar(1);
-        // The overlay shows the creature unturned; it turns toward its heading once it swims.
+        // Show the creature unturned at first; it turns toward its heading once it swims.
         directionRef.current.quaternion.identity();
         swimRef.current.updateWorldMatrix(true, true);
         const bounds = new THREE.Box3().setFromObject(directionRef.current);
         const canvasRect = canvas.getBoundingClientRect();
-        const overlay = arrival?.rect;
+        const origin = arrival?.rect;
         const naturalScale = depthScaleAt(isWhale ? state.z : arrivalDepth);
         let fromX = state.x;
         let fromY = state.y;
         let fromScale = naturalScale * 0.3;
-        if (overlay && !bounds.isEmpty() && canvasRect.width > 0) {
+        if (origin && !bounds.isEmpty() && canvasRect.width > 0) {
           const size = bounds.getSize(new THREE.Vector3());
           const center = bounds.getCenter(new THREE.Vector3());
           const pixelsPerUnit = canvasRect.width / viewport.width;
-          const fittedWidth = Math.min(overlay.width, overlay.height * (size.x / Math.max(size.y, 0.001))) * arrival.fill;
+          const fittedWidth = Math.min(origin.width, origin.height * (size.x / Math.max(size.y, 0.001))) * arrival.fill;
           fromScale = fittedWidth / (Math.max(size.x, 0.001) * pixelsPerUnit);
-          const centerX = ((overlay.left + overlay.width / 2 - canvasRect.left) / canvasRect.width - 0.5) * viewport.width;
-          const centerY = (0.5 - (overlay.top + overlay.height / 2 - canvasRect.top) / canvasRect.height) * viewport.height;
+          const centerX = ((origin.left + origin.width / 2 - canvasRect.left) / canvasRect.width - 0.5) * viewport.width;
+          const centerY = (0.5 - (origin.top + origin.height / 2 - canvasRect.top) / canvasRect.height) * viewport.height;
           fromX = centerX - center.x * fromScale;
           fromY = centerY - center.y * fromScale;
         }
@@ -354,7 +352,6 @@ const FloatingCreature = memo(function FloatingCreature({
             : THREE.MathUtils.clamp(fromY - 1.2, -maxY * 0.85, maxY * 0.85);
         }
         arrivalMotion.current = { startedAt: elapsed, fromX, fromY, fromScale };
-        arrival?.onTakeover?.();
       }
     }
     previousProgress.current = progress;
@@ -578,7 +575,7 @@ const FloatingCreature = memo(function FloatingCreature({
     );
   });
 
-  // An arriving creature starts at the size it had on the arrival screen, so it keeps full detail until it settles.
+  // An arriving creature starts large in the left column, so it keeps full detail until it settles.
   const isShownLarge = useCallback((elapsed: number) => {
     if (arrivalPending.current) return true;
     const arrivalStart = arrivalMotion.current?.startedAt;

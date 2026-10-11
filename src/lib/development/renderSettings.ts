@@ -55,8 +55,8 @@ const meshQualityFallback = { value: 1 };
 /** The named mesh qualities; each is the share of a shape's full segments it keeps. */
 export const meshQualityPresets = [
   { name: "High", quality: 1 },
-  { name: "Medium", quality: 0.5 },
-  { name: "Low", quality: 0.25 },
+  { name: "Medium", quality: 0.9 },
+  { name: "Low", quality: 0.8 },
 ] as const;
 
 export const minimumMeshQuality = 0.1;

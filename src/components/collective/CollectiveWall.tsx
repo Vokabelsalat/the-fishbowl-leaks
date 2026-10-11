@@ -12,7 +12,7 @@ import { FitText } from "@/components/ui/FitText";
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 import { creatureFitMargin } from "@/components/creature/CreatureCanvas";
 import { formatRenderStats, type RenderStatsReport } from "@/components/development/RenderStats";
-import { meshQualityPresets, minimumMeshQuality, useMeshQuality, useMergeStaticMeshes, useReduceGeometryDetail } from "@/lib/development/renderSettings";
+import { meshQualityPresets, minimumMeshQuality, useBatchMeshes, useMeshQuality, useMergeStaticMeshes, useReduceGeometryDetail } from "@/lib/development/renderSettings";
 import { activeVisualizationCopy, collectiveCapacity } from "@/config/visualization";
 import { artifacts } from "@/data/artifacts";
 import { aggregateContributionDwellTimes } from "@/lib/contributions/heatmap";
@@ -131,6 +131,7 @@ export function CollectiveWall() {
   const renderStatsRef = useRef<HTMLSpanElement>(null);
   const [mergeStaticMeshes, setMergeStaticMeshes] = useMergeStaticMeshes();
   const [reduceGeometryDetail, setReduceGeometryDetail] = useReduceGeometryDetail();
+  const [batchMeshes, setBatchMeshes] = useBatchMeshes();
   const [meshQuality, setMeshQuality] = useMeshQuality();
   // Written straight into the element, so the readout never re-renders the wall.
   const showRenderStatsReport = useCallback((report: RenderStatsReport) => {
@@ -296,6 +297,7 @@ export function CollectiveWall() {
             onSelectContribution={setSelectedContribution}
             onRenderStats={showRenderStats ? showRenderStatsReport : undefined}
             mergeStaticMeshes={mergeStaticMeshes}
+            batchMeshes={batchMeshes}
             reduceGeometryDetail={reduceGeometryDetail}
             meshQuality={meshQuality}
           />
@@ -333,6 +335,7 @@ export function CollectiveWall() {
           {showRenderStats && view === "collective" && (
             <div className="absolute right-8 top-20 flex items-center gap-6">
               <RenderSwitch label="Merged meshes" checked={mergeStaticMeshes} onChange={setMergeStaticMeshes} />
+              <RenderSwitch label="Batched draws" checked={batchMeshes} onChange={setBatchMeshes} />
               <RenderSwitch label="Reduced detail" checked={reduceGeometryDetail} onChange={setReduceGeometryDetail} />
               <MeshQualityControl quality={meshQuality} onChange={setMeshQuality} />
               <span ref={renderStatsRef} aria-hidden="true" />

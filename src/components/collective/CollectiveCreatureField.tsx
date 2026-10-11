@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { AquaticCreatureModel } from "@/components/creature/AquaticCreatureModel";
 import { GeometryDetailReducer } from "@/components/creature/GeometryDetailReducer";
 import { StaticMeshMerger } from "@/components/creature/StaticMeshMerger";
+import { TankMeshBatches } from "@/components/creature/MeshBatcher";
 import { AquariumDioramaPlants } from "@/components/collective/AquariumDioramaPlants";
 import { creatureSizeScale, creatureSpeedFactor, creatureSpeedHoldSeconds, type AquaticForm } from "@/lib/creature/aquaticForms";
 import { creatureColorPalette } from "@/lib/creature/colorPalettes";
@@ -926,6 +927,7 @@ export function CollectiveCreatureField({
   onSelectContribution,
   onRenderStats,
   mergeStaticMeshes = false,
+  batchMeshes = false,
   reduceGeometryDetail = false,
   meshQuality = 1,
 }: {
@@ -937,6 +939,8 @@ export function CollectiveCreatureField({
   onRenderStats?: (report: RenderStatsReport) => void;
   /** Merges each creature's still parts into a few meshes to save draw calls. */
   mergeStaticMeshes?: boolean;
+  /** Draws the merged meshes of all creatures together, in a few batched draws; needs `mergeStaticMeshes`. */
+  batchMeshes?: boolean;
   /** Builds rounded shapes with only as many segments as their size on screen needs. */
   reduceGeometryDetail?: boolean;
   /** The share of their full segments the creatures' rounded shapes keep, from 0.1 to 1. */
@@ -976,62 +980,64 @@ export function CollectiveCreatureField({
       {/* Ambient and one sun only: coloured point lights this far from the tank fade to almost nothing yet cost every pixel. */}
       <ambientLight intensity={1.5} />
       <directionalLight position={[2, 5, 8]} intensity={2.4} color="#FFF4DF" />
-      {whales.map((contribution) => (
-        <FloatingCreature
-          key={contribution.id}
-          contribution={contribution}
-          progress={progress}
-          mergeStaticMeshes={mergeStaticMeshes}
-          reduceGeometryDetail={reduceGeometryDetail}
-          meshQuality={meshQuality}
-          arrival={arrival?.id === contribution.id ? arrival : undefined}
-          onSelect={onSelectContribution}
-        />
-      ))}
-      <WhaleDepthVeil />
-      <AquariumDioramaPlants layer="back" />
-      <PairingDirector
-        contributions={tankAdults}
-        actorRegistry={actorRegistry}
-        pairingRef={pairingRef}
-        schoolingRef={schoolingRef}
-        onBaby={handleBaby}
-      />
-      <SchoolingDirector
-        contributions={tankAdults}
-        actorRegistry={actorRegistry}
-        pairingRef={pairingRef}
-        schoolingRef={schoolingRef}
-      />
-      <PairingHeart pairingRef={pairingRef} />
-      {tankAdults.map((contribution) => (
-        <FloatingCreature
-          key={contribution.id}
-          contribution={contribution}
-          progress={progress}
-          mergeStaticMeshes={mergeStaticMeshes}
-          reduceGeometryDetail={reduceGeometryDetail}
-          meshQuality={meshQuality}
+      <TankMeshBatches enabled={batchMeshes && mergeStaticMeshes}>
+        {whales.map((contribution) => (
+          <FloatingCreature
+            key={contribution.id}
+            contribution={contribution}
+            progress={progress}
+            mergeStaticMeshes={mergeStaticMeshes}
+            reduceGeometryDetail={reduceGeometryDetail}
+            meshQuality={meshQuality}
+            arrival={arrival?.id === contribution.id ? arrival : undefined}
+            onSelect={onSelectContribution}
+          />
+        ))}
+        <WhaleDepthVeil />
+        <AquariumDioramaPlants layer="back" />
+        <PairingDirector
+          contributions={tankAdults}
           actorRegistry={actorRegistry}
           pairingRef={pairingRef}
           schoolingRef={schoolingRef}
-          arrival={arrival?.id === contribution.id ? arrival : undefined}
-          onSelect={onSelectContribution}
+          onBaby={handleBaby}
         />
-      ))}
-      {babies.map((baby) => (
-        <FloatingCreature
-          key={baby.contribution.id}
-          contribution={baby.contribution}
-          progress={progress}
-          mergeStaticMeshes={mergeStaticMeshes}
-          reduceGeometryDetail={reduceGeometryDetail}
-          meshQuality={meshQuality}
-          juvenile
-          spawnPosition={baby.spawnPosition}
+        <SchoolingDirector
+          contributions={tankAdults}
+          actorRegistry={actorRegistry}
+          pairingRef={pairingRef}
+          schoolingRef={schoolingRef}
         />
-      ))}
-      <AquariumDioramaPlants layer="front" />
+        <PairingHeart pairingRef={pairingRef} />
+        {tankAdults.map((contribution) => (
+          <FloatingCreature
+            key={contribution.id}
+            contribution={contribution}
+            progress={progress}
+            mergeStaticMeshes={mergeStaticMeshes}
+            reduceGeometryDetail={reduceGeometryDetail}
+            meshQuality={meshQuality}
+            actorRegistry={actorRegistry}
+            pairingRef={pairingRef}
+            schoolingRef={schoolingRef}
+            arrival={arrival?.id === contribution.id ? arrival : undefined}
+            onSelect={onSelectContribution}
+          />
+        ))}
+        {babies.map((baby) => (
+          <FloatingCreature
+            key={baby.contribution.id}
+            contribution={baby.contribution}
+            progress={progress}
+            mergeStaticMeshes={mergeStaticMeshes}
+            reduceGeometryDetail={reduceGeometryDetail}
+            meshQuality={meshQuality}
+            juvenile
+            spawnPosition={baby.spawnPosition}
+          />
+        ))}
+        <AquariumDioramaPlants layer="front" />
+      </TankMeshBatches>
     </Canvas>
   );
 }

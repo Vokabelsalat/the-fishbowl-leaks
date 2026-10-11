@@ -100,6 +100,7 @@ function VisualizationField({
   onSelectContribution,
   onRenderStats,
   mergeStaticMeshes = false,
+  batchMeshes = false,
   reduceGeometryDetail = false,
   meshQuality = 1,
 }: {
@@ -109,6 +110,8 @@ function VisualizationField({
   onSelectContribution?: (contribution: ExhibitionContribution) => void;
   /** Merges each creature's still parts into a few meshes in the 3D aquarium. */
   mergeStaticMeshes?: boolean;
+  /** Draws the merged meshes of all creatures in the 3D aquarium together, in a few batched draws. */
+  batchMeshes?: boolean;
   /** Builds rounded shapes in the 3D aquarium with only as many segments as their size needs. */
   reduceGeometryDetail?: boolean;
   meshQuality?: number;
@@ -129,6 +132,7 @@ function VisualizationField({
       onSelectContribution={onSelectContribution}
       onRenderStats={onRenderStats}
       mergeStaticMeshes={mergeStaticMeshes}
+      batchMeshes={batchMeshes}
       reduceGeometryDetail={reduceGeometryDetail}
       meshQuality={meshQuality}
     />

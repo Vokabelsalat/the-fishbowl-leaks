@@ -5,7 +5,9 @@ import * as THREE from "three";
 import { CreatureLookContext } from "@/components/creature/CreatureLook";
 import type { CreaturePattern } from "@/lib/creature/patterns";
 
-const tileSize = 128;
+/** Pattern tiles are square, with this many pixels on each side. */
+export const patternTileSize = 128;
+const tileSize = patternTileSize;
 
 /** A small seeded random generator, so a pattern seed always draws the same marks. */
 function seededRandom(seed: number) {
@@ -32,13 +34,14 @@ function wrappedCircle(context: CanvasRenderingContext2D, x: number, y: number, 
 
 /**
  * Draws one seamless tile of the pattern. Marks are flat and hard-edged, to suit toon shading.
- * Tiles are drawn with stripes running along +x; "around" turns them a quarter turn.
+ * Tiles are drawn with stripes running along +x; "around" turns them a quarter turn. `readBack`
+ * keeps the canvas in main memory, so its pixels can be read without stalling the GPU.
  */
-function drawPatternTile(pattern: CreaturePattern, baseColor: string, markingColor: string) {
+function drawPatternTile(pattern: CreaturePattern, baseColor: string, markingColor: string, readBack = false) {
   const canvas = document.createElement("canvas");
   canvas.width = tileSize;
   canvas.height = tileSize;
-  const context = canvas.getContext("2d")!;
+  const context = canvas.getContext("2d", { willReadFrequently: readBack })!;
   context.fillStyle = baseColor;
   context.fillRect(0, 0, tileSize, tileSize);
   const marking = new THREE.Color(baseColor).lerp(new THREE.Color(markingColor), pattern.contrast).getStyle();
@@ -114,6 +117,15 @@ function drawPatternTile(pattern: CreaturePattern, baseColor: string, markingCol
   return canvas;
 }
 
+/** The pattern's marks in white on black, the same for every colouring of the pattern, ready to be read back. */
+export function drawPatternMask(pattern: CreaturePattern) {
+  return drawPatternTile({ ...pattern, contrast: 1 }, "#000000", "#FFFFFF", true);
+}
+
+/** What a pattern texture shows, kept on it so the tank's batched drawing can rebuild it from a shared mask. */
+export type PatternTextureSource = { pattern: CreaturePattern; baseColor: string; markingColor: string };
+export const patternSourceKey = "patternSource";
+
 const tileCache = new Map<string, THREE.Texture>();
 const repeatedCache = new Map<string, THREE.Texture>();
 
@@ -134,6 +146,7 @@ function patternTexture(pattern: CreaturePattern, baseColor: string, markingColo
     // Clones share the drawn image, so each repeat costs no extra texture memory.
     repeated = tile.clone();
     repeated.repeat.set(repeat[0], repeat[1]);
+    repeated.userData[patternSourceKey] = { pattern, baseColor, markingColor } satisfies PatternTextureSource;
     repeated.needsUpdate = true;
     repeatedCache.set(repeatedKey, repeated);
   }

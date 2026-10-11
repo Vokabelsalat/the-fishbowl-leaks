@@ -4,6 +4,7 @@ import { useCallback, useSyncExternalStore } from "react";
 
 const MERGE_STATIC_MESHES_KEY = "after-augmented-reality:merge-static-meshes";
 const REDUCE_GEOMETRY_DETAIL_KEY = "after-augmented-reality:reduce-geometry-detail";
+const BATCH_MESHES_KEY = "after-augmented-reality:batch-meshes";
 const changeEvent = "render-settings-updated";
 // Used when the browser blocks storage, so a switch still works until the page reloads.
 const fallbacks = new Map<string, boolean>();
@@ -47,6 +48,11 @@ export function useMergeStaticMeshes() {
 /** Whether the aquarium builds rounded shapes with only as many segments as their size needs. */
 export function useReduceGeometryDetail() {
   return useBrowserSwitch(REDUCE_GEOMETRY_DETAIL_KEY);
+}
+
+/** Whether the aquarium draws the merged meshes of all its creatures together, in a few batched draws. */
+export function useBatchMeshes() {
+  return useBrowserSwitch(BATCH_MESHES_KEY);
 }
 
 const MESH_QUALITY_KEY = "after-augmented-reality:mesh-quality";

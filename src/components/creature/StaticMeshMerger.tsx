@@ -1,9 +1,10 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useContext, useEffect, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { batchProxyLayer, MeshBatcherContext, type TankBatcher } from "@/components/creature/MeshBatcher";
 
 /** Marks meshes this merger creates, so tools that count or index a model's meshes can skip them. */
 export const mergedMeshTag = "mergedStaticMesh";
@@ -149,20 +150,31 @@ type MergeState = {
   moving: Set<THREE.Object3D>;
   merged: THREE.Mesh[];
   hidden: Array<{ mesh: THREE.Mesh; layers: number; material: THREE.Material | THREE.Material[]; geometry: THREE.BufferGeometry }>;
+  /** Nodes holding only hidden originals, whose matrices stop updating while merged. */
+  frozen: THREE.Object3D[];
   nextWatch: number;
+  /** Draws the merged meshes together with other creatures' when the tank batches them. */
+  batcher: TankBatcher | null;
 };
 
-function freshState(now: number): MergeState {
-  return { phase: "settling", startedAt: now, poses: new Map(), moving: new Set(), merged: [], hidden: [], nextWatch: 0 };
+function freshState(now: number, batcher: TankBatcher | null): MergeState {
+  return { phase: "settling", startedAt: now, poses: new Map(), moving: new Set(), merged: [], hidden: [], frozen: [], nextWatch: 0, batcher };
 }
 
 function unmerge(state: MergeState) {
   for (const mesh of state.merged) {
+    state.batcher?.remove(mesh);
     mesh.removeFromParent();
     mesh.geometry.dispose();
     (mesh.material as THREE.Material).dispose();
   }
   for (const { mesh, layers } of state.hidden) mesh.layers.mask = layers;
+  for (const node of state.frozen) {
+    node.matrixAutoUpdate = true;
+    node.matrixWorldAutoUpdate = true;
+    node.matrixWorldNeedsUpdate = true;
+  }
+  state.frozen = [];
   state.merged = [];
   state.hidden = [];
 }
@@ -221,8 +233,8 @@ function merge(root: THREE.Object3D, state: MergeState) {
   });
 
   for (const batch of batches.values()) {
-    // A single part gains nothing from merging.
-    if (batch.meshes.length < 2) {
+    // A single part gains nothing from merging, unless the tank can draw it together with other creatures.
+    if (batch.meshes.length < 2 && !state.batcher) {
       batch.geometries.forEach((geometry) => geometry.dispose());
       continue;
     }
@@ -236,12 +248,50 @@ function merge(root: THREE.Object3D, state: MergeState) {
     mergedMesh.userData[mergedMeshTag] = true;
     mergedMesh.renderOrder = batch.meshes[0].renderOrder;
     batch.anchor.add(mergedMesh);
+    const batched = state.batcher?.add(mergedMesh) ?? false;
+    if (!batched && batch.meshes.length < 2) {
+      mergedMesh.removeFromParent();
+      geometry.dispose();
+      material.dispose();
+      continue;
+    }
+    // A batched mesh stays only to be clicked, and to carry its batched copy along.
+    if (batched) mergedMesh.layers.set(batchProxyLayer);
     state.merged.push(mergedMesh);
     for (const mesh of batch.meshes) {
       state.hidden.push({ mesh, layers: mesh.layers.mask, material: mesh.material, geometry: mesh.geometry });
       mesh.layers.set(hiddenLayer);
     }
   }
+}
+
+/** True when nothing under `object`, itself included, is drawn: only hidden originals and the groups holding them. */
+function holdsOnlyHidden(object: THREE.Object3D, hidden: Set<THREE.Object3D>): boolean {
+  if (!hidden.has(object) && object.type !== "Group" && object.type !== "Object3D") return false;
+  return object.children.every((child) => holdsOnlyHidden(child, hidden));
+}
+
+/**
+ * Stops the matrix updates of everything that holds only hidden originals. They are not drawn,
+ * and nothing drawn hangs below them, so their matrices are never needed while merged; a moving
+ * part always carries its merged mesh, so it keeps updating.
+ */
+function freezeHidden(root: THREE.Object3D, state: MergeState) {
+  const hidden = new Set<THREE.Object3D>(state.hidden.map(({ mesh }) => mesh));
+  const freeze = (object: THREE.Object3D) => {
+    object.traverse((node) => {
+      node.matrixAutoUpdate = false;
+      node.matrixWorldAutoUpdate = false;
+      state.frozen.push(node);
+    });
+  };
+  const visit = (object: THREE.Object3D) => {
+    for (const child of object.children) {
+      if (holdsOnlyHidden(child, hidden)) freeze(child);
+      else visit(child);
+    }
+  };
+  visit(root);
 }
 
 /** True when a merged part has moved, been replaced or been removed since it was merged. */
@@ -265,11 +315,21 @@ function mergeIsStale(root: THREE.Object3D, state: MergeState) {
  * Merges the parts of its children that never move relative to each other into a few meshes,
  * so a creature needs a handful of draw calls instead of dozens. Parts are watched for a moment
  * first: whatever moves on its own (a tail, a claw, an eye) keeps moving, carrying its merged
- * still parts with it. Turning `enabled` off restores the original meshes.
+ * still parts with it. Inside a tank that batches meshes, the merged meshes are drawn together
+ * with every other creature's. Turning `enabled` off restores the original meshes.
  */
 export function StaticMeshMerger({ enabled, children }: { enabled: boolean; children: ReactNode }) {
   const rootRef = useRef<THREE.Group>(null);
   const stateRef = useRef<MergeState | null>(null);
+  const batcher = useContext(MeshBatcherContext);
+
+  // Batching turned on or off: start over, so the meshes are merged for the new way of drawing.
+  useEffect(() => {
+    if (stateRef.current && stateRef.current.batcher !== batcher) {
+      unmerge(stateRef.current);
+      stateRef.current = null;
+    }
+  }, [batcher]);
 
   useEffect(() => {
     if (enabled) return;
@@ -285,7 +345,7 @@ export function StaticMeshMerger({ enabled, children }: { enabled: boolean; chil
     const root = rootRef.current;
     if (!enabled || !root) return;
     const now = clock.elapsedTime;
-    const state = (stateRef.current ??= freshState(now));
+    const state = (stateRef.current ??= freshState(now, batcher));
 
     if (state.phase === "settling") {
       if (now - state.startedAt < settleSeconds) return;
@@ -307,6 +367,7 @@ export function StaticMeshMerger({ enabled, children }: { enabled: boolean; chil
       if (!takeMergeBudget(now)) return;
       recordPoses(root, state);
       merge(root, state);
+      freezeHidden(root, state);
       state.phase = "merged";
       state.nextWatch = now + watchEverySeconds * (0.5 + Math.random());
       return;

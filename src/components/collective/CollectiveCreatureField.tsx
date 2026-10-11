@@ -973,10 +973,9 @@ export function CollectiveCreatureField({
       <PerformanceMonitor factor={1} onChange={adjustPixelRatio} onFallback={settleOnLowestPixelRatio} />
       {onRenderStats && <RenderStats onReport={onRenderStats} />}
       <DepthHaze />
-      <ambientLight intensity={1.4} />
+      {/* Ambient and one sun only: coloured point lights this far from the tank fade to almost nothing yet cost every pixel. */}
+      <ambientLight intensity={1.5} />
       <directionalLight position={[2, 5, 8]} intensity={2.4} color="#FFF4DF" />
-      <pointLight position={[-5, 1, 5]} intensity={2.2} color="#58D6FF" />
-      <pointLight position={[5, -2, 5]} intensity={1.8} color="#FF7557" />
       {whales.map((contribution) => (
         <FloatingCreature
           key={contribution.id}

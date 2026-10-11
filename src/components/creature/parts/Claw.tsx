@@ -76,11 +76,10 @@ export function pinchCycle(cycle: number) {
 function ClawSurface({ color, glow }: { color: string; glow?: number }) {
   if (glow === undefined) return <meshToonMaterial color={color} />;
   return (
-    <meshStandardMaterial
+    <meshToonMaterial
       color={color}
       emissive={color}
       emissiveIntensity={glow}
-      roughness={0.38}
     />
   );
 }

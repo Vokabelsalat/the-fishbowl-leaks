@@ -1411,6 +1411,7 @@ function ClamModel(props: AquaticModelProps) {
       ))}
       <mesh position={[0, 0, 0.36]} scale={0.24}>
         <sphereGeometry args={[1, 20, 14]} />
+        {/* The pearl alone keeps a glossy material for its highlight; it is one small mesh per clam. */}
         <meshStandardMaterial color="#F4EAF3" emissive={colors.accent} emissiveIntensity={0.36} roughness={0.12} />
       </mesh>
       <TraitMarks pieces={props.pieces} baseSeed={props.baseSeed} form="clam" highlightedPart={props.highlightedPart} />

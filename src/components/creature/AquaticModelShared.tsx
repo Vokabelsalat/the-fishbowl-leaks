@@ -62,11 +62,10 @@ export function GrowingTrait({ active, held = false, children }: { active: boole
 
 function TraitMaterial({ color, highlighted, opacity = 1, glow = 0.24 }: { color: string; highlighted: boolean; opacity?: number; glow?: number }) {
   return (
-    <meshStandardMaterial
+    <meshToonMaterial
       color={color}
       emissive={color}
       emissiveIntensity={highlighted ? 0.85 : glow}
-      roughness={0.38}
       transparent={opacity < 1}
       opacity={opacity}
       side={THREE.DoubleSide}

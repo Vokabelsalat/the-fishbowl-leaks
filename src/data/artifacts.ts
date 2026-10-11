@@ -643,9 +643,9 @@ const exhibitionSources: ArtifactSource[] = [
     narrativeWords: ["witness", "presence", "remember", "resist"],
     creaturePart: {
       id: "heart-plume",
-      label: "Heart scale",
+      label: "Sea anemone",
       description:
-        "A bright central scale for presence, memory and resistance.",
+        "A low anemone holding close to the skin: a living shelter for presence and memory that stings back.",
     },
   },
   {
@@ -706,9 +706,9 @@ const exhibitionSources: ArtifactSource[] = [
     narrativeWords: ["sand", "revisit", "haunt", "recombine"],
     creaturePart: {
       id: "sand-hourglass",
-      label: "Sand chamber",
+      label: "Barnacles",
       description:
-        "A small hourglass chamber that lets memories fall into new arrangements.",
+        "Sand-coloured barnacles grown over the skin, small chambers that close over the memories they keep.",
     },
   },
   {

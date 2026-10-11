@@ -3,6 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { CreaturePiece } from "@/components/creature/CreatureModel";
 import { applyAddonModelOverrides } from "@/lib/creature/addonOverrides";
 import type { AquaticForm } from "@/lib/creature/aquaticForms";
@@ -142,6 +143,39 @@ function leafShape(length: number, width: number, bend = 0) {
 
 // A tube along `curve` whose radius goes from `radius` at its start to `radius * end` at its end.
 // `detail` scales its segment counts, for creatures shown small.
+/**
+ * Closes both ends of a tube built by THREE.TubeGeometry, so no add-on ever shows a hollow
+ * opening, whichever way it is mounted.
+ */
+function cappedTube(geometry: THREE.BufferGeometry, tubular: number, radial: number) {
+  const positions = geometry.getAttribute("position");
+  const ringCenter = (ring: number) => {
+    const center = new THREE.Vector3();
+    for (let side = 0; side < radial; side += 1) center.add(new THREE.Vector3().fromBufferAttribute(positions, ring * (radial + 1) + side));
+    return center.divideScalar(radial);
+  };
+  const cap = (ring: number, neighbour: number) => {
+    const center = ringCenter(ring);
+    const facing = center.clone().sub(ringCenter(neighbour)).normalize();
+    const capPositions = [center.x, center.y, center.z];
+    const normals = [facing.x, facing.y, facing.z];
+    for (let side = 0; side <= radial; side += 1) {
+      const index = ring * (radial + 1) + side;
+      capPositions.push(positions.getX(index), positions.getY(index), positions.getZ(index));
+      normals.push(facing.x, facing.y, facing.z);
+    }
+    const indices: number[] = [];
+    for (let side = 1; side <= radial; side += 1) indices.push(0, side, side + 1);
+    const capGeometry = new THREE.BufferGeometry();
+    capGeometry.setAttribute("position", new THREE.Float32BufferAttribute(capPositions, 3));
+    capGeometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+    capGeometry.setAttribute("uv", new THREE.Float32BufferAttribute(new Array((radial + 2) * 2).fill(0), 2));
+    capGeometry.setIndex(indices);
+    return capGeometry;
+  };
+  return mergeGeometries([geometry, cap(0, 1), cap(tubular, tubular - 1)], false);
+}
+
 function taperedTube(curve: THREE.Curve<THREE.Vector3>, radius: number, end = 0.15, detail = 1) {
   const tubular = Math.max(8, Math.round(48 * detail));
   const radial = Math.max(5, Math.round(10 * detail));
@@ -159,25 +193,14 @@ function taperedTube(curve: THREE.Curve<THREE.Vector3>, radius: number, end = 0.
     }
   }
   geometry.computeVertexNormals();
-  return geometry;
+  return cappedTube(geometry, tubular, radial);
 }
 
 function curve(points: Array<[number, number, number]>) {
   return new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z)));
 }
 
-function smoothProfile(points: Array<[number, number]>) {
-  return new THREE.SplineCurve(points.map(([x, y]) => new THREE.Vector2(x, y))).getPoints(28);
-}
-
 // Moves a geometry so it is centred on x and its lowest point sinks `sink` below the skin.
-function seated(geometry: THREE.BufferGeometry, sink = 0.04) {
-  geometry.computeBoundingBox();
-  const box = geometry.boundingBox!;
-  geometry.translate(-(box.min.x + box.max.x) / 2, -box.min.y - sink, -(box.min.z + box.max.z) / 2);
-  return geometry;
-}
-
 const flatExtrude = { depth: 0.04, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 3, curveSegments: 18 };
 const thinExtrude = { ...flatExtrude, depth: 0.015, bevelThickness: 0.012, bevelSize: 0.012 };
 
@@ -224,10 +247,10 @@ const traitShapes = {
 };
 
 const traitGeometries = {
-  lure: withDetailRecipe(48, (detail) => taperedTube(new THREE.LineCurve3(new THREE.Vector3(0, -0.05, 0), new THREE.Vector3(0, 0.72, 0)), 0.05, 0.5, detail)),
+  lure: withDetailRecipe(48, (detail) => taperedTube(new THREE.LineCurve3(new THREE.Vector3(0, -0.12, 0), new THREE.Vector3(0, 0.72, 0)), 0.05, 0.5, detail)),
   thorn: (() => {
     // Few radial segments keep the spine faceted, like a crystal grown into a thorn.
-    const path = curve([[0, -0.05, 0], [0.02, 0.3, 0], [-0.1, 0.6, 0], [-0.26, 0.78, 0]]);
+    const path = curve([[0, -0.12, 0], [0.02, 0.3, 0], [-0.1, 0.6, 0], [-0.26, 0.78, 0]]);
     const geometry = new THREE.TubeGeometry(path, 12, 0.13, 5, false);
     const positions = geometry.attributes.position;
     const vertex = new THREE.Vector3();
@@ -239,12 +262,12 @@ const traitGeometries = {
         positions.setXYZ(index, vertex.x, vertex.y, vertex.z);
       }
     }
-    return geometry.toNonIndexed();
+    return cappedTube(geometry, 12, 5).toNonIndexed();
   })(),
-  beak: withDetailRecipe(48, (detail) => taperedTube(curve([[0, -0.05, 0], [0.08, 0.2, 0], [0.26, 0.34, 0], [0.42, 0.26, 0]]), 0.17, 0.08, detail)),
+  beak: withDetailRecipe(48, (detail) => taperedTube(curve([[0, -0.12, 0], [0.08, 0.2, 0], [0.26, 0.34, 0], [0.42, 0.26, 0]]), 0.17, 0.08, detail)),
   // A fiddlehead: a short stem that rolls into a spiral.
   curl: withDetailRecipe(48, (detail) => taperedTube(curve([
-    [0, -0.05, 0],
+    [0, -0.12, 0],
     [0.01, 0.2, 0],
     ...Array.from({ length: 16 }, (_, index) => {
       const t = index / 15;
@@ -253,13 +276,38 @@ const traitGeometries = {
       return [0.15 + Math.cos(angle) * radius, 0.4 + Math.sin(angle) * radius, 0] as [number, number, number];
     }),
   ]), 0.065, 0.35, detail)),
-  // A chambered shell that coils outward from its tiny first chamber.
-  shell: withDetailRecipe(48, (detail) => seated(taperedTube(curve(Array.from({ length: 40 }, (_, index) => {
-    const angle = (index / 39) * Math.PI * 2.4;
-    const radius = 0.03 * Math.exp(angle * 0.28);
-    return [Math.cos(angle) * radius, Math.sin(angle) * radius, 0] as [number, number, number];
-  })), 0.02, 6.5, detail))),
-  polyp: new THREE.LatheGeometry(smoothProfile([[0.001, 0], [0.16, 0.01], [0.08, 0.14], [0.07, 0.26], [0.17, 0.36], [0.18, 0.44], [0.08, 0.5], [0.001, 0.48]]), 22),
+  // One barnacle, a unit tall: a ribbed cone of fused plates rising to a lipped crater that dips back in.
+  barnacle: withDetailRecipe(30, (detail) => {
+    const profile: Array<[number, number]> = [[0.5, -0.04], [0.47, 0.18], [0.39, 0.46], [0.28, 0.72], [0.22, 0.84], [0.19, 0.86], [0.16, 0.82], [0.13, 0.62], [0.001, 0.58]];
+    const around = Math.max(12, Math.round(30 * detail));
+    const positions: number[] = [];
+    const indices: number[] = [];
+    profile.forEach(([radius, y]) => {
+      for (let step = 0; step <= around; step += 1) {
+        const angle = (step / around) * Math.PI * 2;
+        // Six plates make the wall bulge out between their seams.
+        const ribbed = radius * (1 + 0.07 * Math.abs(Math.cos(angle * 3)));
+        positions.push(Math.cos(angle) * ribbed, y, Math.sin(angle) * ribbed);
+      }
+    });
+    for (let ring = 0; ring < profile.length - 1; ring += 1) {
+      for (let step = 0; step < around; step += 1) {
+        const a = ring * (around + 1) + step;
+        const b = a + around + 1;
+        // Up the profile and around the axis, this order faces the wall outward.
+        indices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  }),
+  // A sea anemone's squat column, flaring slightly into the rim that carries its tentacles.
+  anemoneColumn: new THREE.CylinderGeometry(0.17, 0.2, 0.1, 24),
+  // One short tentacle rising from the rim and curling in over the centre.
+  anemoneTentacle: withDetailRecipe(10, (detail) => taperedTube(curve([[0, 0, 0], [0.005, 0.07, 0], [-0.03, 0.12, 0], [-0.07, 0.13, 0]]), 0.028, 0.45, detail)),
 };
 traitGeometries.thorn.computeVertexNormals();
 
@@ -337,6 +385,83 @@ function SeepingBubbles({ color, highlighted }: { color: string; highlighted: bo
   );
 }
 
+/** A cluster of barnacles on the skin: x, z, height, and how far each leans out (around x and z). */
+const barnacles: Array<[number, number, number, number, number]> = [
+  [0, 0, 0.36, 0, 0],
+  [0.2, 0.05, 0.25, 0.1, -0.4],
+  [-0.19, -0.03, 0.27, -0.05, 0.38],
+  [0.06, 0.19, 0.2, 0.42, -0.1],
+  [-0.08, -0.19, 0.22, -0.4, 0.12],
+  [0.17, -0.16, 0.16, -0.32, -0.3],
+  [-0.18, 0.15, 0.15, 0.3, 0.32],
+];
+
+// Barnacles grown over the skin: small sand-coloured chambers, each closing over what it keeps.
+function BarnacleCluster({ color, highlighted }: { color: string; highlighted: boolean }) {
+  return (
+    <>
+      {barnacles.map(([x, z, height, leanX, leanZ], index) => (
+        <group key={index} position={[x, -0.02, z]} rotation={[leanX, index * 0.9, leanZ]} scale={[height * 1.1, height * 0.8, height * 1.1]}>
+          <mesh geometry={traitGeometries.barnacle}>
+            <TraitMaterial color={color} highlighted={highlighted} glow={0.3} />
+          </mesh>
+          {/* The two little plates that close the crater, meeting in a seam. */}
+          {[-1, 1].map((side) => (
+            <mesh key={side} position={[side * 0.055, 0.63, 0]} rotation={[0, 0, side * -0.35]} scale={[0.07, 0.05, 0.11]}>
+              <sphereGeometry args={[1, 10, 8]} />
+              <TraitMaterial color={color} highlighted={highlighted} glow={0.08} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </>
+  );
+}
+
+/** Tentacle rings of the anemone: how far out from the centre they rise, how many there are and how large. */
+const anemoneRings = [
+  { radius: 0.155, count: 18, size: 1.1 },
+  { radius: 0.09, count: 11, size: 0.8 },
+];
+
+// A low sea anemone hugging the skin, its short tentacles curled in over its centre: a shelter that keeps close.
+function SeaAnemone({ color, highlighted }: { color: string; highlighted: boolean }) {
+  const tentacleRefs = useRef<Array<THREE.Group | null>>([]);
+  const tentacles = anemoneRings.flatMap((ring, ringIndex) => Array.from({ length: ring.count }, (_, index) => ({
+    ...ring,
+    angle: (index / ring.count) * Math.PI * 2 + ringIndex * 0.2,
+  })));
+
+  useFrame(({ clock }) => {
+    tentacleRefs.current.forEach((tentacle, index) => {
+      // Each tentacle sways a little in and out, in a ripple running round the ring.
+      if (tentacle) tentacle.rotation.z = Math.sin(clock.elapsedTime * 1.4 + index * 0.6) * 0.12;
+    });
+  });
+
+  return (
+    <>
+      <mesh position={[0, 0.02, 0]} geometry={traitGeometries.anemoneColumn}>
+        <TraitMaterial color={color} highlighted={highlighted} glow={0.25} />
+      </mesh>
+      <mesh position={[0, 0.07, 0]} scale={[0.17, 0.035, 0.17]}>
+        <sphereGeometry args={[1, 20, 10]} />
+        <TraitMaterial color={color} highlighted={highlighted} glow={0.6} />
+      </mesh>
+      {tentacles.map(({ radius, size, angle }, index) => (
+        // Turned so each tentacle's curl points toward the centre.
+        <group key={index} position={[Math.cos(angle) * radius, 0.06, Math.sin(angle) * radius]} rotation={[0, -angle, 0]}>
+          <group ref={(node) => { tentacleRefs.current[index] = node; }} scale={size}>
+            <mesh geometry={traitGeometries.anemoneTentacle}>
+              <TraitMaterial color={color} highlighted={highlighted} glow={0.45} />
+            </mesh>
+          </group>
+        </group>
+      ))}
+    </>
+  );
+}
+
 // One form per part, built in a mount frame: origin on the skin, +y pointing away from the body
 // and +x pointing toward the head. Every form stands in the xy plane so it reads from any side.
 function AquaticTraitForm({ partId, color, highlighted }: { partId: CreaturePartId; color: string; highlighted: boolean }) {
@@ -369,7 +494,7 @@ function AquaticTraitForm({ partId, color, highlighted }: { partId: CreaturePart
     case "surfer-feet":
       return <mesh position={[0, -0.06, -0.02]}><extrudeGeometry args={[traitShapes.surfFin, flatExtrude]} />{material}</mesh>;
     case "sand-hourglass":
-      return <mesh geometry={traitGeometries.shell}>{material}</mesh>;
+      return <BarnacleCluster color={color} highlighted={highlighted} />;
     case "route-tail":
       return <StreamingLines color={color} highlighted={highlighted} />;
     case "cockatoo-beak":
@@ -377,12 +502,13 @@ function AquaticTraitForm({ partId, color, highlighted }: { partId: CreaturePart
     case "inner-eye":
       return (
         <>
-          <mesh scale={[1, 0.7, 1]}><sphereGeometry args={[0.24, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />{material}</mesh>
+          {/* A whole squashed sphere: its lower half sinks into the body, so the eye has no open rim to show. */}
+          <mesh scale={[1, 0.7, 1]}><sphereGeometry args={[0.24, 20, 16]} />{material}</mesh>
           <mesh position={[0, 0.15, 0]} scale={[1, 0.5, 1]}><sphereGeometry args={[0.1, 14, 10]} /><meshBasicMaterial color="#071015" /></mesh>
         </>
       );
     case "heart-plume":
-      return <mesh position={[0, -0.02, 0]} geometry={traitGeometries.polyp}><TraitMaterial color={color} highlighted={highlighted} glow={0.55} /></mesh>;
+      return <SeaAnemone color={color} highlighted={highlighted} />;
     case "memory-crown":
       return <mesh position={[0, -0.05, -0.02]} rotation={[0, 0, 0.3]}><extrudeGeometry args={[traitShapes.scale, flatExtrude]} /><TraitMaterial color={color} highlighted={highlighted} glow={0.45} /></mesh>;
     case "archive-ears":

@@ -9,6 +9,7 @@ import { creatureColorPalette, type CreatureColorPalette } from "@/lib/creature/
 import type { CreaturePartId, ThemeId } from "@/types/exhibition";
 import { PatternedToonMaterial } from "@/components/creature/CreaturePatternMaterial";
 import { BodyAttachment, BodyProportions } from "@/components/creature/CreatureLook";
+import { movingPartTag } from "@/components/creature/StaticMeshMerger";
 
 export type CreaturePiece = {
   artifactId: string;
@@ -762,6 +763,8 @@ export function CreatureModel({
         <group
           ref={(node) => { eyeRefs.current[index] = node; }}
           key={side}
+          // Blinks are rare and short, so the mesh merger would otherwise bake an eye in mid-blink.
+          userData={{ [movingPartTag]: true }}
           position={[headX + proportions.head * 0.24, proportions.height * 0.28, headCenterZ + side * (eyeSkinDepth - eyeSink)]}
           rotation={[0, side > 0 ? 0 : Math.PI, 0]}
           // Flattened into discs set in the side of the head, like a real fish's eyes, so they never stand off a thin head.

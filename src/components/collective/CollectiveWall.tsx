@@ -314,6 +314,7 @@ export function CollectiveWall() {
       <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between">
         <div className="p-8">
           <h1 className="font-display text-xl tracking-[-0.03em] lg:text-2xl">The Fishbowl Leaks</h1>
+          <AquariumAudio />
           {/* <p className="mt-1 text-sm text-white/45">Shared aquarium · daily cycle</p> */}
         </div>
         <div className="absolute left-1/2 flex -translate-x-1/2 rounded-full border border-white/12 bg-black/20 p-1 text-[10px] tracking-[0.18em] backdrop-blur-md" role="group" aria-label="Collective view">
@@ -351,8 +352,6 @@ export function CollectiveWall() {
           </span> */}
         </div>
       </header>
-
-      <AquariumAudio />
 
       <input
         className="tank-time-slider absolute inset-x-0 bottom-[var(--collective-recents-height)] z-40 w-full translate-y-1/2"

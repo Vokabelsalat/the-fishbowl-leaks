@@ -7,6 +7,11 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 
 /** Marks meshes this merger creates, so tools that count or index a model's meshes can skip them. */
 export const mergedMeshTag = "mergedStaticMesh";
+/**
+ * Marks parts that move only now and then, like a blinking eye, so they are never merged in a
+ * pose they hold only briefly. Parts that move all the time are found by watching them instead.
+ */
+export const movingPartTag = "movesOnItsOwn";
 
 /** Originals that are merged stay in the scene for their animation code, but only on this layer. */
 const hiddenLayer = 31;
@@ -165,7 +170,9 @@ function unmerge(state: MergeState) {
 function recordPoses(root: THREE.Object3D, state: MergeState) {
   state.poses.clear();
   root.traverse((object) => {
-    if (object !== root && !isMergedMesh(object)) state.poses.set(object, poseOf(object));
+    if (object === root || isMergedMesh(object)) return;
+    state.poses.set(object, poseOf(object));
+    if (object.userData[movingPartTag]) state.moving.add(object);
   });
 }
 

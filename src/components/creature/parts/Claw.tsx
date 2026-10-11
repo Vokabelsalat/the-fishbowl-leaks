@@ -210,24 +210,3 @@ export function Claw({
     </group>
   );
 }
-
-/** A mirrored left and right claw. `offset` places the right shoulder; the left one mirrors it. */
-export function ClawPair({
-  offset,
-  phase = 0,
-  ...claw
-}: Omit<ClawProps, "side" | "position"> & { offset: Vector3Tuple }) {
-  return (
-    <>
-      {([-1, 1] as const).map((side) => (
-        <Claw
-          key={side}
-          side={side}
-          position={[side * offset[0], offset[1], offset[2]]}
-          phase={phase + (side > 0 ? 0.37 : 0)}
-          {...claw}
-        />
-      ))}
-    </>
-  );
-}

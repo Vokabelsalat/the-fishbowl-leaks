@@ -764,7 +764,8 @@ export function CreatureModel({
           position={[
             headX + proportions.head * 0.64,
             -proportions.height * 0.1,
-            side * (proportions.depth * 0.72),
+            // On the head's skin where the snout narrows, rather than out at the body's full depth.
+            0.02 + side * proportions.depth * 0.96 * 0.7 * Math.sqrt(Math.max(0, 1 - (0.64 / 0.7) ** 2 - ((proportions.height * 0.1 + 0.02) / (proportions.height * 0.9 * 0.7)) ** 2)),
           ]}
           rotation={[0, 0, Math.PI / 2]}
           scale={[1, 1, 0.12]}

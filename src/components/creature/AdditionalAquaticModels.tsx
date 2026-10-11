@@ -54,6 +54,24 @@ function MovingPart({ children, animated, phase, base = 0, amount = 0.1, speed =
   return <group ref={ref} rotation={[0, 0, base]}>{children}</group>;
 }
 
+/**
+ * A limb that rests where it would after turning `angle` around the creature's centre, but
+ * paddles around `pivot`, its root on the body, so it stays attached while it moves. `center`
+ * and `pivot` are given before that turn.
+ */
+function PivotedPart({ center, pivot, angle, animated, phase, amount, speed, children }: { center: Point3; pivot: Point3; angle: number; animated?: boolean; phase: number; amount: number; speed: number; children: ReactNode }) {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const root: Point3 = [pivot[0] * cos - pivot[1] * sin, pivot[0] * sin + pivot[1] * cos, pivot[2]];
+  return (
+    <group position={root}>
+      <MovingPart animated={animated} phase={phase} base={angle} amount={amount} speed={speed}>
+        <group position={[center[0] - pivot[0], center[1] - pivot[1], center[2] - pivot[2]]}>{children}</group>
+      </MovingPart>
+    </group>
+  );
+}
+
 function MovingPupil({ position, scale, animated, phase = 0, range = [0.035, 0.025] }: { position: [number, number, number]; scale: number | [number, number, number]; animated?: boolean; phase?: number; range?: [number, number] }) {
   const ref = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
@@ -64,17 +82,39 @@ function MovingPupil({ position, scale, animated, phase = 0, range = [0.035, 0.0
   return <mesh ref={ref} position={position} scale={scale}><sphereGeometry args={[1, 10, 8]} /><meshBasicMaterial color="#071015" /></mesh>;
 }
 
-function PairOfEyes({ x = 0.34, y = 0.25, z = 0.55, animated }: { x?: number; y?: number; z?: number; animated?: boolean }) {
-  return [-1, 1].map((side) => (
-    <group key={side} position={[side * x, y, z]}>
+type Point3 = [number, number, number];
+
+/**
+ * How far toward the viewer the skin of an ellipsoid body part sits above (x, y), or null when
+ * (x, y) lies outside it. `rotationZ` is the part's own turn in the xy plane.
+ */
+function ellipsoidSkinZ(center: Point3, radii: Point3, x: number, y: number, rotationZ = 0) {
+  const dx = x - center[0];
+  const dy = y - center[1];
+  const along = dx * Math.cos(rotationZ) + dy * Math.sin(rotationZ);
+  const across = -dx * Math.sin(rotationZ) + dy * Math.cos(rotationZ);
+  const inside = 1 - (along / radii[0]) ** 2 - (across / radii[1]) ** 2;
+  return inside > 0 ? center[2] + radii[2] * Math.sqrt(inside) : null;
+}
+
+function CartoonEye({ position, animated, phase }: { position: Point3; animated?: boolean; phase: number }) {
+  return (
+    <group position={position}>
       <mesh scale={[0.12, 0.15, 0.08]}>
         <sphereGeometry args={[1, 14, 12]} />
         <meshToonMaterial color="#F3F0E8" />
       </mesh>
-      <MovingPupil position={[0, 0, 0.075]} scale={[0.045, 0.07, 0.03]} animated={animated} phase={side * 0.2} />
+      <MovingPupil position={[0, 0, 0.075]} scale={[0.045, 0.07, 0.03]} animated={animated} phase={phase} />
     </group>
-  ));
+  );
 }
+
+function PairOfEyes({ x = 0.34, y = 0.25, z = 0.55, animated }: { x?: number; y?: number; z?: number; animated?: boolean }) {
+  return [-1, 1].map((side) => <CartoonEye key={side} position={[side * x, y, z]} animated={animated} phase={side * 0.2} />);
+}
+
+const turtleShellTop = { center: [0, 0.03, 0.24] as Point3, radii: [0.92 * 0.92, 0.58 * 0.92, 0.18 * 0.92] as Point3 };
+const turtleHead = { center: [1.12, 0.02, 0] as Point3, radii: [0.46 * 0.75, 0.38 * 0.75, 0.34 * 0.75] as Point3 };
 
 function TurtleModel(props: AquaticModelProps) {
   const colors = aquaticPalette(props.pieces, props.baseSeed, props.colorPalette);
@@ -90,21 +130,36 @@ function TurtleModel(props: AquaticModelProps) {
           <PatternedToonMaterial color={colors.body} />
         </mesh>
         {[0.46, 0.8].map((ring, index) => (
-          <mesh key={ring} position={[0, 0.03, 0.43]} scale={[ring * 1.18, ring * 0.78, 0.06]}>
+          // Each ring lies on the domed shell at the height the dome has that far out.
+          <mesh key={ring} position={[0, 0.03, (ellipsoidSkinZ(turtleShellTop.center, turtleShellTop.radii, ring * 0.85, 0.03) ?? 0) + 0.002]} scale={[ring * 1.18, ring * 0.78, 0.06]}>
             <torusGeometry args={[0.72, 0.035 + index * 0.01, 7, 24]} />
             <meshToonMaterial color={colors.light} />
           </mesh>
         ))}
       </BodyProportions>
-      <mesh position={[1.12, 0.02, 0]} scale={[0.46, 0.38, 0.34]}>
+      <mesh position={turtleHead.center} scale={[0.46, 0.38, 0.34]}>
         <sphereGeometry args={[0.75, 20, 14]} />
         <meshToonMaterial color={colors.light} />
       </mesh>
-      <group position={[1.25, 0.12, 0.29]} scale={0.7}>{PairOfEyes({ x: 0.16, y: 0, z: 0.16, animated: props.animated })}</group>
+      {/* Both eyes sit on the near side of the head, half sunk into its skin. */}
+      {[1.16, 1.33].map((x, index) => (
+        <group key={x} position={[x, 0.12, (ellipsoidSkinZ(turtleHead.center, turtleHead.radii, x, 0.12) ?? 0) - 0.02]} scale={0.7}>
+          <CartoonEye position={[0, 0, 0]} animated={props.animated} phase={index ? 0.2 : -0.2} />
+        </group>
+      ))}
       {[-1, 1].flatMap((side) => [-1, 1].map((front) => (
-        <MovingPart key={`${side}-${front}`} animated={props.animated} phase={side * 0.8 + front} base={side * (front > 0 ? -0.58 : 0.58)} amount={0.12} speed={1.45}>
-          <mesh position={[front * 0.62, side * 0.68, -0.02]} scale={[0.48, 0.2, 0.09]}><sphereGeometry args={[1, 18, 12]} /><meshToonMaterial color={colors.accent} /></mesh>
-        </MovingPart>
+        <PivotedPart
+          key={`${side}-${front}`}
+          center={[front * 0.62, side * 0.68, -0.02]}
+          pivot={[front * 0.16, side * 0.68, -0.02]}
+          angle={side * (front > 0 ? -0.58 : 0.58)}
+          animated={props.animated}
+          phase={side * 0.8 + front}
+          amount={0.12}
+          speed={1.45}
+        >
+          <mesh scale={[0.48, 0.2, 0.09]}><sphereGeometry args={[1, 18, 12]} /><meshToonMaterial color={colors.accent} /></mesh>
+        </PivotedPart>
       )))}
       <mesh position={[-1.15, 0, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.2, 0.34, 0.12]}>
         <coneGeometry args={[1, 1, 12]} />
@@ -114,6 +169,15 @@ function TurtleModel(props: AquaticModelProps) {
     </LivingGroup>
   );
 }
+
+/** Gill slits lie on the pale underside where it bulges out, and on the disc beyond it. */
+function rayGillZ(x: number, y: number) {
+  const belly = ellipsoidSkinZ([0.42, 0, 0.1], [0.92 * 0.92, 0.92 * 0.54, 0.92 * 0.16], x, y) ?? 0;
+  return Math.max(belly, 0.14) + 0.004;
+}
+
+/** The ray's eyes bulge out of the pale underside, sunk into it by most of their depth. */
+const rayEyeZ = rayGillZ(0.75, 0.24) - 0.004;
 
 function RayModel(props: AquaticModelProps) {
   const colors = aquaticPalette(props.pieces, props.baseSeed, props.colorPalette);
@@ -162,8 +226,8 @@ function RayModel(props: AquaticModelProps) {
         </mesh>
       </BodyProportions>
       {[-1, 1].map((side) => (
-        <BodyAttachment key={`eye-${side}`} anchor={[0.75, side * 0.24, 0.27]}>
-        <group position={[0.75, side * 0.24, 0.31]}>
+        <BodyAttachment key={`eye-${side}`} anchor={[0.75, side * 0.24, rayEyeZ]}>
+        <group position={[0.75, side * 0.24, rayEyeZ + 0.02]}>
           <mesh scale={[0.105, 0.075, 0.06]}>
             <sphereGeometry args={[1, 14, 10]} />
             <meshToonMaterial color="#F3F0E8" />
@@ -176,7 +240,7 @@ function RayModel(props: AquaticModelProps) {
       {[-1, 1].flatMap((side) => [0, 1, 2].map((index) => (
         <mesh
           key={`gill-${side}-${index}`}
-          position={[0.38 - index * 0.12, side * (0.24 + index * 0.055), 0.275]}
+          position={[0.38 - index * 0.12, side * (0.24 + index * 0.055), rayGillZ(0.38 - index * 0.12, side * (0.24 + index * 0.055))]}
           rotation={[0, 0, side * 0.18]}
           scale={[0.08, 0.018, 0.012]}
         >
@@ -349,6 +413,13 @@ function StarfishModel(props: AquaticModelProps) {
   );
 }
 
+/** Belly ribs lie on whichever is outermost there: the pale belly or the body behind it, slightly sunk in. */
+function seahorseRibZ(x: number, y: number) {
+  const body = ellipsoidSkinZ([-0.02, 0.02, 0], [0.58 * 0.82, 0.86 * 0.82, 0.36 * 0.82], x, y, -0.12) ?? 0;
+  const belly = ellipsoidSkinZ([0.22, 0.16, 0.03], [0.42 * 0.76, 0.65 * 0.76, 0.31 * 0.76], x, y, -0.18) ?? 0;
+  return Math.max(body, belly) - 0.01;
+}
+
 function SeahorseModel(props: AquaticModelProps) {
   const colors = aquaticPalette(props.pieces, props.baseSeed, props.colorPalette);
   const neck = useMemo(() => new THREE.CatmullRomCurve3([
@@ -398,7 +469,8 @@ function SeahorseModel(props: AquaticModelProps) {
         <coneGeometry args={[1, 1, 10]} />
         <meshToonMaterial color={colors.accent} />
       </mesh>
-      <mesh position={[1.05, 1.1, 0]} scale={[0.1, 0.12, 0.1]}>
+      {/* The trumpet mouth sits on the tip of the snout. */}
+      <mesh position={[0.82, 1.175, 0]} scale={[0.1, 0.12, 0.1]}>
         <sphereGeometry args={[1, 12, 10]} />
         <meshToonMaterial color={colors.dark} />
       </mesh>
@@ -434,7 +506,7 @@ function SeahorseModel(props: AquaticModelProps) {
       })}
       <BodyProportions origin={[-0.02, 0.02, 0]}>
         {Array.from({ length: 6 }, (_, index) => (
-          <mesh key={`rib-${index}`} position={[0.17, 0.52 - index * 0.18, 0.32]} rotation={[0, 0, 0.16]} scale={[0.3, 0.035, 0.035]}>
+          <mesh key={`rib-${index}`} position={[0.17, 0.52 - index * 0.18, seahorseRibZ(0.17, 0.52 - index * 0.18)]} rotation={[0, 0, 0.16]} scale={[0.3, 0.035, 0.035]}>
             <capsuleGeometry args={[0.5, 0.5, 4, 8]} />
             <meshToonMaterial color={colors.accent} />
           </mesh>
@@ -510,9 +582,9 @@ function SealModel(props: AquaticModelProps) {
         <meshToonMaterial color={colors.dark} />
       </mesh>
       {[-1, 1].map((side) => (
-        <MovingPart key={side} animated={props.animated} phase={side} base={side * -0.46} amount={0.11} speed={1.5}>
-          <mesh position={[0.25, side * 0.55, -0.02]} scale={[0.62, 0.2, 0.1]}><sphereGeometry args={[1, 18, 12]} /><meshToonMaterial color={colors.accent} /></mesh>
-        </MovingPart>
+        <PivotedPart key={side} center={[0.25, side * 0.55, -0.02]} pivot={[0, side * 0.55, -0.02]} angle={side * -0.46} animated={props.animated} phase={side} amount={0.11} speed={1.5}>
+          <mesh scale={[0.62, 0.2, 0.1]}><sphereGeometry args={[1, 18, 12]} /><meshToonMaterial color={colors.accent} /></mesh>
+        </PivotedPart>
       ))}
       <BodyProportions>
         <ArticulatedSealTail animated={props.animated} colors={colors} />
@@ -522,6 +594,25 @@ function SealModel(props: AquaticModelProps) {
       </group>
       <TraitMarks pieces={props.pieces} baseSeed={props.baseSeed} form="seal" highlightedPart={props.highlightedPart} />
     </LivingGroup>
+  );
+}
+
+/** A shrimp's walking leg, from a hip inside the body down to its knee and foot. */
+const shrimpLeg = { hip: [0, 0.06, 0] as Point3, knee: [0.1, -0.3, 0] as Point3, foot: [0.3, -0.56, 0] as Point3 };
+
+/** A tapering limb segment stretched between two points in the xy plane. */
+function LegSegment({ from, to, radius, tip = 0.8, color }: { from: Point3; to: Point3; radius: number; tip?: number; color: string }) {
+  const dx = to[0] - from[0];
+  const dy = to[1] - from[1];
+  return (
+    <mesh
+      position={[(from[0] + to[0]) / 2, (from[1] + to[1]) / 2, (from[2] + to[2]) / 2]}
+      rotation={[0, 0, Math.atan2(-dx, dy)]}
+      scale={[radius, Math.hypot(dx, dy), radius]}
+    >
+      <cylinderGeometry args={[tip, 1, 1, 7]} />
+      <meshToonMaterial color={color} />
+    </mesh>
   );
 }
 
@@ -577,18 +668,14 @@ function ShrimpModel(props: AquaticModelProps) {
       ))}
       <BodyProportions>
       {Array.from({ length: 5 }, (_, index) => [-1, 1].map((depth) => (
-        <MovingPart key={`leg-${index}-${depth}`} animated={props.animated} phase={index * 0.55 + depth} base={-0.18 + index * 0.035} amount={0.13} speed={2.1}>
-          <group position={[0.68 - index * 0.28, -0.18 - index * 0.035, depth * 0.13]}>
-            <mesh position={[0.08, -0.23, 0]} rotation={[0, 0, -0.38]} scale={[0.025, 0.28, 0.025]}>
-              <cylinderGeometry args={[1, 0.7, 1, 7]} />
-              <meshToonMaterial color={colors.dark} />
-            </mesh>
-            <mesh position={[0.22, -0.49, 0]} rotation={[0, 0, -0.68]} scale={[0.018, 0.25, 0.018]}>
-              <cylinderGeometry args={[1, 0.6, 1, 7]} />
-              <meshToonMaterial color={colors.dark} />
-            </mesh>
-          </group>
-        </MovingPart>
+        // Each leg swings from its own hip, tucked up inside the body, so it never comes loose.
+        <group key={`leg-${index}-${depth}`} position={[0.68 - index * 0.28, -0.18 - index * 0.035, depth * 0.13]}>
+          <MovingPart animated={props.animated} phase={index * 0.55 + depth} base={-0.06 + index * 0.02} amount={0.13} speed={2.1}>
+            <LegSegment from={shrimpLeg.hip} to={shrimpLeg.knee} radius={0.025} color={colors.dark} />
+            <mesh position={shrimpLeg.knee}><sphereGeometry args={[0.024, 8, 6]} /><meshToonMaterial color={colors.dark} /></mesh>
+            <LegSegment from={shrimpLeg.knee} to={shrimpLeg.foot} radius={0.02} tip={0.6} color={colors.dark} />
+          </MovingPart>
+        </group>
       )))}
       </BodyProportions>
       {/* The tail fan continues the curl of the last abdomen segment and spreads out from its tip. */}
@@ -732,6 +819,7 @@ function BezierFlippers({
   signature,
   root,
   skin,
+  farSkin = skin,
   size,
   colors,
   animated,
@@ -741,7 +829,9 @@ function BezierFlippers({
   name: string;
   signature: string;
   root: [number, number];
+  /** How far out of the near side the skin sits at the root; `farSkin` for the far side when it differs. */
   skin: number;
+  farSkin?: number;
   size: number;
   colors: ReturnType<typeof aquaticPalette>;
   animated?: boolean;
@@ -752,15 +842,20 @@ function BezierFlippers({
   const [x, y] = root;
   return (
     <>
-      {[1, -1].map((side) => (
-        <group key={side} name={`${name} ${side > 0 ? "near" : "far"} flipper`} position={[x, y, side * (skin + 0.012)]}>
+      {[1, -1].map((side) => {
+        const z = side * ((side > 0 ? skin : farSkin) + 0.012);
+        return (
+        <BodyAttachment key={side} anchor={[x, y, z]}>
+        <group name={`${name} ${side > 0 ? "near" : "far"} flipper`} position={[x, y, z]}>
           <MovingPart animated={animated} phase={side > 0 ? 0 : 0.6} base={side > 0 ? 0.03 : -0.05} amount={amount} speed={speed}>
             <group scale={[style.width * size, style.height * size, 1]}>
               <FleshyPectoralFin style={style} color={colors.accent} />
             </group>
           </MovingPart>
         </group>
-      ))}
+        </BodyAttachment>
+        );
+      })}
     </>
   );
 }
@@ -1052,12 +1147,13 @@ function DolphinModel(props: AquaticModelProps) {
   const bellyGeometry = useMemo(() => roundedBody(body, dolphinWidthRatio, belly, 1.012), [body, belly]);
   const outline = useMemo(() => outlineOf(body), [body]);
   const eyeZ = useMemo(() => roundedSurfaceZ(outline, dolphinWidthRatio, 1.17, 0.13, 0), [outline]);
-  const mouth = useMemo(() => new THREE.CatmullRomCurve3([
-    new THREE.Vector3(1.75, -0.045, 0.095),
-    new THREE.Vector3(1.55, -0.055, 0.12),
-    new THREE.Vector3(1.34, -0.07, 0.15),
-    new THREE.Vector3(1.16, -0.085, 0.19),
-  ]), []);
+  // The mouth line runs along the side of the beak and onto the body, lying on whichever skin is outermost.
+  const mouth = useMemo(() => new THREE.CatmullRomCurve3([[1.75, -0.045], [1.55, -0.055], [1.34, -0.07], [1.16, -0.085]].map(([x, y]) => {
+    const beakRadius = THREE.MathUtils.lerp(0.13, 0.02, THREE.MathUtils.clamp((x - 1.12) / 0.66, 0, 1));
+    const beak = 0.72 * Math.sqrt(Math.max(0, beakRadius ** 2 - (y + 0.035) ** 2));
+    const body = x <= outline.maxX ? roundedSurfaceZ(outline, dolphinWidthRatio, x, y, 0) : 0;
+    return new THREE.Vector3(x, y, Math.max(beak, body) + 0.004);
+  })), [outline]);
 
   return (
     <LivingGroup animated={props.animated} scale={props.scale} motion="glide">
@@ -1138,7 +1234,11 @@ function NarwhalModel(props: AquaticModelProps) {
     const inside = 1 - ((flipperRoot[0] - center[0]) / radii[0]) ** 2 - ((flipperRoot[1] - center[1]) / radii[1]) ** 2;
     return inside > 0 ? center[2] + radii[2] * Math.sqrt(inside) : 0;
   };
-  const flipperSkin = Math.max(ellipsoidSkin([0, 0, 0], [bodyLength, bodyHeight, bodyDepth]), ellipsoidSkin(bellyCenter, bellyRadii));
+  const bodySkin = ellipsoidSkin([0, 0, 0], [bodyLength, bodyHeight, bodyDepth]);
+  // The eyes are dark beads half sunk into the head's skin.
+  const eyeSkin = ellipsoidSkinZ([0, 0, 0], [bodyLength, bodyHeight, bodyDepth], bodyLength * 0.67, 0.17) ?? 0;
+  // The belly only bulges out of the near side, so the far fin sits on the body itself.
+  const flipperSkin = Math.max(bodySkin, ellipsoidSkin(bellyCenter, bellyRadii));
   return (
     <LivingGroup animated={props.animated} scale={props.scale} motion="glide">
       <BodyProportions>
@@ -1156,6 +1256,7 @@ function NarwhalModel(props: AquaticModelProps) {
         signature={props.baseSeed ?? props.pieces[0]?.artifactId ?? "new"}
         root={flipperRoot}
         skin={flipperSkin}
+        farSkin={bodySkin}
         size={1.05}
         colors={colors}
         animated={props.animated}
@@ -1168,8 +1269,8 @@ function NarwhalModel(props: AquaticModelProps) {
         </group>
       </BodyAttachment>
       {[-1, 1].map((side) => (
-        <BodyAttachment key={`eye-${side}`} anchor={[bodyLength * 0.67, 0.17, side * 0.43]}>
-          <MovingPupil position={[bodyLength * 0.67, 0.17, side * 0.43]} scale={0.075} animated={props.animated} phase={side * 0.2} />
+        <BodyAttachment key={`eye-${side}`} anchor={[bodyLength * 0.67, 0.17, side * eyeSkin]}>
+          <MovingPupil position={[bodyLength * 0.67, 0.17, side * (eyeSkin + 0.035)]} scale={0.075} animated={props.animated} phase={side * 0.2} />
         </BodyAttachment>
       ))}
       <BodyAttachment anchor={[bodyLength * 0.92, 0.03, 0]}>
@@ -1179,6 +1280,14 @@ function NarwhalModel(props: AquaticModelProps) {
     </LivingGroup>
   );
 }
+
+/** Ribs running across each shell valve, following its curve so they lie on it all the way. */
+const clamRidges = [-0.72, -0.36, 0, 0.36, 0.72].map((x) => new THREE.CatmullRomCurve3(
+  Array.from({ length: 7 }, (_, index) => {
+    const y = -0.21 + (index / 6) * 0.42;
+    return new THREE.Vector3(x, y, (ellipsoidSkinZ([0, 0, 0], [1.22 * 0.88, 0.58 * 0.88, 0.28 * 0.88], x, y) ?? 0) - 0.008);
+  }),
+));
 
 function ClamModel(props: AquaticModelProps) {
   const colors = aquaticPalette(props.pieces, props.baseSeed, props.colorPalette);
@@ -1192,9 +1301,9 @@ function ClamModel(props: AquaticModelProps) {
             <sphereGeometry args={[0.88, 20, 14]} />
             <PatternedToonMaterial color={side > 0 ? colors.body : colors.dark} />
           </mesh>
-          {[-0.72, -0.36, 0, 0.36, 0.72].map((x) => (
-            <mesh key={x} position={[x, 0, 0.25]} scale={[0.035, 0.42, 0.035]}>
-              <cylinderGeometry args={[1, 1, 1, 7]} />
+          {clamRidges.map((ridge, index) => (
+            <mesh key={index}>
+              <tubeGeometry args={[ridge, 12, 0.035, 7, false]} />
               <meshToonMaterial color={colors.light} />
             </mesh>
           ))}
@@ -1257,6 +1366,14 @@ function ArticulatedPufferfishTail({
   );
 }
 
+/** The pouting mouth sits on the round snout, turned to lie flat against it. */
+const pufferfishMouth = (() => {
+  const radii: Point3 = [1.16, 0.82, 0.62];
+  const [x, y] = [1.0, -0.1];
+  const z = ellipsoidSkinZ([0, 0, 0], radii, x, y) ?? 0;
+  return { position: [x, y, z] as Point3, turn: Math.atan2(x / radii[0] ** 2, z / radii[2] ** 2) };
+})();
+
 function PufferfishModel(props: AquaticModelProps) {
   const colors = aquaticPalette(props.pieces, props.baseSeed, props.colorPalette);
   return (
@@ -1306,8 +1423,8 @@ function PufferfishModel(props: AquaticModelProps) {
         </group>
         </BodyAttachment>
       ))}
-      <BodyAttachment anchor={[1.08, -0.08, 0.4]}>
-        <mesh position={[1.08, -0.08, 0.48]} scale={[0.12, 0.12, 0.05]}>
+      <BodyAttachment anchor={pufferfishMouth.position}>
+        <mesh position={pufferfishMouth.position} rotation={[0, pufferfishMouth.turn, 0]} scale={[0.12, 0.12, 0.05]}>
           <torusGeometry args={[1, 0.22, 7, 16]} />
           <meshToonMaterial color={colors.dark} />
         </mesh>

@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { CreatureModel, type CreaturePiece } from "@/components/creature/CreatureModel";
 import { AdditionalAquaticModel } from "@/components/creature/AdditionalAquaticModels";
 import { aquaticPalette, TraitMarks } from "@/components/creature/AquaticModelShared";
-import { ClawPair } from "@/components/creature/parts/Claw";
+import { Claw } from "@/components/creature/parts/Claw";
 import type { AquaticForm } from "@/lib/creature/aquaticForms";
 import { applyCreatureModelOverrides } from "@/lib/creature/modelOverrides";
 import type { CreaturePartId } from "@/types/exhibition";
@@ -85,8 +85,10 @@ function CrabModel({
         </group>
         </BodyAttachment>
       ))}
+      {/* Legs and claws move with the stretched shell, so they stay rooted in it whatever its proportions. */}
       {[-1, 1].flatMap((side, sideIndex) => [0, 1, 2].map((leg) => (
-        <group ref={(node) => { legs.current[sideIndex * 3 + leg] = node; }} key={`leg-${side}-${leg}`} position={[side * (0.72 + leg * 0.09), 0.08 - leg * 0.22, 0]} rotation={[0, 0, side * (0.72 + leg * 0.17)]}>
+        <BodyAttachment key={`leg-${side}-${leg}`} anchor={[side * (0.72 + leg * 0.09), 0.08 - leg * 0.22, 0]}>
+        <group ref={(node) => { legs.current[sideIndex * 3 + leg] = node; }} position={[side * (0.72 + leg * 0.09), 0.08 - leg * 0.22, 0]} rotation={[0, 0, side * (0.72 + leg * 0.17)]}>
           <mesh position={[0, -0.34, 0]} scale={[0.075, 0.46, 0.075]}>
             <cylinderGeometry args={[1, 0.78, 1, 8]} />
             <meshToonMaterial color={colors.dark} />
@@ -96,14 +98,21 @@ function CrabModel({
             <meshToonMaterial color={colors.body} />
           </mesh>
         </group>
+        </BodyAttachment>
       )))}
-      <ClawPair
-        offset={[0.96, 0.18, 0.14]}
-        scale={0.9}
-        pose={{ yaw: -0.35 }}
-        color={colors.body}
-        animated={animated !== false}
-      />
+      {([-1, 1] as const).map((side) => (
+        <BodyAttachment key={`claw-${side}`} anchor={[side * 0.88, 0.18, 0.14]}>
+          <Claw
+            side={side}
+            position={[side * 0.88, 0.18, 0.14]}
+            phase={side > 0 ? 0.37 : 0}
+            scale={0.9}
+            pose={{ yaw: -0.35 }}
+            color={colors.body}
+            animated={animated !== false}
+          />
+        </BodyAttachment>
+      ))}
       <TraitMarks pieces={pieces} baseSeed={baseSeed} form="crab" highlightedPart={highlightedPart} />
     </group>
   );
@@ -150,7 +159,8 @@ function JellyfishModel({
           <sphereGeometry args={[1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />
           <PatternedToonMaterial color={colors.body} transparent opacity={0.76} depthWrite={false} />
         </mesh>
-        <mesh position={[0, -0.05, 0]} scale={[1.02, 0.18, 0.62]}>
+        {/* The rim disc fills the bell's mouth right up to its edge. */}
+        <mesh position={[0, -0.03, 0]} scale={[1.08, 0.18, 0.67]}>
           <sphereGeometry args={[1, 20, 12]} />
           <meshToonMaterial color={colors.light} transparent opacity={0.62} depthWrite={false} />
         </mesh>

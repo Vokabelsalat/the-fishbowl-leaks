@@ -266,7 +266,7 @@ traitGeometries.thorn.computeVertexNormals();
 // Three parallel streamers that trail backward and sway one after another, like a wake through the water.
 function StreamingLines({ color, highlighted }: { color: string; highlighted: boolean }) {
   const lineRefs = useRef<Array<THREE.Group | null>>([]);
-  const offsets = [-0.24, 0, 0.24];
+  const offsets = [-0.17, 0, 0.17];
 
   useFrame(({ clock }) => {
     lineRefs.current.forEach((line, index) => {
@@ -280,7 +280,8 @@ function StreamingLines({ color, highlighted }: { color: string; highlighted: bo
         const length = 1.1 + index * 0.22;
         return (
           <group key={offset} position={[offset, 0, 0]} ref={(node) => { lineRefs.current[index] = node; }}>
-            <mesh position={[0, length / 2, 0]}>
+            {/* Each streamer starts a little below the mount, so it stays rooted where the body curves away. */}
+            <mesh position={[0, length / 2 - 0.12, 0]}>
               <capsuleGeometry args={[0.075, length, 6, 12]} />
               <TraitMaterial color={color} highlighted={highlighted} opacity={0.8} />
             </mesh>
@@ -431,6 +432,7 @@ export function AquaticAddon({ partId, color, highlighted = false }: { partId: C
 
 const traitMarksTag = "aquaticTraitMarks";
 const skinInset = 0.02;
+const mouthInset = 0.06;
 
 function isInsideTraitMarks(object: THREE.Object3D) {
   for (let node: THREE.Object3D | null = object; node; node = node.parent) {
@@ -580,8 +582,10 @@ export function TraitMarks({
       const atMouth = mouthPartIds.has(piece.partId);
       // If the ray misses the body there, slide toward the middle until it lands on skin.
       for (let step = 0; step <= 10; step += 1) {
+        // Mouth parts sit a little deeper, so they stay rooted even on a thin snout's tip.
+        const mouth = mouthGeometry(layout, step / 10);
         const point = atMouth
-          ? skinPoint(body, mouthGeometry(layout, step / 10), raycaster, isMouthSkin)
+          ? skinPoint(body, mouth, raycaster, isMouthSkin)?.addScaledVector(mouth.outward, -mouthInset) ?? null
           : skinPoint(body, mountGeometry(layout, mounts[piece.artifactId].mount, mounts[piece.artifactId].along * (1 - step / 10)), raycaster);
         if (point) {
           next[piece.artifactId] = point;

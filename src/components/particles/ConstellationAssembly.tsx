@@ -23,8 +23,8 @@ const MAX_DELAY = 0.38;
  * Share of the printed constellation's particles that fly in, so older phones do not stutter
  * while the camera and the creature render too. The fewer particles are drawn a little larger.
  */
-const PARTICLE_SHARE = 0.4;
-const POINT_SIZE_BOOST = 1.2;
+const PARTICLE_SHARE = 0.7;
+const POINT_SIZE_BOOST = 1.08;
 
 const vertexShader = /* glsl */ `
   attribute vec3 aEdge;

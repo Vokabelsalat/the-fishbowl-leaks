@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { artifactById } from "@/data/artifacts";
 import { TraitMarks } from "@/components/creature/AquaticModelShared";
@@ -571,6 +571,8 @@ export function CreatureModel({
   colorPalette?: CreatureColorPalette;
 }) {
   const groupRef = useRef<THREE.Group>(null);
+  const headRef = useRef<THREE.Mesh>(null);
+  const faceRef = useRef<THREE.Group>(null);
   const tailRef = useRef<THREE.Group>(null);
   const dorsalRef = useRef<THREE.Group>(null);
   const finRef = useRef<THREE.Group>(null);
@@ -615,7 +617,22 @@ export function CreatureModel({
     Math.min(pelvicFinStyles.length - 1, Math.floor(hashUnit(`${signature}:pelvic-fin`) * pelvicFinStyles.length))
   ];
 
+  const originalHeadInverse = useMemo(() => new THREE.Matrix4().compose(
+    new THREE.Vector3(proportions.length * 0.62, 0.02, 0),
+    new THREE.Quaternion(),
+    new THREE.Vector3(proportions.head, proportions.height * 0.9, proportions.depth * 0.96),
+  ).invert(), [proportions]);
+  const attachFace = () => {
+    if (!headRef.current || !faceRef.current) return;
+    headRef.current.updateMatrix();
+    faceRef.current.matrix.multiplyMatrices(headRef.current.matrix, originalHeadInverse);
+    faceRef.current.matrixWorldNeedsUpdate = true;
+  };
+  useLayoutEffect(attachFace);
+
   useFrame(({ clock }) => {
+    // Saved shape edits are applied after mounting, including on still poster creatures.
+    attachFace();
     if (!animated || !groupRef.current) return;
     const elapsed = clock.elapsedTime;
     const swim = elapsed * 3.3 + hashUnit(signature) * Math.PI * 2;
@@ -670,7 +687,7 @@ export function CreatureModel({
         </mesh>
       </BodyProportions>
       <BodyProportions>
-      <mesh name="Fish head" position={[headX, 0.02, headCenterZ]} scale={[proportions.head, proportions.height * 0.9, proportions.depth * 0.96]}>
+      <mesh ref={headRef} name="Fish head" position={[headX, 0.02, headCenterZ]} scale={[proportions.head, proportions.height * 0.9, proportions.depth * 0.96]}>
         <sphereGeometry args={[0.7, 20, 14]} />
         <PatternedToonMaterial color={headColor} repeat={[2, 1]} />
       </mesh>
@@ -760,6 +777,7 @@ export function CreatureModel({
       </BodyAttachment>
 
       <BodyProportions>
+      <group ref={faceRef} matrixAutoUpdate={false} userData={{ attachedFishFace: true, [movingPartTag]: true }}>
       {[1, -1].map((side, index) => (
         <group
           name={`Fish ${side > 0 ? "near" : "far"} eye`}
@@ -798,6 +816,7 @@ export function CreatureModel({
           <meshBasicMaterial color="#171218" />
         </mesh>
       ))}
+      </group>
       </BodyProportions>
 
       <TraitMarks

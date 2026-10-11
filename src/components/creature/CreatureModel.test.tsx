@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CreatureModel } from "./CreatureModel";
 import { BodyAttachment, BodyProportions } from "./CreatureLook";
 import { creatureProportions } from "@/lib/creature/proportions";
+import { applyCreatureModelOverrides, meshKey } from "@/lib/creature/modelOverrides";
 
 const state = vi.hoisted(() => ({
   stretch: { x: 1, y: 1, z: 1 },
@@ -15,6 +16,7 @@ vi.mock("react", async (original) => ({
   useMemo: (create: () => unknown) => create(),
   useRef: (current: unknown) => ({ current }),
   useContext: () => ({ proportions: state.stretch }),
+  useLayoutEffect: () => {},
 }));
 vi.mock("@react-three/fiber", () => ({ useFrame: (frame: typeof state.frame) => { state.frame = frame; } }));
 vi.mock("./AquaticModelShared", () => ({ TraitMarks: () => null }));
@@ -33,6 +35,8 @@ function scene(node: ReactNode, parent: THREE.Object3D) {
   if (node.type !== "group" && node.type !== "mesh") return;
   const object = node.type === "mesh" ? new THREE.Mesh() : new THREE.Group();
   object.name = props.name as string ?? "";
+  object.userData = props.userData as Record<string, unknown> ?? {};
+  if (props.matrixAutoUpdate === false) object.matrixAutoUpdate = false;
   if (props.position) object.position.fromArray(props.position as number[]);
   if (props.rotation) object.rotation.set(...props.rotation as [number, number, number]);
   if (typeof props.scale === "number") object.scale.setScalar(props.scale);
@@ -49,6 +53,35 @@ function scene(node: ReactNode, parent: THREE.Object3D) {
 }
 
 describe("fish eyes", () => {
+  it("carries both eyes with an edited head and ignores stale edits that hide an individual eye", () => {
+    state.stretch = creatureProportions("632cd7bf:fish:4");
+    const root = new THREE.Group();
+    scene(CreatureModel({ pieces: [], baseSeed: "632cd7bf:fish:4", animated: false }), root);
+    const head = root.getObjectByName("Fish head")!;
+    const eyes = [root.getObjectByName("Fish near eye")!, root.getObjectByName("Fish far eye")!];
+    const transform = { x: 1.8, y: 0.2, z: -0.4, scaleX: 0.8, scaleY: 0.5, scaleZ: 0.25, rotationX: 10, rotationY: 15, rotationZ: 5 };
+    const overrides = {
+      fish: {
+        [meshKey(root, head)!]: transform,
+        [meshKey(root, eyes[0].children[0])!]: { ...transform, scaleX: 0, scaleY: 0, scaleZ: 0 },
+        [meshKey(root, eyes[1].children[1])!]: { ...transform, z: 5 },
+      },
+    };
+    vi.stubGlobal("window", { localStorage: { getItem: (key: string) => key.endsWith(":v1") ? JSON.stringify(overrides) : null } });
+    try {
+      applyCreatureModelOverrides(root, "fish");
+      state.frame!({ clock: { elapsedTime: 0 } });
+      root.updateMatrixWorld(true);
+      for (const eye of eyes) {
+        const center = eye.getWorldPosition(new THREE.Vector3());
+        expect(head.worldToLocal(center).length()).toBeLessThan(0.7);
+        expect(eye.children[0].scale.toArray()).toEqual([1, 1, 1]);
+        expect(eye.children[1].position.z).toBe(0.1);
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it("exposes the camera-facing eye in the reported poster pose", () => {
     state.stretch = creatureProportions("632cd7bf:fish:4");
     const root = new THREE.Group();

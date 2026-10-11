@@ -94,6 +94,13 @@ export function applyCreatureModelOverrides(root: THREE.Object3D, form: AquaticF
     const transform = overrides[`mesh-${index}`];
     index += 1;
     if (!transform) return;
+    // The fish's essential face follows the edited head as one attachment. Old per-mesh
+    // eye edits can otherwise hide a white, move its pupil away or leave it floating.
+    if (form === "fish") {
+      for (let parent = object.parent; parent && parent !== root; parent = parent.parent) {
+        if (parent.userData.attachedFishFace) return;
+      }
+    }
     object.position.set(transform.x, transform.y, transform.z);
     object.scale.set(transform.scaleX, transform.scaleY, transform.scaleZ);
     object.rotation.set(

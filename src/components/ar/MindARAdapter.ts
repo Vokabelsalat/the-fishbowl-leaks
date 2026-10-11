@@ -4,6 +4,8 @@ import { revealAssemblesConstellation, revealTiming } from "@/lib/animation/reve
 import type { ExhibitionArtifact } from "@/types/exhibition";
 
 const AR_PARTICLE_COUNT = 2000;
+/** Share of the formation's particles drawn on a tracked target, spread evenly across it. */
+const AR_PARTICLE_SHARE = 0.7;
 const AR_PARTICLE_SIZE_PX = 15;
 const AR_CLUSTER_FADE_MS = 450;
 const AR_FORMATION_SCALE = 0.51;
@@ -258,11 +260,17 @@ export class MindARAdapter {
     THREE: typeof THREEType,
     target: ARParticleTarget,
   ): NativeParticle {
-    const count = AR_PARTICLE_COUNT;
+    const count = Math.max(1, Math.round(AR_PARTICLE_COUNT * AR_PARTICLE_SHARE));
     const positions = new Float32Array(count * 3);
     const basePositions = new Float32Array(count * 3);
     const seeds = new Float32Array(count);
-    const formation = createArtifactFormationPositions(target, count);
+    // An even subset of the full formation, so the constellation keeps its shape, only sparser.
+    const full = createArtifactFormationPositions(target, AR_PARTICLE_COUNT);
+    const formation = new Float32Array(count * 3);
+    for (let index = 0; index < count; index += 1) {
+      const source = Math.floor((index * AR_PARTICLE_COUNT) / count);
+      formation.set(full.subarray(source * 3, source * 3 + 3), index * 3);
+    }
     let seed = (target.targetIndex + 1) * 104729;
     const random = () => {
       seed = (seed * 1664525 + 1013904223) >>> 0;

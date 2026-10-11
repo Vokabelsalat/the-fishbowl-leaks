@@ -15,13 +15,27 @@ export type SavedNodeTransform = {
   rotationX: number;
   rotationY: number;
   rotationZ: number;
+  /** True when the shape was deleted in the creature editor, so the creature is drawn without it. */
+  hidden?: boolean;
 };
 
 export type CreatureModelOverrides = Partial<Record<AquaticForm, Record<string, SavedNodeTransform>>>;
 
+/** Marks the group holding a creature's add-ons, which the add-on editor adjusts instead. */
+export const traitMarksTag = "aquaticTraitMarks";
+
+function isInsideTraitMarks(object: THREE.Object3D) {
+  for (let node: THREE.Object3D | null = object; node; node = node.parent) {
+    if (node.userData[traitMarksTag]) return true;
+  }
+  return false;
+}
+
 // Meshes added by StaticMeshMerger are not part of the model, so they never shift its mesh indices.
+// Nor are add-ons: they differ from creature to creature, so counting them would let an adjustment
+// saved for one creature's body land on another creature's add-on.
 function isModelMesh(object: THREE.Object3D): object is THREE.Mesh {
-  return object instanceof THREE.Mesh && object.userData.mergedStaticMesh !== true;
+  return object instanceof THREE.Mesh && object.userData.mergedStaticMesh !== true && !isInsideTraitMarks(object);
 }
 
 export function meshKey(root: THREE.Object3D, target: THREE.Object3D) {
@@ -94,6 +108,8 @@ export function applyCreatureModelOverrides(root: THREE.Object3D, form: AquaticF
     const transform = overrides[`mesh-${index}`];
     index += 1;
     if (!transform) return;
+    // Deleting a shape is always deliberate, so it applies to the fish's face too.
+    object.visible = !transform.hidden;
     // The fish's essential face follows the edited head as one attachment. Old per-mesh
     // eye edits can otherwise hide a white, move its pupil away or leave it floating.
     if (form === "fish") {

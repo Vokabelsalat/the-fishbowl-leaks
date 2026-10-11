@@ -2,7 +2,7 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
-import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import * as THREE from "three";
 import { AquariumPlant, editorPlantSpecs, plantKindLabels, plantKinds, type PlantKind } from "@/components/collective/AquariumDioramaPlants";
 import { AquaticCreatureModel } from "@/components/creature/AquaticCreatureModel";
@@ -11,7 +11,7 @@ import { caudalTailShapes, dorsalFinStyles, pectoralFinStyles, pelvicFinStyles }
 import { artifacts } from "@/data/artifacts";
 import { aquaticForms, aquaticFormLabels, type AquaticForm } from "@/lib/creature/aquaticForms";
 import type { CreaturePiece } from "@/components/creature/CreatureModel";
-import { clearCreatureModelOverrides, meshKey, saveCreatureModelOverrides, type SavedNodeTransform } from "@/lib/creature/modelOverrides";
+import { clearCreatureModelOverrides, loadCreatureModelOverrides, meshKey, saveCreatureModelOverrides, type SavedNodeTransform } from "@/lib/creature/modelOverrides";
 import { clearPlantModelOverrides, savePlantModelOverrides } from "@/lib/creature/plantOverrides";
 import { clearAddonModelOverrides, saveAddonModelOverrides } from "@/lib/creature/addonOverrides";
 import type { CreaturePartId } from "@/types/exhibition";
@@ -279,6 +279,8 @@ type NodeTransform = {
 type HiddenFeature = {
   key: string;
   label: string;
+  /** Deleted shapes stay gone in the app once saved; hidden ones only in this editor session. */
+  deleted?: boolean;
 };
 
 const editorPieces: CreaturePiece[] = artifacts.map((artifact) => ({
@@ -360,37 +362,65 @@ function AquaticModelEditor({ onShow }: { onShow: (view: EditorView) => void }) 
     setTransform(null);
   };
 
-  const setFeatureVisibility = (key: string, visible: boolean) => {
-    if (!modelRootRef.current) return;
-    let meshIndex = 0;
-    modelRootRef.current.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return;
-      if (`mesh-${meshIndex}` === key) object.visible = visible;
-      meshIndex += 1;
+  // Counted like saved overrides, so add-ons and merged meshes never shift a shape's key.
+  const meshByKey = (key: string) => {
+    const root = modelRootRef.current;
+    let found: THREE.Mesh | null = null;
+    root?.traverse((object) => {
+      if (!found && object instanceof THREE.Mesh && meshKey(root, object) === key) found = object;
     });
+    return found as THREE.Mesh | null;
   };
 
-  const hideSelectedFeature = () => {
-    if (!selectedObject || !selectedKey) return;
+  const setFeatureVisibility = (key: string, visible: boolean) => {
+    const mesh = meshByKey(key);
+    if (mesh) mesh.visible = visible;
+  };
+
+  // Shapes deleted earlier are listed again, so they can be brought back one by one. They are
+  // read once the model has mounted, so each can be named after its mesh.
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      const saved = loadCreatureModelOverrides()[form] ?? {};
+      setHiddenFeatures(Object.entries(saved)
+        .filter(([, transform]) => transform.hidden)
+        .map(([key]) => {
+          const mesh = meshByKey(key);
+          return { key, label: mesh?.name || `${mesh?.geometry.type ?? "Shape"} · ${key}`, deleted: true };
+        }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [form, modelRevision]);
+
+  const removeSelectedFeature = (deleted: boolean) => {
+    if (!selectedObject || !selectedKey || !transform) return;
     const label = selectedObject.name || `${selectedObject.type} · ${selectedKey}`;
     setFeatureVisibility(selectedKey, false);
-    setHiddenFeatures((current) => current.some((feature) => feature.key === selectedKey)
-      ? current
-      : [...current, { key: selectedKey, label }]);
+    setHiddenFeatures((current) => [...current.filter((feature) => feature.key !== selectedKey), { key: selectedKey, label, deleted }]);
+    if (deleted) {
+      setPending((current) => ({ ...current, [selectedKey]: { ...transform, hidden: true } }));
+      setSaveStatus("Unsaved changes");
+    }
     setSelectedObject(null);
     setSelectedKey(null);
     setTransform(null);
   };
 
-  const showFeature = (key: string) => {
-    setFeatureVisibility(key, true);
-    setHiddenFeatures((current) => current.filter((feature) => feature.key !== key));
+  const showFeature = (feature: HiddenFeature) => {
+    setFeatureVisibility(feature.key, true);
+    setHiddenFeatures((current) => current.filter(({ key }) => key !== feature.key));
+    const mesh = meshByKey(feature.key);
+    if (feature.deleted && mesh) {
+      setPending((current) => ({ ...current, [feature.key]: { ...readTransform(mesh), hidden: false } }));
+      setSaveStatus("Unsaved changes");
+    }
   };
 
-  const showAllFeatures = () => {
-    hiddenFeatures.forEach((feature) => setFeatureVisibility(feature.key, true));
-    setHiddenFeatures([]);
-  };
+  const showAllFeatures = () => hiddenFeatures.forEach(showFeature);
 
   const geometry = selectedObject instanceof THREE.Mesh ? selectedObject.geometry : null;
   const construction = geometry
@@ -502,8 +532,8 @@ function AquaticModelEditor({ onShow }: { onShow: (view: EditorView) => void }) 
               <ul className="space-y-1">
                 {hiddenFeatures.map((feature) => (
                   <li key={feature.key} className="flex items-center justify-between gap-3 border border-white/12 px-3 py-2">
-                    <span className="min-w-0 truncate text-sm text-white/62">{feature.label}</span>
-                    <button type="button" className="shrink-0 text-xs text-white/55 hover:text-white" onClick={() => showFeature(feature.key)}>Show</button>
+                    <span className="min-w-0 truncate text-sm text-white/62">{feature.label}{feature.deleted && " · deleted"}</span>
+                    <button type="button" className="shrink-0 text-xs text-white/55 hover:text-white" onClick={() => showFeature(feature)}>{feature.deleted ? "Restore" : "Show"}</button>
                   </li>
                 ))}
               </ul>
@@ -514,7 +544,8 @@ function AquaticModelEditor({ onShow }: { onShow: (view: EditorView) => void }) 
               <div className="flex items-start justify-between gap-4 border-b border-white/12 pb-4">
                 <div><h2 className="font-display text-xl">{selectedObject.name || selectedObject.type}</h2><p className="mt-1 font-mono text-[10px] text-white/38">{geometry?.type ?? selectedObject.type}</p></div>
                 <div className="flex shrink-0 gap-2">
-                  <button type="button" className="border border-white/18 px-2.5 py-1.5 text-xs text-white/48 hover:border-white/35 hover:text-white" onClick={hideSelectedFeature}>Hide feature</button>
+                  <button type="button" className="border border-white/18 px-2.5 py-1.5 text-xs text-white/48 hover:border-white/35 hover:text-white" onClick={() => removeSelectedFeature(false)}>Hide feature</button>
+                  <button type="button" className="border border-white/18 px-2.5 py-1.5 text-xs text-white/48 hover:border-white/35 hover:text-white disabled:cursor-not-allowed disabled:opacity-35" disabled={!selectedKey} onClick={() => removeSelectedFeature(true)}>Delete shape</button>
                   <button type="button" className="border border-white/18 px-2.5 py-1.5 text-xs text-white/48 hover:border-white/35 hover:text-white" onClick={resetNode}>Reset part</button>
                 </div>
               </div>

@@ -677,6 +677,25 @@ export function CreatureModel({
   const pelvicSkin = bodySkin(-proportions.length * 0.18, -proportions.height * 0.62);
   const finRootSink = 0.02;
   const eyeFlatten = 0.5;
+  const mouthY = -proportions.height * 0.1;
+  // One smiling line drawn on the head's skin round the front of the snout, from one cheek to the
+  // other, with the corners turned up. Lying on the skin, it can never stick out like feelers.
+  const mouth = useMemo(() => {
+    const reach = 0.95;
+    const points = Array.from({ length: 13 }, (_, index) => {
+      const angle = -reach + (index / 12) * reach * 2;
+      const y = mouthY + 0.035 * (angle / reach) ** 2;
+      const across = Math.sqrt(Math.max(0, 1 - ((y - 0.02) / headRadii[1]) ** 2));
+      return new THREE.Vector3(
+        headX + Math.cos(angle) * headRadii[0] * across,
+        y,
+        headCenterZ + Math.sin(angle) * headRadii[2] * across,
+      );
+    });
+    return { curve: new THREE.CatmullRomCurve3(points), ends: [points[0], points[points.length - 1]] };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proportions]);
+  const mouthRadius = 0.022;
 
   return (
     <group ref={groupRef} scale={scale}>
@@ -800,19 +819,13 @@ export function CreatureModel({
         </group>
       ))}
 
-      {[1, -1].map((side) => (
-        <mesh
-          key={`mouth-${side}`}
-          position={[
-            headX + proportions.head * 0.64,
-            -proportions.height * 0.1,
-            // On the head's skin where the snout narrows, rather than out at the body's full depth.
-            headCenterZ + side * proportions.depth * 0.96 * 0.7 * Math.sqrt(Math.max(0, 1 - (0.64 / 0.7) ** 2 - ((proportions.height * 0.1 + 0.02) / (proportions.height * 0.9 * 0.7)) ** 2)),
-          ]}
-          rotation={[0, 0, Math.PI / 2]}
-          scale={[1, 1, 0.12]}
-        >
-          <capsuleGeometry args={[0.025, 0.15, 4, 8]} />
+      <mesh name="Fish mouth">
+        <tubeGeometry args={[mouth.curve, 32, mouthRadius, 6, false]} />
+        <meshBasicMaterial color="#171218" />
+      </mesh>
+      {mouth.ends.map((end, index) => (
+        <mesh key={`mouth-corner-${index}`} position={end}>
+          <sphereGeometry args={[mouthRadius, 8, 6]} />
           <meshBasicMaterial color="#171218" />
         </mesh>
       ))}
@@ -831,7 +844,7 @@ export function CreatureModel({
           cy: 0,
           z: proportions.depth * 0.86,
           scale: 0.72,
-          mouth: { y: -proportions.height * 0.1 },
+          mouth: { y: mouthY },
         }}
       />
     </group>

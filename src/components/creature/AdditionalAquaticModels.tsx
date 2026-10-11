@@ -9,7 +9,7 @@ import type { AquaticModelProps } from "@/components/creature/AquaticCreatureMod
 import type { AquaticForm } from "@/lib/creature/aquaticForms";
 import { PatternedToonMaterial } from "@/components/creature/CreaturePatternMaterial";
 import { BodyAttachment, BodyProportions } from "@/components/creature/CreatureLook";
-import { pectoralFinStyleFor, type PectoralFinStyle } from "@/components/creature/CreatureModel";
+import { dorsalFinStyleFor, pectoralFinStyleFor } from "@/components/creature/CreatureModel";
 import { withDetailRecipe } from "@/lib/creature/geometryDetail";
 
 type AdditionalForm = Exclude<AquaticForm, "fish" | "crab" | "jellyfish" | "octopus">;
@@ -793,18 +793,22 @@ function onRoundedSurface(outline: Outline, widthRatio: number, points: Array<[n
   return new THREE.CatmullRomCurve3(points.map(([x, y]) => new THREE.Vector3(x, y, side * roundedSurfaceZ(outline, widthRatio, x, y))));
 }
 
+/** How deep inside the skin each pectoral fin is rooted, and how far its blade tilts out from the body. */
+const finRootDepth = 0.07;
+const finSplay = 0.38;
+
 const fleshyFinThickness = 0.012;
 /** How far the rounded edge swells out of each face; the fin is about 0.03 thick in all. */
 const fleshyFinEdge = 0.009;
 
 /**
- * A pectoral fin with a fish fin's Bézier outline, but solid and fleshy like a marine mammal's
- * flipper: opaque, slightly thick with rounded edges, and without rays.
+ * A fin with one of the fish's Bézier outlines, but solid and fleshy like a marine mammal's:
+ * opaque, slightly thick with rounded edges, and without rays.
  */
-function FleshyPectoralFin({ style, color }: { style: PectoralFinStyle; color: string }) {
+function FleshyFin({ shape, color, name }: { shape: THREE.Shape; color: string; name?: string }) {
   return (
-    <mesh position={[0, 0, -fleshyFinThickness / 2]}>
-      <extrudeGeometry args={[style.shape, { depth: fleshyFinThickness, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.012, bevelThickness: fleshyFinEdge, curveSegments: 16 }]} />
+    <mesh name={name} position={[0, 0, -fleshyFinThickness / 2]}>
+      <extrudeGeometry args={[shape, { depth: fleshyFinThickness, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.012, bevelThickness: fleshyFinEdge, curveSegments: 16 }]} />
       <meshToonMaterial color={color} />
     </mesh>
   );
@@ -843,13 +847,16 @@ function BezierFlippers({
   return (
     <>
       {[1, -1].map((side) => {
-        const z = side * ((side > 0 ? skin : farSkin) + 0.012);
+        const surface = side * (side > 0 ? skin : farSkin);
+        // The root sits well inside the body and the blade tilts out of it, so the fin's base
+        // always cuts into the skin, however the body is stretched or the fin paddles.
+        const z = surface - side * finRootDepth;
         return (
-        <BodyAttachment key={side} anchor={[x, y, z]}>
-        <group name={`${name} ${side > 0 ? "near" : "far"} flipper`} position={[x, y, z]}>
+        <BodyAttachment key={side} anchor={[x, y, surface]}>
+        <group name={`${name} ${side > 0 ? "near" : "far"} flipper`} position={[x, y, z]} rotation={[-side * finSplay, 0, 0]}>
           <MovingPart animated={animated} phase={side > 0 ? 0 : 0.6} base={side > 0 ? 0.03 : -0.05} amount={amount} speed={speed}>
             <group scale={[style.width * size, style.height * size, 1]}>
-              <FleshyPectoralFin style={style} color={colors.accent} />
+              <FleshyFin shape={style.shape} color={colors.accent} />
             </group>
           </MovingPart>
         </group>
@@ -862,6 +869,10 @@ function BezierFlippers({
 
 const whaleWidthRatio = 0.72;
 const dolphinWidthRatio = 0.74;
+/** How large the dolphin's dorsal fin is drawn, relative to the fish fin outline it uses. */
+const dolphinDorsalSize = 0.85;
+/** Where along the back the dorsal fin stands: on the crest, a little ahead of the middle. */
+const dolphinDorsalX = 0.12;
 
 function ArticulatedMammalTail({
   animated,
@@ -985,11 +996,6 @@ function BlueWhaleModel(props: AquaticModelProps) {
   const bellyGeometry = useMemo(() => roundedBody(body, whaleWidthRatio, belly, 1.012), [body, belly]);
   const outline = useMemo(() => outlineOf(body), [body]);
   const mouth = useMemo(() => onRoundedSurface(outline, whaleWidthRatio, [[1.73, -0.02], [1.25, -0.11], [0.7, -0.17], [0.18, -0.18]]), [outline]);
-  const throatGrooves = useMemo(() => Array.from({ length: 7 }, (_, index) => {
-    const y = -0.22 - index * 0.034;
-    const endX = 0.05 - index * 0.07;
-    return onRoundedSurface(outline, whaleWidthRatio, [[1.52 - index * 0.025, y + 0.05], [1.08, y], [0.55, y - 0.015], [endX, y + 0.01]]);
-  }), [outline]);
   const eyeZ = useMemo(() => roundedSurfaceZ(outline, whaleWidthRatio, 1.25, 0.09, 0), [outline]);
 
   return (
@@ -1028,12 +1034,6 @@ function BlueWhaleModel(props: AquaticModelProps) {
           <tubeGeometry args={[mouth, 28, 0.014, 7, false]} />
           <meshBasicMaterial color={colors.dark} />
         </mesh>
-        {throatGrooves.map((groove, index) => (
-          <mesh name="Blue whale throat groove" key={index}>
-            <tubeGeometry args={[groove, 20, 0.006, 5, false]} />
-            <meshBasicMaterial color={colors.dark} transparent opacity={0.5} />
-          </mesh>
-        ))}
       </BodyProportions>
       {[-1, 1].map((side) => (
         <BodyAttachment key={`eye-${side}`} anchor={[1.25, 0.09, side * eyeZ]}>
@@ -1134,19 +1134,19 @@ function DolphinModel(props: AquaticModelProps) {
     shape.closePath();
     return shape;
   }, []);
-  const dorsalFin = useMemo(() => {
-    const shape = new THREE.Shape();
-    shape.moveTo(-0.48, 0);
-    shape.lineTo(0.32, 0);
-    shape.bezierCurveTo(0.23, 0.1, 0.08, 0.43, -0.08, 0.52);
-    shape.bezierCurveTo(-0.24, 0.57, -0.29, 0.2, -0.48, 0);
-    shape.closePath();
-    return shape;
-  }, []);
   const bodyGeometry = useMemo(() => roundedBody(body, dolphinWidthRatio), [body]);
   const bellyGeometry = useMemo(() => roundedBody(body, dolphinWidthRatio, belly, 1.012), [body, belly]);
   const outline = useMemo(() => outlineOf(body), [body]);
   const eyeZ = useMemo(() => roundedSurfaceZ(outline, dolphinWidthRatio, 1.17, 0.13, 0), [outline]);
+  // A dorsal fin from the fish's Bézier collection, standing on the crest of the back. Its base is
+  // sunk just below the back along the middle of its length, so it grows out of the body.
+  const dorsal = useMemo(() => {
+    const style = dorsalFinStyleFor(props.baseSeed ?? props.pieces[0]?.artifactId ?? "new");
+    const points = style.shape.getPoints(12);
+    const reach = Math.max(...points.map((point) => Math.abs(point.x))) * style.width * dolphinDorsalSize * 0.6;
+    const back = Math.min(...Array.from({ length: 7 }, (_, index) => outline.span(dolphinDorsalX - reach + (index / 6) * reach * 2)?.[1] ?? Infinity));
+    return { style, base: back - 0.035 };
+  }, [outline, props.baseSeed, props.pieces]);
   // The mouth line runs along the side of the beak and onto the body, lying on whichever skin is outermost.
   const mouth = useMemo(() => new THREE.CatmullRomCurve3([[1.75, -0.045], [1.55, -0.055], [1.34, -0.07], [1.16, -0.085]].map(([x, y]) => {
     const beakRadius = THREE.MathUtils.lerp(0.13, 0.02, THREE.MathUtils.clamp((x - 1.12) / 0.66, 0, 1));
@@ -1176,18 +1176,18 @@ function DolphinModel(props: AquaticModelProps) {
         <meshToonMaterial color={colors.body} />
       </mesh>
       </BodyAttachment>
-      <BodyAttachment anchor={[0, 0.48, 0]}>
-        <mesh name="Dolphin dorsal fin" position={[0, 0.48, -0.075]}>
-          <extrudeGeometry args={[dorsalFin, { depth: 0.15, bevelEnabled: true, bevelSegments: 2, bevelSize: 0.035, bevelThickness: 0.035, curveSegments: 10 }]} />
-          <meshToonMaterial color={colors.dark} side={THREE.DoubleSide} />
-        </mesh>
+      <BodyAttachment anchor={[dolphinDorsalX, dorsal.base, 0]}>
+        <group position={[dolphinDorsalX, dorsal.base, 0]} scale={[dorsal.style.width * dolphinDorsalSize, dorsal.style.height * dolphinDorsalSize, 1]}>
+          <FleshyFin name="Dolphin dorsal fin" shape={dorsal.style.shape} color={colors.dark} />
+        </group>
       </BodyAttachment>
       <BezierFlippers
         name="Dolphin"
         signature={props.baseSeed ?? props.pieces[0]?.artifactId ?? "new"}
         root={[0.62, -0.1]}
         skin={roundedSurfaceZ(outline, dolphinWidthRatio, 0.62, -0.1, 0)}
-        size={0.95}
+        // Short, stubby flippers suit the dolphin's compact body.
+        size={0.72}
         colors={colors}
         animated={props.animated}
         speed={1.35}

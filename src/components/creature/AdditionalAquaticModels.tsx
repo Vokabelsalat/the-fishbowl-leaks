@@ -3,11 +3,13 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { aquaticPalette, TraitMarks } from "@/components/creature/AquaticModelShared";
 import type { AquaticModelProps } from "@/components/creature/AquaticCreatureModel";
 import type { AquaticForm } from "@/lib/creature/aquaticForms";
 import { PatternedToonMaterial } from "@/components/creature/CreaturePatternMaterial";
 import { BodyAttachment, BodyProportions } from "@/components/creature/CreatureLook";
+import { pectoralFinStyleFor, type PectoralFinStyle } from "@/components/creature/CreatureModel";
 import { withDetailRecipe } from "@/lib/creature/geometryDetail";
 
 type AdditionalForm = Exclude<AquaticForm, "fish" | "crab" | "jellyfish" | "octopus">;
@@ -192,26 +194,156 @@ function RayModel(props: AquaticModelProps) {
   );
 }
 
+const starArms = 5;
+/** Tip and valley radius of the star outline: chunky arms like a storybook starfish's. */
+const starTipRadius = 1.62;
+const starValleyRadius = 0.64;
+/** Radius of the round cap on each arm's tip. */
+const starTipRounding = 0.17;
+const starPuff = 0.36;
+/** How far the arms curl round, in radians at the tips, so the star looks caught mid-wiggle. */
+const starCurl = 0.12;
+
+/** Angular distance from the nearest arm's axis, from 0 on the axis to 1 in the valley between arms. */
+function starArmOffset(angle: number) {
+  const sector = (Math.PI * 2) / starArms;
+  const wrapped = THREE.MathUtils.euclideanModulo(angle - Math.PI / 2, sector);
+  return Math.min(wrapped, sector - wrapped) / (sector / 2);
+}
+
+/**
+ * The star's outline: each side runs as a straight edge from the tip to the valley between two
+ * arms, drawn in a little, with well rounded tips.
+ */
+function starRadius(angle: number) {
+  const offset = starArmOffset(angle);
+  const half = Math.PI / starArms;
+  // Where a ray at this angle off the arm's axis meets the straight edge from tip to valley.
+  const tip = new THREE.Vector2(starTipRadius, 0);
+  const valley = new THREE.Vector2(Math.cos(half) * starValleyRadius, Math.sin(half) * starValleyRadius);
+  const normal = new THREE.Vector2(valley.y - tip.y, tip.x - valley.x);
+  const ray = new THREE.Vector2(Math.cos(offset * half), Math.sin(offset * half));
+  const straight = (normal.dot(tip) / normal.dot(ray)) * (1 - 0.05 * Math.sin(Math.PI * offset));
+  // Each tip is capped by the circle that touches both of its edges, so the arms end round instead of pointed.
+  const edgeAngle = Math.atan2(valley.y, tip.x - valley.x);
+  const capCenter = tip.x - starTipRounding / Math.sin(edgeAngle);
+  const across = capCenter * Math.sin(offset * half);
+  if (across >= starTipRounding) return straight;
+  const capped = capCenter * Math.cos(offset * half) + Math.sqrt(starTipRounding ** 2 - across ** 2);
+  return Math.min(straight, capped);
+}
+
+/** How high the puffy top sits at a share `t` of the way out to the outline: flat-topped, with a rounded rim. */
+function starHeight(t: number, angle: number) {
+  // A little higher along each arm's spine. The ridges fade in away from the centre, so the
+  // middle stays one round dome.
+  const spine = (1 + Math.cos(starArmOffset(angle) * Math.PI)) / 2;
+  const ridge = 1 - 0.2 * (1 - spine) * THREE.MathUtils.smoothstep(t, 0, 0.55);
+  return starPuff * Math.max(0, 1 - t ** 2.2) ** 0.42 * ridge;
+}
+
+/** A point on the top skin, `t` of the way out along `angle`, with the arms' curl applied. */
+function starPoint(t: number, angle: number, lift = 0) {
+  const radius = starRadius(angle) * t;
+  const curled = angle + starCurl * (radius / starTipRadius) ** 2;
+  return new THREE.Vector3(Math.cos(curled) * radius, Math.sin(curled) * radius, starHeight(t, angle) + lift);
+}
+
+/** One puffy star with a rounded rim and a softly rounded underside. */
+const starfishBodyGeometry = withDetailRecipe(160, (detail) => {
+  const around = Math.max(starArms * 8, Math.round(160 * detail));
+  const rings = Math.max(5, Math.round(16 * detail));
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  for (const top of [true, false]) {
+    const offset = positions.length / 3;
+    for (let ring = 0; ring <= rings; ring += 1) {
+      const t = ring / rings;
+      for (let step = 0; step <= around; step += 1) {
+        const angle = (step / around) * Math.PI * 2;
+        const point = starPoint(t, angle);
+        if (!top) point.z = -0.1 * Math.max(0, 1 - t ** 2.2) ** 0.42;
+        positions.push(point.x, point.y, point.z);
+        uvs.push(point.x, point.y);
+      }
+    }
+    for (let ring = 0; ring < rings; ring += 1) {
+      for (let step = 0; step < around; step += 1) {
+        const a = offset + ring * (around + 1) + step;
+        const b = a + around + 1;
+        // Outward rings and counter-clockwise steps face the top toward the viewer; the underside is reversed.
+        if (top) indices.push(a, b, a + 1, b, b + 1, a + 1);
+        else indices.push(a, a + 1, b, b, a + 1, b + 1);
+      }
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  // Every vertex of the innermost ring sits on the centre point; face them straight out so the
+  // dome's peak does not pick up shading from the tilted triangles around it.
+  const normals = geometry.getAttribute("normal");
+  const perSurface = (rings + 1) * (around + 1);
+  for (let step = 0; step <= around; step += 1) {
+    normals.setXYZ(step, 0, 0, 1);
+    normals.setXYZ(perSurface + step, 0, 0, -1);
+  }
+  return geometry;
+});
+
+/** A row of pale, flattened dots down the spine of every arm, shrinking toward the tip. */
+const starfishDotGeometry = withDetailRecipe(10, (detail) => {
+  const dots: THREE.BufferGeometry[] = [];
+  for (let arm = 0; arm < starArms; arm += 1) {
+    const axis = Math.PI / 2 + (arm / starArms) * Math.PI * 2;
+    for (let index = 0; index < 6; index += 1) {
+      const t = 0.44 + index * 0.09;
+      const size = 0.062 - index * 0.005;
+      const point = starPoint(t, axis, 0.004);
+      dots.push(
+        new THREE.SphereGeometry(size, Math.max(6, Math.round(10 * detail)), Math.max(4, Math.round(6 * detail)))
+          .scale(1, 1, 0.4)
+          .translate(point.x, point.y, point.z),
+      );
+    }
+  }
+  return mergeGeometries(dots, false);
+});
+
+/** The starfish's smile, laid over the dome just below its eyes. */
+const starfishSmile = new THREE.CatmullRomCurve3(Array.from({ length: 9 }, (_, index) => {
+  const angle = Math.PI * (1.18 + (index / 8) * 0.64);
+  const x = Math.cos(angle) * 0.17;
+  const y = -0.06 + Math.sin(angle) * 0.13;
+  return new THREE.Vector3(x, y, starHeight(Math.hypot(x, y) / starValleyRadius, Math.atan2(y, x)) + 0.006);
+}));
+
 function StarfishModel(props: AquaticModelProps) {
   const colors = aquaticPalette(props.pieces, props.baseSeed, props.colorPalette);
+  const dotColor = useMemo(() => new THREE.Color(colors.body).lerp(new THREE.Color("#FFF4E6"), 0.55).getStyle(), [colors.body]);
   return (
     <LivingGroup animated={props.animated} scale={props.scale} motion="bob">
       {/* A starfish's whole star is its body. */}
       <BodyProportions>
-      {Array.from({ length: 5 }, (_, index) => {
-        const angle = index * Math.PI * 0.4;
-        return (
-          <mesh key={index} position={[Math.sin(angle) * 0.7, Math.cos(angle) * 0.7, 0]} rotation={[0, 0, -angle]} scale={[0.38, 0.92, 0.16]}>
-            <capsuleGeometry args={[0.44, 0.92, 8, 14]} />
-            <PatternedToonMaterial color={index % 2 ? colors.body : colors.accent} repeat={[2, 2]} />
-          </mesh>
-        );
-      })}
-      <mesh scale={[0.7, 0.7, 0.24]}>
-        <sphereGeometry args={[0.72, 20, 14]} />
-        <meshToonMaterial color={colors.light} />
-      </mesh>
+        <mesh name="Starfish body" geometry={starfishBodyGeometry}>
+          <PatternedToonMaterial color={colors.body} repeat={[1.2, 1.2]} wraps={false} />
+        </mesh>
+        <mesh name="Starfish dots" geometry={starfishDotGeometry}>
+          <meshToonMaterial color={dotColor} />
+        </mesh>
+        <mesh name="Starfish smile">
+          <tubeGeometry args={[starfishSmile, 20, 0.016, 6, false]} />
+          <meshBasicMaterial color={colors.dark} />
+        </mesh>
       </BodyProportions>
+      <BodyAttachment anchor={[0, 0.1, starPuff]}>
+        <group position={[0, 0.12, starPuff - 0.02]} scale={1.15}>
+          {PairOfEyes({ x: 0.13, y: 0, z: 0, animated: props.animated })}
+        </group>
+      </BodyAttachment>
       <TraitMarks pieces={props.pieces} baseSeed={props.baseSeed} form="starfish" highlightedPart={props.highlightedPart} />
     </LivingGroup>
   );
@@ -574,6 +706,63 @@ function onRoundedSurface(outline: Outline, widthRatio: number, points: Array<[n
   return new THREE.CatmullRomCurve3(points.map(([x, y]) => new THREE.Vector3(x, y, side * roundedSurfaceZ(outline, widthRatio, x, y))));
 }
 
+const fleshyFinThickness = 0.03;
+
+/**
+ * A pectoral fin with a fish fin's Bézier outline, but solid and fleshy like a marine mammal's
+ * flipper: opaque, slightly thick with rounded edges, and without rays.
+ */
+function FleshyPectoralFin({ style, color }: { style: PectoralFinStyle; color: string }) {
+  return (
+    <mesh position={[0, 0, -fleshyFinThickness / 2]}>
+      <extrudeGeometry args={[style.shape, { depth: fleshyFinThickness, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.022, bevelThickness: 0.022, curveSegments: 16 }]} />
+      <meshToonMaterial color={color} />
+    </mesh>
+  );
+}
+
+/**
+ * A pair of fleshy pectoral fins with outlines from the fish's Bézier fin collection, rooted on the skin at `root`
+ * (`skin` is how far out of each side the skin sits there) and paddling slowly.
+ */
+function BezierFlippers({
+  name,
+  signature,
+  root,
+  skin,
+  size,
+  colors,
+  animated,
+  speed,
+  amount,
+}: {
+  name: string;
+  signature: string;
+  root: [number, number];
+  skin: number;
+  size: number;
+  colors: ReturnType<typeof aquaticPalette>;
+  animated?: boolean;
+  speed: number;
+  amount: number;
+}) {
+  const style = pectoralFinStyleFor(signature);
+  const [x, y] = root;
+  return (
+    <>
+      {[1, -1].map((side) => (
+        <group key={side} name={`${name} ${side > 0 ? "near" : "far"} flipper`} position={[x, y, side * (skin + 0.012)]}>
+          <MovingPart animated={animated} phase={side > 0 ? 0 : 0.6} base={side > 0 ? 0.03 : -0.05} amount={amount} speed={speed}>
+            <group scale={[style.width * size, style.height * size, 1]}>
+              <FleshyPectoralFin style={style} color={colors.accent} />
+            </group>
+          </MovingPart>
+        </group>
+      ))}
+    </>
+  );
+}
+
 const whaleWidthRatio = 0.72;
 const dolphinWidthRatio = 0.74;
 
@@ -695,16 +884,6 @@ function BlueWhaleModel(props: AquaticModelProps) {
     shape.closePath();
     return shape;
   }, []);
-  const flipper = useMemo(() => {
-    const shape = new THREE.Shape();
-    shape.moveTo(0.14, 0.08);
-    shape.bezierCurveTo(-0.1, 0.02, -0.58, -0.2, -0.86, -0.48);
-    shape.bezierCurveTo(-1, -0.68, -0.82, -0.82, -0.56, -0.75);
-    shape.bezierCurveTo(-0.26, -0.61, 0.02, -0.28, 0.13, -0.11);
-    shape.quadraticCurveTo(0.22, -0.01, 0.14, 0.08);
-    shape.closePath();
-    return shape;
-  }, []);
   const bodyGeometry = useMemo(() => roundedBody(body, whaleWidthRatio), [body]);
   const bellyGeometry = useMemo(() => roundedBody(body, whaleWidthRatio, belly, 1.012), [body, belly]);
   const outline = useMemo(() => outlineOf(body), [body]);
@@ -736,18 +915,17 @@ function BlueWhaleModel(props: AquaticModelProps) {
           <meshToonMaterial color={colors.dark} side={THREE.DoubleSide} />
         </mesh>
       </BodyAttachment>
-      <MovingPart animated={props.animated} phase={0.6} base={-0.06} amount={0.08} speed={1.05}>
-        <mesh name="Blue whale far flipper" position={[0.3, -0.13, -0.3]} scale={[0.88, 0.88, 0.88]}>
-          <extrudeGeometry args={[flipper, { depth: 0.1, bevelEnabled: true, bevelSegments: 1, bevelSize: 0.035, bevelThickness: 0.035, curveSegments: 12 }]} />
-          <meshToonMaterial color={colors.dark} side={THREE.DoubleSide} />
-        </mesh>
-      </MovingPart>
-      <MovingPart animated={props.animated} phase={0} base={0.03} amount={0.075} speed={1.05}>
-        <mesh name="Blue whale near flipper" position={[0.43, -0.17, 0.22]}>
-          <extrudeGeometry args={[flipper, { depth: 0.1, bevelEnabled: true, bevelSegments: 1, bevelSize: 0.035, bevelThickness: 0.035, curveSegments: 12 }]} />
-          <meshToonMaterial color={colors.accent} side={THREE.DoubleSide} />
-        </mesh>
-      </MovingPart>
+      <BezierFlippers
+        name="Blue whale"
+        signature={props.baseSeed ?? props.pieces[0]?.artifactId ?? "new"}
+        root={[0.5, -0.12]}
+        skin={roundedSurfaceZ(outline, whaleWidthRatio, 0.5, -0.12, 0)}
+        size={1.4}
+        colors={colors}
+        animated={props.animated}
+        speed={1.05}
+        amount={0.08}
+      />
       <BodyProportions>
         <mesh name="Blue whale mouth">
           <tubeGeometry args={[mouth, 28, 0.014, 7, false]} />
@@ -868,19 +1046,10 @@ function DolphinModel(props: AquaticModelProps) {
     shape.closePath();
     return shape;
   }, []);
-  const flipper = useMemo(() => {
-    const shape = new THREE.Shape();
-    shape.moveTo(0.12, 0.08);
-    shape.bezierCurveTo(-0.12, 0.02, -0.5, -0.18, -0.72, -0.4);
-    shape.bezierCurveTo(-0.86, -0.56, -0.7, -0.7, -0.48, -0.65);
-    shape.bezierCurveTo(-0.22, -0.5, 0.02, -0.26, 0.11, -0.1);
-    shape.quadraticCurveTo(0.18, -0.01, 0.12, 0.08);
-    shape.closePath();
-    return shape;
-  }, []);
   const bodyGeometry = useMemo(() => roundedBody(body, dolphinWidthRatio), [body]);
   const bellyGeometry = useMemo(() => roundedBody(body, dolphinWidthRatio, belly, 1.012), [body, belly]);
-  const eyeZ = useMemo(() => roundedSurfaceZ(outlineOf(body), dolphinWidthRatio, 1.17, 0.13, 0), [body]);
+  const outline = useMemo(() => outlineOf(body), [body]);
+  const eyeZ = useMemo(() => roundedSurfaceZ(outline, dolphinWidthRatio, 1.17, 0.13, 0), [outline]);
   const mouth = useMemo(() => new THREE.CatmullRomCurve3([
     new THREE.Vector3(1.75, -0.045, 0.095),
     new THREE.Vector3(1.55, -0.055, 0.12),
@@ -915,18 +1084,17 @@ function DolphinModel(props: AquaticModelProps) {
           <meshToonMaterial color={colors.dark} side={THREE.DoubleSide} />
         </mesh>
       </BodyAttachment>
-      <MovingPart animated={props.animated} phase={0.65} base={-0.04} amount={0.11} speed={1.35}>
-        <mesh name="Dolphin far flipper" position={[0.48, -0.12, -0.26]} scale={[0.84, 0.84, 0.84]}>
-          <extrudeGeometry args={[flipper, { depth: 0.09, bevelEnabled: true, bevelSegments: 2, bevelSize: 0.032, bevelThickness: 0.032, curveSegments: 12 }]} />
-          <meshToonMaterial color={colors.dark} side={THREE.DoubleSide} />
-        </mesh>
-      </MovingPart>
-      <MovingPart animated={props.animated} phase={0} base={0.03} amount={0.11} speed={1.35}>
-        <mesh name="Dolphin near flipper" position={[0.58, -0.15, 0.175]}>
-          <extrudeGeometry args={[flipper, { depth: 0.09, bevelEnabled: true, bevelSegments: 2, bevelSize: 0.032, bevelThickness: 0.032, curveSegments: 12 }]} />
-          <meshToonMaterial color={colors.accent} side={THREE.DoubleSide} />
-        </mesh>
-      </MovingPart>
+      <BezierFlippers
+        name="Dolphin"
+        signature={props.baseSeed ?? props.pieces[0]?.artifactId ?? "new"}
+        root={[0.62, -0.1]}
+        skin={roundedSurfaceZ(outline, dolphinWidthRatio, 0.62, -0.1, 0)}
+        size={0.95}
+        colors={colors}
+        animated={props.animated}
+        speed={1.35}
+        amount={0.11}
+      />
       <BodyProportions>
         <mesh name="Dolphin mouth">
           <tubeGeometry args={[mouth, 20, 0.011, 6, false]} />
@@ -959,11 +1127,21 @@ function NarwhalModel(props: AquaticModelProps) {
   const colors = aquaticPalette(props.pieces, props.baseSeed, props.colorPalette);
   const bodyLength = 1.46;
   const bodyHeight = 0.58;
+  const bodyDepth = 0.48;
+  const bellyCenter: [number, number, number] = [0.42, -bodyHeight * 0.42, 0.28];
+  const bellyRadii: [number, number, number] = [bodyLength * 0.7, bodyHeight * 0.42, 0.3];
+  const flipperRoot: [number, number] = [0.55, -0.16];
+  // The fins grow from whichever skin is outermost there: the body, or the pale belly bulging over it.
+  const ellipsoidSkin = (center: [number, number, number], radii: [number, number, number]) => {
+    const inside = 1 - ((flipperRoot[0] - center[0]) / radii[0]) ** 2 - ((flipperRoot[1] - center[1]) / radii[1]) ** 2;
+    return inside > 0 ? center[2] + radii[2] * Math.sqrt(inside) : 0;
+  };
+  const flipperSkin = Math.max(ellipsoidSkin([0, 0, 0], [bodyLength, bodyHeight, bodyDepth]), ellipsoidSkin(bellyCenter, bellyRadii));
   return (
     <LivingGroup animated={props.animated} scale={props.scale} motion="glide">
       <BodyProportions>
-        <mesh scale={[bodyLength, bodyHeight, 0.48]}><sphereGeometry args={[1, 20, 14]} /><PatternedToonMaterial color={colors.body} /></mesh>
-        <mesh position={[0.42, -bodyHeight * 0.42, 0.28]} scale={[bodyLength * 0.7, bodyHeight * 0.42, 0.3]}><sphereGeometry args={[1, 20, 14]} /><meshToonMaterial color={colors.light} /></mesh>
+        <mesh scale={[bodyLength, bodyHeight, bodyDepth]}><sphereGeometry args={[1, 20, 14]} /><PatternedToonMaterial color={colors.body} /></mesh>
+        <mesh position={bellyCenter} scale={bellyRadii}><sphereGeometry args={[1, 20, 14]} /><meshToonMaterial color={colors.light} /></mesh>
       </BodyProportions>
       <BodyAttachment anchor={[bodyLength * 0.92, 0.03, 0]}>
         <mesh position={[bodyLength * 0.92, 0.03, 0]} scale={[0.42, 0.26, 0.28]}><sphereGeometry args={[1, 20, 14]} /><meshToonMaterial color={colors.light} /></mesh>
@@ -971,11 +1149,17 @@ function NarwhalModel(props: AquaticModelProps) {
       <BodyAttachment anchor={[0.05, bodyHeight * 0.92, 0]}>
         <mesh position={[0.05, bodyHeight * 0.92, -0.03]} rotation={[0, 0, -0.22]} scale={[0.34, 0.46, 0.09]}><coneGeometry args={[1, 1, 12]} /><meshToonMaterial color={colors.dark} /></mesh>
       </BodyAttachment>
-      {[-1, 1].map((side) => (
-        <MovingPart key={`flipper-${side}`} animated={props.animated} phase={side} base={side * -0.52} amount={0.12} speed={1.2}>
-          <mesh position={[0.36, side * bodyHeight * 0.8, -0.06]} scale={[0.58, 0.14, 0.08]}><sphereGeometry args={[1, 18, 12]} /><meshToonMaterial color={colors.accent} /></mesh>
-        </MovingPart>
-      ))}
+      <BezierFlippers
+        name="Narwhal"
+        signature={props.baseSeed ?? props.pieces[0]?.artifactId ?? "new"}
+        root={flipperRoot}
+        skin={flipperSkin}
+        size={1.05}
+        colors={colors}
+        animated={props.animated}
+        speed={1.2}
+        amount={0.12}
+      />
       <BodyAttachment anchor={[-bodyLength * 0.93, 0, 0]}>
         <group position={[-bodyLength * 0.93, 0, 0]}>
           <ArticulatedMammalTail animated={props.animated} colors={colors} />

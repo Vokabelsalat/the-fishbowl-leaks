@@ -489,7 +489,7 @@ const traitLayouts: Record<Exclude<AquaticForm, "fish">, TraitLayout> = {
   octopus: { x: 0.66, y: 0.68, cx: 0, cy: 0.36, z: 0.46, scale: 0.44, mouth: { y: 0.28, facing: "viewer" } },
   turtle: { x: 1.08, y: 0.54, cx: 0.04, cy: 0, z: 0.36, scale: 0.48, mouth: { x: 1.25, y: -0.04, facing: "viewer" } },
   ray: { x: 1.14, y: 0.82, cx: 0.18, cy: 0, z: 0.24, scale: 0.46, mouth: { x: 0.9, y: 0, facing: "viewer" } },
-  starfish: { x: 0.84, y: 0.84, cx: 0, cy: 0, z: 0.24, scale: 0.4, mouth: { y: 0, facing: "viewer" } },
+  starfish: { x: 0.84, y: 0.84, cx: 0, cy: 0, z: 0.24, scale: 0.4, mouth: { y: -0.19, facing: "viewer" } },
   seahorse: { x: 0.48, y: 1.06, cx: 0, cy: 0.02, z: 0.3, scale: 0.38, vertical: true, mouth: { y: 1.1 } },
   seal: { x: 1.16, y: 0.48, cx: 0, cy: 0.02, z: 0.35, scale: 0.48, mouth: { x: 1.12, y: 0.16, facing: "viewer" } },
   shrimp: { x: 1.08, y: 0.4, cx: 0, cy: 0.08, z: 0.28, scale: 0.4, mouth: { y: 0.1 } },

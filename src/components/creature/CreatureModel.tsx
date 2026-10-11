@@ -504,6 +504,13 @@ function DorsalFin({
   );
 }
 
+/** The pectoral fin style a creature grows, picked from its seed like the rest of its fins. */
+export function pectoralFinStyleFor(signature: string) {
+  return pectoralFinStyles[
+    Math.min(pectoralFinStyles.length - 1, Math.floor(hashUnit(`${signature}:pectoral-fin`) * pectoralFinStyles.length))
+  ];
+}
+
 function PectoralFin({
   style,
   color,
@@ -598,9 +605,7 @@ export function CreatureModel({
   const dorsalStyle = dorsalFinStyles[
     Math.min(dorsalFinStyles.length - 1, Math.floor(hashUnit(`${signature}:dorsal-fin`) * dorsalFinStyles.length))
   ];
-  const pectoralStyle = pectoralFinStyles[
-    Math.min(pectoralFinStyles.length - 1, Math.floor(hashUnit(`${signature}:pectoral-fin`) * pectoralFinStyles.length))
-  ];
+  const pectoralStyle = pectoralFinStyleFor(signature);
   const pelvicStyle = pelvicFinStyles[
     Math.min(pelvicFinStyles.length - 1, Math.floor(hashUnit(`${signature}:pelvic-fin`) * pelvicFinStyles.length))
   ];

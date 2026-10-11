@@ -12,13 +12,14 @@ function freshSeed() {
 }
 
 export default async function PosterPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const { seed, width } = await searchParams;
+  const { seed, width, pose } = await searchParams;
   const fixedWidth = Number(width);
   return (
     <CreaturePoster
       // Without a seed every visit draws a new cast; the poster logs its seed so it can be recreated.
       seed={typeof seed === "string" && seed ? seed : freshSeed()}
       width={Number.isFinite(fixedWidth) && fixedWidth > 0 ? fixedWidth : undefined}
+      pose={typeof pose === "string" ? pose : undefined}
     />
   );
 }

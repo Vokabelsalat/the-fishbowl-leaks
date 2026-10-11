@@ -1,6 +1,6 @@
 "use client";
 
-import { AdaptiveDpr } from "@react-three/drei";
+import { PerformanceMonitor, type PerformanceMonitorApi } from "@react-three/drei";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
@@ -908,6 +908,17 @@ function createBaby(event: PairingEvent): BabyCreature {
   };
 }
 
+/** The sharpest the aquarium renders, in device pixels per CSS pixel, on screens that have that many. */
+const sharpestPixelRatio = 1.35;
+/** How far the resolution may drop while frames come too slowly, as a share of the sharpest. */
+const lowestResolutionShare = 0.6;
+
+/** The pixel ratio for a performance factor from 0 (struggling) to 1 (comfortable), in steps of 0.05. */
+function pixelRatioFor(factor: number) {
+  const sharpest = Math.min(typeof window === "undefined" ? 1 : window.devicePixelRatio, sharpestPixelRatio);
+  return Math.round(sharpest * THREE.MathUtils.lerp(lowestResolutionShare, 1, factor) * 20) / 20;
+}
+
 export function CollectiveCreatureField({
   contributions,
   progress = 1,
@@ -932,6 +943,10 @@ export function CollectiveCreatureField({
   meshQuality?: number;
 }) {
   const [babies, setBabies] = useState<BabyCreature[]>([]);
+  // Starts sharp; the monitor lowers the resolution while the frame rate stays low, and raises it again once it recovers.
+  const [pixelRatio, setPixelRatio] = useState(() => pixelRatioFor(1));
+  const adjustPixelRatio = useCallback(({ factor }: PerformanceMonitorApi) => setPixelRatio(pixelRatioFor(factor)), []);
+  const settleOnLowestPixelRatio = useCallback(() => setPixelRatio(pixelRatioFor(0)), []);
   const actorRegistry = useRef(new Map<number, MutableRefObject<CreatureMotion>>());
   const pairingRef = useRef<PairingEvent | null>(null);
   const schoolingRef = useRef<Schooling>({ places: new Map(), schools: [], cooldownUntil: new Map() });
@@ -952,9 +967,10 @@ export function CollectiveCreatureField({
     <Canvas
       orthographic
       camera={{ position: [0, 0, 10], zoom: 82, near: 0.1, far: 30 }}
-      dpr={[1, 1.35]}
+      dpr={pixelRatio}
       gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
     >
+      <PerformanceMonitor factor={1} onChange={adjustPixelRatio} onFallback={settleOnLowestPixelRatio} />
       {onRenderStats && <RenderStats onReport={onRenderStats} />}
       <ambientLight intensity={1.4} />
       <directionalLight position={[2, 5, 8]} intensity={2.4} color="#FFF4DF" />
@@ -1017,7 +1033,6 @@ export function CollectiveCreatureField({
       ))}
       <DepthHazeLayers />
       <AquariumDioramaPlants layer="front" />
-      <AdaptiveDpr pixelated />
     </Canvas>
   );
 }

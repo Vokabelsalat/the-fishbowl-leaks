@@ -62,7 +62,7 @@ function ArtifactRevealSequence({
   return (
     <section className="pointer-events-none absolute inset-0 z-40 overflow-hidden" aria-live="polite">
       {!isRevisit && visualizationDesign === "constellation" && phase !== "complete" && (
-        <ParticleNarrative artifact={artifact} phase={phase} mode="ar-release" quality="high" />
+        <ParticleNarrative artifact={artifact} phase={phase} mode="ar-release" quality="low" />
       )}
       {creatureVisible && (phase === "assembling" || phase === "attached") && (
         // Centred on the creature stage below (top 7vh, height 58vh).

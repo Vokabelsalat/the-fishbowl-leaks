@@ -19,3 +19,5 @@ pattern
 claws
 bow
 hat
+
+take out the piano track

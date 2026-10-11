@@ -19,6 +19,12 @@ const FLIGHT_SHARE = 0.82;
 const COLLAPSE_MS = 600;
 /** Longest per-particle start delay, as a share of the flight. */
 const MAX_DELAY = 0.38;
+/**
+ * Share of the printed constellation's particles that fly in, so older phones do not stutter
+ * while the camera and the creature render too. The fewer particles are drawn a little larger.
+ */
+const PARTICLE_SHARE = 0.4;
+const POINT_SIZE_BOOST = 1.2;
 
 const vertexShader = /* glsl */ `
   attribute vec3 aEdge;
@@ -80,10 +86,26 @@ function toColor([red, green, blue]: [number, number, number]) {
   return new THREE.Color(red / 255, green / 255, blue / 255);
 }
 
-// Formation positions projected like the printed target and normalised so
-// the larger projected half extent is 1.
-function targetPositions(artifact: ExhibitionArtifact, count: number) {
-  const formation = createArtifactFormationPositions(artifact, count);
+/** Evenly spread indices into the printed constellation, `share` of them in all. */
+function sampledIndices(total: number, share: number) {
+  const count = Math.max(1, Math.round(total * share));
+  return Array.from({ length: count }, (_, index) => Math.floor((index * total) / count));
+}
+
+// An even subset of the formation positions, projected like the printed target and
+// normalised so the larger projected half extent is 1. Sizes come from the full
+// constellation, so each particle keeps the size it has on the print.
+function targetPositions(artifact: ExhibitionArtifact) {
+  const full = createArtifactFormationPositions(artifact, constellationParticleCount);
+  const fullSizes = prepareConstellation(full, artifact.color, "dark").sizes;
+  const indices = sampledIndices(constellationParticleCount, PARTICLE_SHARE);
+  const count = indices.length;
+  const formation = new Float32Array(count * 3);
+  const sizes = new Float32Array(count);
+  indices.forEach((source, index) => {
+    formation.set(full.subarray(source * 3, source * 3 + 3), index * 3);
+    sizes[index] = fullSizes[source];
+  });
   const orientation = constellationOrientations[artifact.id] ?? initialOrientation;
   const projected = new Float32Array(count * 3);
   let minX = Infinity;
@@ -108,7 +130,7 @@ function targetPositions(artifact: ExhibitionArtifact, count: number) {
     projected[offset] = (projected[offset] - centerX) / extent;
     projected[offset + 1] = (projected[offset + 1] - centerY) / extent;
   }
-  return { formation, projected };
+  return { count, sizes, projected };
 }
 
 function AssemblyPoints({
@@ -135,9 +157,8 @@ function AssemblyPoints({
   );
 
   const { geometry, material } = useMemo(() => {
-    const count = constellationParticleCount;
-    const { formation, projected } = targetPositions(artifact, count);
-    const constellation = prepareConstellation(formation, artifact.color, "dark");
+    const { count, sizes, projected } = targetPositions(artifact);
+    const constellation = prepareConstellation(projected, artifact.color, "dark");
     const random = seededRandom(`${artifact.id}:assembly`);
     const edges = new Float32Array(count * 3);
     const seeds = new Float32Array(count);
@@ -159,7 +180,7 @@ function AssemblyPoints({
     assembled.setAttribute("aEdge", new THREE.BufferAttribute(edges, 3));
     assembled.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 1));
     assembled.setAttribute("aDelay", new THREE.BufferAttribute(delays, 1));
-    assembled.setAttribute("aSize", new THREE.BufferAttribute(constellation.sizes, 1));
+    assembled.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
 
     return {
       geometry: assembled,
@@ -208,7 +229,7 @@ function AssemblyPoints({
     uniforms.uHalf.value.set(size.width / 2, size.height / 2);
     uniforms.uCenter.value.set(0, centerY * size.height);
     uniforms.uScale.value = scale;
-    uniforms.uPointSize.value = scale * 0.032 * pixelRatio;
+    uniforms.uPointSize.value = scale * 0.032 * POINT_SIZE_BOOST * pixelRatio;
     uniforms.uProgress.value = Math.min(
       1,
       (now - startedAt.current) / (revealTiming.assembling * FLIGHT_SHARE * timeScale),
@@ -248,7 +269,7 @@ export function ConstellationAssembly({
       <Canvas
         orthographic
         camera={{ position: [0, 0, 10], zoom: 1, near: 0.1, far: 100 }}
-        dpr={[1, 1.6]}
+        dpr={[1, 1.25]}
         gl={{ alpha: true, antialias: false, powerPreference: "high-performance" }}
       >
         <AssemblyPoints artifact={artifact} collapsing={collapsing} centerY={centerY} fit={fit} />

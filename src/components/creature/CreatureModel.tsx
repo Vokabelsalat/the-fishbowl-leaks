@@ -575,7 +575,6 @@ export function CreatureModel({
   const dorsalRef = useRef<THREE.Group>(null);
   const finRef = useRef<THREE.Group>(null);
   const pelvicRef = useRef<THREE.Group>(null);
-  const eyeRefs = useRef<Array<THREE.Group | null>>([]);
   const pupilRefs = useRef<Array<THREE.Mesh | null>>([]);
   const signature = baseSeed ?? pieces[0]?.artifactId ?? "new";
   const lookIds = Object.keys(fishLooks);
@@ -635,13 +634,11 @@ export function CreatureModel({
 
     const winkTime = elapsed + proportions.winkOffset;
     const winkProgress = (winkTime % proportions.winkEvery) / 0.18;
-    eyeRefs.current.forEach((eye) => {
-      if (!eye) return;
-      const closure = winkProgress < 1 ? Math.sin(winkProgress * Math.PI) : 0;
-      eye.scale.y = Math.max(0.08, 1 - closure * 0.92);
-    });
     pupilRefs.current.forEach((pupil, index) => {
       if (!pupil) return;
+      // Keep the white embedded in the skin; blinking the whole eye hides it inside the head.
+      const closure = winkProgress < 1 ? Math.sin(winkProgress * Math.PI) : 0;
+      pupil.scale.y = Math.max(0.08, 1 - closure * 0.92);
       pupil.position.x = 0.025 + Math.sin(elapsed * 0.67 + index * 0.35 + proportions.winkOffset) * 0.028;
       pupil.position.y = Math.cos(elapsed * 0.49 + index * 0.28 + proportions.winkOffset) * 0.022;
     });
@@ -649,12 +646,13 @@ export function CreatureModel({
 
   const headX = proportions.length * 0.62;
   const tailX = -proportions.length * 1.02;
-  // The head is a squashed sphere set slightly toward the near side. Both eyes are flat discs on
-  // its actual skin, sunk in a little, so on a thin fish neither eye can stand off the head.
-  const headCenterZ = 0.02;
+  // Centre the head between its two eyes. Mount them forward of the body's widest overlap,
+  // so the far eye cannot disappear into the body on a long, thin fish.
+  const headCenterZ = 0;
+  const eyeX = proportions.head * 0.42;
   const headRadii = [0.7 * proportions.head, 0.7 * proportions.height * 0.9, 0.7 * proportions.depth * 0.96];
-  const eyeSkinDepth = headRadii[2] * Math.sqrt(Math.max(0, 1 - (0.24 / 0.7) ** 2 - ((proportions.height * 0.28 - 0.02) / headRadii[1]) ** 2));
-  const eyeSink = 0.02;
+  const eyeSkinDepth = headRadii[2] * Math.sqrt(Math.max(0, 1 - (eyeX / headRadii[0]) ** 2 - ((proportions.height * 0.28 - 0.02) / headRadii[1]) ** 2));
+  const eyeSink = 0.01;
   // The side fins grow from the body's actual skin at their roots, sunk in a little, rather than
   // at a fixed depth beside it; low on the belly the body is much narrower than at its middle.
   const bodySkin = (x: number, y: number) => 0.86 * proportions.depth * Math.sqrt(Math.max(0, 1 - (x / (0.86 * proportions.length)) ** 2 - (y / (0.86 * proportions.height)) ** 2));
@@ -671,10 +669,12 @@ export function CreatureModel({
           <PatternedToonMaterial color={baseColor} />
         </mesh>
       </BodyProportions>
-      <mesh position={[headX, 0.02, 0.02]} scale={[proportions.head, proportions.height * 0.9, proportions.depth * 0.96]}>
+      <BodyProportions>
+      <mesh name="Fish head" position={[headX, 0.02, headCenterZ]} scale={[proportions.head, proportions.height * 0.9, proportions.depth * 0.96]}>
         <sphereGeometry args={[0.7, 20, 14]} />
         <PatternedToonMaterial color={headColor} repeat={[2, 1]} />
       </mesh>
+      </BodyProportions>
       <BodyProportions>
       {[1, -1].map((side) => (
         <mesh
@@ -759,13 +759,14 @@ export function CreatureModel({
       </group>
       </BodyAttachment>
 
+      <BodyProportions>
       {[1, -1].map((side, index) => (
         <group
-          ref={(node) => { eyeRefs.current[index] = node; }}
+          name={`Fish ${side > 0 ? "near" : "far"} eye`}
           key={side}
-          // Blinks are rare and short, so the mesh merger would otherwise bake an eye in mid-blink.
+          // Keep the eye as an animation anchor when static meshes are merged.
           userData={{ [movingPartTag]: true }}
-          position={[headX + proportions.head * 0.24, proportions.height * 0.28, headCenterZ + side * (eyeSkinDepth - eyeSink)]}
+          position={[headX + eyeX, proportions.height * 0.28, headCenterZ + side * (eyeSkinDepth - eyeSink)]}
           rotation={[0, side > 0 ? 0 : Math.PI, 0]}
           // Flattened into discs set in the side of the head, like a real fish's eyes, so they never stand off a thin head.
           scale={[1, 1, eyeFlatten]}
@@ -788,7 +789,7 @@ export function CreatureModel({
             headX + proportions.head * 0.64,
             -proportions.height * 0.1,
             // On the head's skin where the snout narrows, rather than out at the body's full depth.
-            0.02 + side * proportions.depth * 0.96 * 0.7 * Math.sqrt(Math.max(0, 1 - (0.64 / 0.7) ** 2 - ((proportions.height * 0.1 + 0.02) / (proportions.height * 0.9 * 0.7)) ** 2)),
+            headCenterZ + side * proportions.depth * 0.96 * 0.7 * Math.sqrt(Math.max(0, 1 - (0.64 / 0.7) ** 2 - ((proportions.height * 0.1 + 0.02) / (proportions.height * 0.9 * 0.7)) ** 2)),
           ]}
           rotation={[0, 0, Math.PI / 2]}
           scale={[1, 1, 0.12]}
@@ -797,6 +798,7 @@ export function CreatureModel({
           <meshBasicMaterial color="#171218" />
         </mesh>
       ))}
+      </BodyProportions>
 
       <TraitMarks
         pieces={pieces}

@@ -1,5 +1,10 @@
 Cover image
 something else than leak droplet
+the addons on the starfish need to be better distributed
+3D collision of the fish?
+the ray ned to wig with its tail
+show again which song is currently playing
+integrate three quick scales
 
 maybe we try to assemble the creature from parts which are picked by the user
 
@@ -21,7 +26,5 @@ hat
 take out the piano track
 
 Refined narrative
-integrate three quick scales
 integrate questionaire in the end
 fix up the buttons and the user guidance
-show again which song is currently playing

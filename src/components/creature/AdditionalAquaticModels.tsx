@@ -179,6 +179,84 @@ function rayGillZ(x: number, y: number) {
 /** The ray's eyes bulge out of the pale underside, sunk into it by most of their depth. */
 const rayEyeZ = rayGillZ(0.75, 0.24) - 0.004;
 
+const rayTailRoot: Point3 = [-0.78, 0, 0.02];
+const rayTailSegments = 7;
+const rayTailSegmentLength = 0.37;
+
+/** A stable value from 0 to 1 for a specimen's seed and what it is drawn for. */
+function seededUnit(seed: string, purpose: string) {
+  let hash = 2166136261;
+  for (const character of `${seed}:${purpose}`) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x85ebca6b);
+  hash ^= hash >>> 13;
+  return (hash >>> 0) / 4294967295;
+}
+
+/**
+ * The ray's whip of a tail: a chain of short, tapering links, each swinging a little later and a
+ * little further than the one before it, so a wave runs down to the tip. Every specimen grows its
+ * own length and thickness of tail.
+ */
+function RayTail({ color, animated, seed }: { color: string; animated?: boolean; seed: string }) {
+  const linkRefs = useRef<Array<THREE.Group | null>>([]);
+  const { phase, length, thickness } = useMemo(() => ({
+    phase: seededUnit(seed, "tail-phase") * Math.PI * 2,
+    length: rayTailSegmentLength * (0.7 + seededUnit(seed, "tail-length") * 0.6),
+    thickness: 0.75 + seededUnit(seed, "tail-thickness") * 0.6,
+  }), [seed]);
+  const radiusAt = (index: number) => (0.034 - (index / rayTailSegments) * 0.022) * thickness;
+
+  useFrame(({ clock }) => {
+    if (animated === false) return;
+    const time = clock.elapsedTime * 2.1 + phase;
+    linkRefs.current.forEach((link, index) => {
+      if (!link) return;
+      const reach = 0.05 + index * 0.018;
+      link.rotation.z = Math.sin(time - index * 0.75) * reach;
+      link.rotation.y = Math.sin(time * 0.6 - index * 0.5) * reach * 0.35;
+    });
+  });
+
+  const link = (index: number): ReactNode => {
+    if (index >= rayTailSegments) return null;
+    const start = radiusAt(index);
+    const end = radiusAt(index + 1);
+    return (
+      <group
+        ref={(node) => { linkRefs.current[index] = node; }}
+        position={[index === 0 ? 0 : -length, 0, 0]}
+      >
+        {/* A ball at every joint keeps the tail closed where two links bend apart. */}
+        <mesh>
+          <sphereGeometry args={[start, 8, 6]} />
+          <meshToonMaterial color={color} />
+        </mesh>
+        <mesh position={[-length / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[start, end, length, 8]} />
+          <meshToonMaterial color={color} />
+        </mesh>
+        {index === rayTailSegments - 1 && (
+          <mesh position={[-length, 0, 0]}>
+            <sphereGeometry args={[end, 8, 6]} />
+            <meshToonMaterial color={color} />
+          </mesh>
+        )}
+        {link(index + 1)}
+      </group>
+    );
+  };
+
+  return (
+    <BodyAttachment anchor={rayTailRoot}>
+      <group position={rayTailRoot}>{link(0)}</group>
+    </BodyAttachment>
+  );
+}
+
 function RayModel(props: AquaticModelProps) {
   const colors = aquaticPalette(props.pieces, props.baseSeed, props.colorPalette);
   const disc = useMemo(() => {
@@ -190,12 +268,6 @@ function RayModel(props: AquaticModelProps) {
     shape.bezierCurveTo(-0.3, -0.94, -0.72, -0.5, -0.82, 0);
     return shape;
   }, []);
-  const tail = useMemo(() => new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-0.78, 0, 0.02),
-    new THREE.Vector3(-1.55, -0.08, 0.01),
-    new THREE.Vector3(-2.4, 0.08, 0),
-    new THREE.Vector3(-3.35, -0.06, -0.01),
-  ]), []);
   return (
     <LivingGroup animated={props.animated} scale={props.scale} motion="glide">
       <BodyProportions>
@@ -219,12 +291,7 @@ function RayModel(props: AquaticModelProps) {
           <meshToonMaterial color={colors.dark} />
         </mesh>
       ))}
-      <BodyProportions>
-        <mesh>
-          <tubeGeometry args={[tail, 40, 0.028, 7, false]} />
-          <meshToonMaterial color={colors.dark} />
-        </mesh>
-      </BodyProportions>
+      <RayTail color={colors.dark} animated={props.animated} seed={props.baseSeed ?? "ray"} />
       {[-1, 1].map((side) => (
         <BodyAttachment key={`eye-${side}`} anchor={[0.75, side * 0.24, rayEyeZ]}>
         <group position={[0.75, side * 0.24, rayEyeZ + 0.02]}>

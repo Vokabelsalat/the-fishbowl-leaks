@@ -65,7 +65,7 @@ export function ShareContribution({
           ? `Your ${activeVisualizationCopy.singular} is now swimming on the shared screen.`
           : state === "error"
             ? "The screen could not be reached. Your story is still safe on this device."
-            : `Its body and story will appear anonymously in the shared aquarium.`}
+            : `Its body and story will appear anonymously in the shared aquarium. Any artwork ratings you gave will also be submitted for exhibition evaluation.`}
       </p>
     </div>
   );

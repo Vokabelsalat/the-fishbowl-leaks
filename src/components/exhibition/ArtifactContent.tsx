@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import type { ExhibitionArtifact } from "@/types/exhibition";
 import { ScrollNotice } from "@/components/ui/ScrollNotice";
+import { ArtworkFeedback } from "@/components/exhibition/ArtworkFeedback";
 
 type ArtifactContentProps = {
   artifact: ExhibitionArtifact;
@@ -21,7 +22,7 @@ export function ArtifactContent({ artifact, onContinue, mini = false }: Artifact
     >
       <ScrollNotice
         containerRef={contentRef}
-        label="More artwork details below"
+        label="Artwork details and feedback below"
       />
 
       <button
@@ -51,6 +52,8 @@ export function ArtifactContent({ artifact, onContinue, mini = false }: Artifact
             <p className="mt-4 text-sm text-white/50">Traits carried forward: {artifact.visualTraits.join(" · ")}</p>
           </div>
         )}
+
+        <ArtworkFeedback artifactId={artifact.id} />
       </div>
 
       <button

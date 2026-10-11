@@ -582,11 +582,35 @@ function isMouthSkin(object: THREE.Object3D) {
 }
 
 type TraitMouth = { y: number; x?: number; facing?: "forward" | "viewer" };
-type TraitLayout = { x: number; y: number; cx: number; cy: number; z: number; scale: number; vertical?: boolean; mouth: TraitMouth };
+/** `radial` bodies are flat discs facing the viewer: traits grow out of the rim and from the front and back faces. */
+type TraitLayout = { x: number; y: number; cx: number; cy: number; z: number; scale: number; vertical?: boolean; radial?: boolean; mouth: TraitMouth };
 
 const flankTilt = { flat: 1.1, volumetric: 0.35 };
 
-function mountRotation(mount: TraitMount, vertical: boolean | undefined, volumetric: boolean) {
+/**
+ * Where a trait sits on a radial body, as an angle around the centre. Rim traits spread over the
+ * upper and lower halves. Face traits each take an arm, since the dips between arms are too narrow
+ * to hold them; on the front the top arm stays free for the eyes.
+ */
+function radialAngle(mount: TraitMount, along: number) {
+  if (mount === "top") return Math.PI / 2 - along * Math.PI * 0.9;
+  if (mount === "bottom") return -Math.PI / 2 + along * Math.PI * 0.9;
+  const arms = mount === "right" ? [1, 2, 3, 4] : [0, 1, 2, 3, 4];
+  const arm = arms[THREE.MathUtils.clamp(Math.floor((along + 0.5) * arms.length), 0, arms.length - 1)];
+  return Math.PI / 2 + (arm / 5) * Math.PI * 2;
+}
+
+/** How far out along an arm face traits sit, as a share of the rim's reach. */
+const radialFaceReach = 0.6;
+
+function mountRotation(layout: TraitLayout, mount: TraitMount, along: number, volumetric: boolean) {
+  const { vertical } = layout;
+  if (layout.radial) {
+    const angle = radialAngle(mount, along);
+    // Rim traits point straight out of the rim; face traits lean outward from the centre.
+    if (mount === "top" || mount === "bottom") return new THREE.Euler(0, 0, angle - Math.PI / 2);
+    return new THREE.Euler(Math.PI / 2 - flankTilt[volumetric ? "volumetric" : "flat"], 0, angle - Math.PI / 2, "ZYX");
+  }
   if (mount === "left" || mount === "right") {
     // The left flank is the right flank mirrored (see mountMirror), so both use the same rotation.
     return new THREE.Euler(Math.PI / 2 - flankTilt[volumetric ? "volumetric" : "flat"], 0, 0);
@@ -607,6 +631,20 @@ const mouthRotations = {
 };
 
 function mountGeometry(layout: TraitLayout, mount: TraitMount, along: number) {
+  if (layout.radial) {
+    const angle = radialAngle(mount, along);
+    const radial = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0);
+    if (mount === "top" || mount === "bottom") {
+      // Just above the rim's seam, so the ray meets the top skin rather than grazing the edge.
+      return { start: new THREE.Vector3(layout.cx, layout.cy, 0.02), outward: radial, reach: Math.max(layout.x, layout.y) };
+    }
+    const reach = Math.max(layout.x, layout.y) * radialFaceReach;
+    return {
+      start: new THREE.Vector3(layout.cx, layout.cy, 0).addScaledVector(radial, reach),
+      outward: new THREE.Vector3(0, 0, mount === "right" ? 1 : -1),
+      reach: layout.z,
+    };
+  }
   const axis = layout.vertical ? "y" : "x";
   const alongPosition = layout.vertical ? layout.cy + along * layout.y : layout.cx + along * layout.x;
   const start = new THREE.Vector3(layout.cx, layout.cy, 0);
@@ -660,7 +698,7 @@ const traitLayouts: Record<Exclude<AquaticForm, "fish">, TraitLayout> = {
   octopus: { x: 0.66, y: 0.68, cx: 0, cy: 0.36, z: 0.46, scale: 0.44, mouth: { y: 0.28, facing: "viewer" } },
   turtle: { x: 1.08, y: 0.54, cx: 0.04, cy: 0, z: 0.36, scale: 0.48, mouth: { x: 1.25, y: -0.04, facing: "viewer" } },
   ray: { x: 1.14, y: 0.82, cx: 0.18, cy: 0, z: 0.24, scale: 0.46, mouth: { x: 0.9, y: 0, facing: "viewer" } },
-  starfish: { x: 0.84, y: 0.84, cx: 0, cy: 0, z: 0.24, scale: 0.4, mouth: { y: -0.19, facing: "viewer" } },
+  starfish: { x: 1.62, y: 1.62, cx: 0, cy: 0, z: 0.4, scale: 0.4, radial: true, mouth: { y: -0.19, facing: "viewer" } },
   seahorse: { x: 0.48, y: 1.06, cx: 0, cy: 0.02, z: 0.3, scale: 0.38, vertical: true, mouth: { y: 1.1 } },
   seal: { x: 1.16, y: 0.48, cx: 0, cy: 0.02, z: 0.35, scale: 0.48, mouth: { x: 1.12, y: 0.16, facing: "viewer" } },
   shrimp: { x: 1.08, y: 0.4, cx: 0, cy: 0.08, z: 0.28, scale: 0.4, mouth: { y: 0.1 } },
@@ -731,7 +769,7 @@ export function TraitMarks({
         const fallback = atMouth ? mouthGeometry(layout) : mountGeometry(layout, mount!.mount, mount!.along);
         const position = placements[piece.artifactId] ?? fallback.start.addScaledVector(fallback.outward, fallback.reach);
         const rotation = mount
-          ? mountRotation(mount.mount, layout.vertical, volumetricPartIds.has(piece.partId))
+          ? mountRotation(layout, mount.mount, mount.along, volumetricPartIds.has(piece.partId))
           : mouthRotations[layout.mouth.facing ?? "forward"];
         const highlighted = piece.partId === highlightedPart;
         // During a reveal only the newly found trait grows, even if older traits share its part.

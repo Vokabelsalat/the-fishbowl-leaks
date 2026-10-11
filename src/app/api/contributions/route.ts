@@ -14,6 +14,7 @@ import { creatureColorPalette, isCreatureColorPalette } from "@/lib/creature/col
 import { creaturePattern, isCreaturePattern } from "@/lib/creature/patterns";
 import { creatureProportions, isCreatureProportions } from "@/lib/creature/proportions";
 import type { ContributionSubmission, SharedCreaturePart } from "@/types/contribution";
+import { isArtworkFeedback } from "@/lib/evaluation/artworkFeedback";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,12 +47,16 @@ function parseSubmission(value: unknown): ContributionSubmission | string {
       sequence: Number(item?.sequence),
       discoveredAt: Number(item?.discoveredAt),
       choiceId: typeof item?.choiceId === "string" ? item.choiceId : undefined,
+      feedback: item?.feedback,
     }))
     .sort((a, b) => a.sequence - b.sequence);
 
   for (const [index, item] of discoveries.entries()) {
     const artifact = artifactById.get(item.artifactId);
     if (!artifact) return `Unknown artifact "${item.artifactId}".`;
+    if (item.feedback !== undefined && !isArtworkFeedback(item.feedback)) {
+      return `Artifact "${item.artifactId}" has invalid ratings. Use integers from 1 to 5, or null for not applicable.`;
+    }
     if (seen.has(item.artifactId)) return `Artifact "${item.artifactId}" appears twice.`;
     if (item.sequence !== index + 1) {
       return `Discovery sequence ${item.sequence} should be ${index + 1}.`;
@@ -150,6 +155,7 @@ export async function POST(request: Request) {
       theme: artifact.theme,
       color: artifact.color,
       dwellMs: dwellTimes[index],
+      ...(discovery.feedback !== undefined ? { feedback: discovery.feedback } : {}),
     };
   });
   const narrative = generateJourneyNarrative(submission.discoveries, artifacts);

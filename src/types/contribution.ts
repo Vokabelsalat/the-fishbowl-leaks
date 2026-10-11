@@ -3,6 +3,7 @@ import type { AquaticForm } from "@/lib/creature/aquaticForms";
 import type { CreatureColorPalette } from "@/lib/creature/colorPalettes";
 import type { CreaturePattern } from "@/lib/creature/patterns";
 import type { CreatureProportions } from "@/lib/creature/proportions";
+import type { ArtworkFeedback } from "@/lib/evaluation/artworkFeedback";
 
 export type SharedCreaturePart = {
   artifactId: string;
@@ -13,6 +14,7 @@ export type SharedCreaturePart = {
   color: string;
   /** Time from this scan until the next scan or journey completion. */
   dwellMs?: number;
+  feedback?: ArtworkFeedback;
 };
 
 export type ExhibitionContribution = {
@@ -46,5 +48,6 @@ export type ContributionSubmission = {
     sequence: number;
     discoveredAt: number;
     choiceId?: string;
+    feedback?: ArtworkFeedback;
   }>;
 };

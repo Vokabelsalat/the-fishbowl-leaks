@@ -5,6 +5,7 @@ import { creatureColorPalette, type CreatureColorPalette } from "@/lib/creature/
 import { creaturePattern, type CreaturePattern } from "@/lib/creature/patterns";
 import { creatureProportions, type CreatureProportions } from "@/lib/creature/proportions";
 import type { NarrativeState } from "@/types/exhibition";
+import { isArtworkFeedback, type ArtworkFeedback, type FeedbackDimension, type FeedbackRating } from "@/lib/evaluation/artworkFeedback";
 
 export type ExperiencePhase =
   | "intro"
@@ -19,6 +20,7 @@ export type Discovery = {
   sequence: number;
   discoveredAt: number;
   choiceId?: string;
+  feedback?: ArtworkFeedback;
 };
 
 export type JourneyState = {
@@ -186,6 +188,15 @@ const journeySlice = createSlice({
         },
       );
     },
+    feedbackRated(
+      state,
+      action: PayloadAction<{ artifactId: string; dimension: FeedbackDimension; rating: FeedbackRating | null }>,
+    ) {
+      const { artifactId, dimension, rating } = action.payload;
+      const discovery = state.discoveries.find((item) => item.artifactId === artifactId);
+      if (!discovery || !isArtworkFeedback({ [dimension]: rating })) return;
+      discovery.feedback = { ...discovery.feedback, [dimension]: rating };
+    },
     setActiveArtifact(state, action: PayloadAction<string | null>) {
       state.activeArtifactId = action.payload;
     },
@@ -235,6 +246,7 @@ export const {
   artifactDetected,
   artifactRevisited,
   choiceMade,
+  feedbackRated,
   finishJourney,
   hydrateJourney,
   resetJourney,

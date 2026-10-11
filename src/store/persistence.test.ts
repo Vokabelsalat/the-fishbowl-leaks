@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeStore } from "@/store";
-import { artifactDetected, startJourney } from "@/store/journeySlice";
+import { artifactDetected, feedbackRated, startJourney } from "@/store/journeySlice";
 import {
   JOURNEY_STORAGE_KEY,
   clearJourney,
@@ -29,6 +29,18 @@ class MemoryStorage {
 }
 
 describe("journey persistence", () => {
+  it("persists partial ratings and not-applicable responses across reloads", () => {
+    const storage = new MemoryStorage();
+    const store = makeStore();
+    const unsubscribe = subscribeToJourneyPersistence(store, storage);
+    store.dispatch(startJourney({ sessionId: "session-rated", startedAt: 10 }));
+    store.dispatch(artifactDetected("body-space", 20));
+    store.dispatch(feedbackRated({ artifactId: "body-space", dimension: "narrative", rating: 4 }));
+    store.dispatch(feedbackRated({ artifactId: "body-space", dimension: "interaction", rating: null }));
+    unsubscribe();
+    expect(loadJourney(storage)?.discoveries[0].feedback).toEqual({ narrative: 4, interaction: null });
+  });
+
   it("round-trips the serializable journey fields", () => {
     const storage = new MemoryStorage();
     const persisted = {

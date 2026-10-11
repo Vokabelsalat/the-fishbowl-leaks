@@ -4,6 +4,7 @@ import type { Discovery, PersistedJourney } from "@/store/journeySlice";
 import { isCreatureColorPalette } from "@/lib/creature/colorPalettes";
 import { isCreaturePattern } from "@/lib/creature/patterns";
 import { isCreatureProportions } from "@/lib/creature/proportions";
+import { isArtworkFeedback } from "@/lib/evaluation/artworkFeedback";
 
 export const JOURNEY_STORAGE_KEY = "say-hi:journey:v1";
 
@@ -23,7 +24,8 @@ function isDiscovery(value: unknown): value is Discovery {
   return (
     typeof candidate.artifactId === "string" &&
     typeof candidate.sequence === "number" &&
-    typeof candidate.discoveredAt === "number"
+    typeof candidate.discoveredAt === "number" &&
+    (candidate.feedback === undefined || isArtworkFeedback(candidate.feedback))
   );
 }
 

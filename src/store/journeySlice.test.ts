@@ -4,6 +4,7 @@ import {
   artifactDetected,
   artifactRevisited,
   finishJourney,
+  feedbackRated,
   hydrateJourney,
   journeyReducer,
   resetJourney,
@@ -13,6 +14,23 @@ import {
 import { creatureColorPalette } from "@/lib/creature/colorPalettes";
 
 describe("journeySlice", () => {
+  it("keeps ratings per artwork, permits revisions, and does not change the narrative", () => {
+    let state = journeyReducer(undefined, artifactDetected("memory-fragment", 100));
+    state = journeyReducer(state, artifactDetected("body-space", 200));
+    const narrative = state.narrativeState;
+    state = journeyReducer(state, feedbackRated({ artifactId: "memory-fragment", dimension: "narrative", rating: 4 }));
+    state = journeyReducer(state, feedbackRated({ artifactId: "memory-fragment", dimension: "interaction", rating: null }));
+    state = journeyReducer(state, feedbackRated({ artifactId: "body-space", dimension: "narrative", rating: 2 }));
+    state = journeyReducer(state, artifactRevisited("memory-fragment"));
+    state = journeyReducer(state, feedbackRated({ artifactId: "memory-fragment", dimension: "narrative", rating: 5 }));
+    expect(state.discoveries[0].feedback).toEqual({ narrative: 5, interaction: null });
+    expect(state.discoveries[1].feedback).toEqual({ narrative: 2 });
+    expect(state.discoveries).toHaveLength(2);
+    expect(state.narrativeState).toEqual(narrative);
+    const unchanged = journeyReducer(state, feedbackRated({ artifactId: "unscanned", dimension: "interaction", rating: 3 }));
+    expect(unchanged).toEqual(state);
+  });
+
   it("starts a reproducible journey session", () => {
     const state = journeyReducer(
       undefined,

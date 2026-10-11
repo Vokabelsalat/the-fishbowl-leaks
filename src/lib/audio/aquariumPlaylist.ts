@@ -1,12 +1,12 @@
 import { renderAquariumScore } from "./aquariumScore";
-import { renderAquariumPiano } from "./aquariumPiano";
+import { renderAquariumDrift } from "./aquariumDrift";
 import { renderAquariumHarp } from "./aquariumHarp";
 
-export const aquariumTracks = ["Below the glass · ambient", "Tidal memories · piano", "Threads of the tide · harp"];
+export const aquariumTracks = ["Below the glass · ambient", "Pressure drift · drones", "Threads of the tide · harp"];
 export const trackSeconds = 96;
 
 export async function renderAquariumPlaylist() {
-  const renderers = [renderAquariumScore, renderAquariumPiano, renderAquariumHarp];
+  const renderers = [renderAquariumScore, renderAquariumDrift, renderAquariumHarp];
   const rate = 22050;
   const playlist = new AudioBuffer({ numberOfChannels: 2, length: rate * trackSeconds * renderers.length, sampleRate: rate });
   let offset = 0;

@@ -131,7 +131,7 @@ const turtleFlipperGeometry = (() => {
   shape.bezierCurveTo(0.6, 0.03, 0.3, 0.11, 0, 0.07);
   shape.closePath();
   const depth = 0.02;
-  return new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: 0.022, bevelSize: 0.02, bevelSegments: 3, curveSegments: 16 })
+  return new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: 0.022, bevelSize: 0.02, bevelSegments: 1, curveSegments: 16 })
     .translate(0, 0, -depth / 2);
 })();
 const turtleHead = { center: [1.12, 0.02, 0] as Point3, radii: [0.46 * 0.75, 0.38 * 0.75, 0.34 * 0.75] as Point3 };
@@ -906,7 +906,7 @@ const fleshyFinEdge = 0.009;
 function FleshyFin({ shape, color, name }: { shape: THREE.Shape; color: string; name?: string }) {
   return (
     <mesh name={name} position={[0, 0, -fleshyFinThickness / 2]}>
-      <extrudeGeometry args={[shape, { depth: fleshyFinThickness, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.012, bevelThickness: fleshyFinEdge, curveSegments: 16 }]} />
+      <extrudeGeometry args={[shape, { depth: fleshyFinThickness, bevelEnabled: true, bevelSegments: 1, bevelSize: 0.012, bevelThickness: fleshyFinEdge, curveSegments: 16 }]} />
       <meshToonMaterial color={color} />
     </mesh>
   );

@@ -9,7 +9,7 @@ import { detailRecipeOf, type DetailRecipe } from "@/lib/creature/geometryDetail
  * Roughly how many on-screen pixels one segment of a rounded outline may span. The full-detail
  * models already use about 11 pixels per segment at their size in the aquarium.
  */
-const pixelsPerSegment = 8;
+const pixelsPerSegment = 14;
 /** Creatures grow and shrink as they swim through the depth; detail allows for this much growth. */
 const growthAllowance = 1.3;
 /** Shapes without a single around-count, like extrusions, are assumed to start with this many. */

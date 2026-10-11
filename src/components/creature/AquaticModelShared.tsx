@@ -201,7 +201,8 @@ function curve(points: Array<[number, number, number]>) {
 }
 
 // Moves a geometry so it is centred on x and its lowest point sinks `sink` below the skin.
-const flatExtrude = { depth: 0.04, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 3, curveSegments: 18 };
+// A single bevel step keeps the outline and thickness of a rounded one; on parts this thin it reads the same at half the triangles.
+const flatExtrude = { depth: 0.04, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 1, curveSegments: 18 };
 const thinExtrude = { ...flatExtrude, depth: 0.015, bevelThickness: 0.012, bevelSize: 0.012 };
 
 const traitShapes = {

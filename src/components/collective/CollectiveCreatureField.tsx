@@ -614,8 +614,8 @@ const FloatingCreature = memo(function FloatingCreature({
               pieces={contribution.parts}
               baseSeed={contribution.publicId}
               colorPalette={contribution.creaturePalette}
-            pattern={patternForTraitCount(contribution.creaturePattern, contribution.parts.length)}
-            proportions={contribution.creatureProportions}
+              pattern={patternForTraitCount(contribution.creaturePattern, contribution.parts.length)}
+              proportions={contribution.creatureProportions}
               scale={placement.scale * formScale * individualScale}
               animated
               grounded={isBottomDweller}
@@ -911,7 +911,7 @@ function createBaby(event: PairingEvent): BabyCreature {
 /** The sharpest the aquarium renders, in device pixels per CSS pixel, on screens that have that many. */
 const sharpestPixelRatio = 1.35;
 /** How far the resolution may drop while frames come too slowly, as a share of the sharpest. */
-const lowestResolutionShare = 0.6;
+const lowestResolutionShare = 0.7;
 
 /** The pixel ratio for a performance factor from 0 (struggling) to 1 (comfortable), in steps of 0.05. */
 function pixelRatioFor(factor: number) {

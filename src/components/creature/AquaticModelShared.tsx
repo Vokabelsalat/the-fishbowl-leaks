@@ -259,8 +259,6 @@ const traitGeometries = {
     const radius = 0.03 * Math.exp(angle * 0.28);
     return [Math.cos(angle) * radius, Math.sin(angle) * radius, 0] as [number, number, number];
   })), 0.02, 6.5, detail))),
-  // A drop swelling at the end of a thin neck, as if it is just slipping out of the body.
-  droplet: new THREE.LatheGeometry(smoothProfile([[0.001, 0], [0.07, 0.02], [0.05, 0.14], [0.13, 0.32], [0.2, 0.48], [0.18, 0.62], [0.1, 0.7], [0.001, 0.72]]), 24),
   polyp: new THREE.LatheGeometry(smoothProfile([[0.001, 0], [0.16, 0.01], [0.08, 0.14], [0.07, 0.26], [0.17, 0.36], [0.18, 0.44], [0.08, 0.5], [0.001, 0.48]]), 22),
 };
 traitGeometries.thorn.computeVertexNormals();
@@ -293,6 +291,51 @@ function StreamingLines({ color, highlighted }: { color: string; highlighted: bo
   );
 }
 
+/** Bubbles of tank water welling out of the skin: x, y, z and radius, largest at the pore, smaller as they rise. */
+const seepingBubbles: Array<[number, number, number, number]> = [
+  [0, 0.05, 0, 0.13],
+  [0.15, 0.04, 0.03, 0.075],
+  [-0.13, 0.03, -0.02, 0.065],
+  [0.04, 0.27, 0, 0.09],
+  [-0.08, 0.42, 0.02, 0.062],
+  [0.09, 0.51, -0.02, 0.046],
+  [-0.02, 0.63, 0, 0.034],
+  [0.06, 0.73, 0, 0.024],
+];
+
+// A cluster of glassy bubbles seeping out through the skin, as if the creature itself is leaking.
+function SeepingBubbles({ color, highlighted }: { color: string; highlighted: boolean }) {
+  const bubbleRefs = useRef<Array<THREE.Group | null>>([]);
+
+  useFrame(({ clock }) => {
+    bubbleRefs.current.forEach((bubble, index) => {
+      if (!bubble || index < 3) return;
+      // Risen bubbles wobble a little as they drift; the ones still welling out of the pore stay put.
+      const [x, y] = seepingBubbles[index];
+      bubble.position.x = x + Math.sin(clock.elapsedTime * 1.3 + index * 1.7) * 0.018;
+      bubble.position.y = y + Math.sin(clock.elapsedTime * 0.9 + index) * 0.012;
+    });
+  });
+
+  return (
+    <>
+      {seepingBubbles.map(([x, y, z, radius], index) => (
+        <group key={index} position={[x, y, z]} ref={(node) => { bubbleRefs.current[index] = node; }}>
+          <mesh>
+            <sphereGeometry args={[radius, 18, 14]} />
+            <TraitMaterial color={color} highlighted={highlighted} opacity={0.55} glow={0.5} />
+          </mesh>
+          {/* A glint on each bubble's upper side reads as curved, glassy water. */}
+          <mesh position={[-radius * 0.42, radius * 0.47, radius * 0.69]} scale={[1, 0.7, 0.45]}>
+            <sphereGeometry args={[radius * 0.22, 8, 6]} />
+            <meshBasicMaterial color="#FFFFFF" transparent opacity={0.75} />
+          </mesh>
+        </group>
+      ))}
+    </>
+  );
+}
+
 // One form per part, built in a mount frame: origin on the skin, +y pointing away from the body
 // and +x pointing toward the head. Every form stands in the xy plane so it reads from any side.
 function AquaticTraitForm({ partId, color, highlighted }: { partId: CreaturePartId; color: string; highlighted: boolean }) {
@@ -321,7 +364,7 @@ function AquaticTraitForm({ partId, color, highlighted }: { partId: CreaturePart
     case "crystal-spines":
       return <mesh geometry={traitGeometries.thorn}><TraitMaterial color={color} highlighted={highlighted} opacity={0.86} /></mesh>;
     case "helping-arms":
-      return <mesh position={[0, -0.03, 0]} geometry={traitGeometries.droplet}><TraitMaterial color={color} highlighted={highlighted} opacity={0.82} glow={0.4} /></mesh>;
+      return <SeepingBubbles color={color} highlighted={highlighted} />;
     case "surfer-feet":
       return <mesh position={[0, -0.06, -0.02]}><extrudeGeometry args={[traitShapes.surfFin, flatExtrude]} />{material}</mesh>;
     case "sand-hourglass":

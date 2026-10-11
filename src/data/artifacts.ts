@@ -748,8 +748,8 @@ const exhibitionSources: ArtifactSource[] = [
     narrativeWords: ["contain", "leak", "gather", "evolve"],
     creaturePart: {
       id: "helping-arms",
-      label: "Leak droplet",
-      description: "A drop of the tank that slipped through the glass and carries the collective with it.",
+      label: "Seeping bubbles",
+      description: "Bubbles of the tank welling out through the skin, as if the creature itself is leaking the collective into open water.",
     },
   },
   {

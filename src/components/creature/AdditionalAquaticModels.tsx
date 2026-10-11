@@ -706,7 +706,9 @@ function onRoundedSurface(outline: Outline, widthRatio: number, points: Array<[n
   return new THREE.CatmullRomCurve3(points.map(([x, y]) => new THREE.Vector3(x, y, side * roundedSurfaceZ(outline, widthRatio, x, y))));
 }
 
-const fleshyFinThickness = 0.03;
+const fleshyFinThickness = 0.012;
+/** How far the rounded edge swells out of each face; the fin is about 0.03 thick in all. */
+const fleshyFinEdge = 0.009;
 
 /**
  * A pectoral fin with a fish fin's Bézier outline, but solid and fleshy like a marine mammal's
@@ -715,7 +717,7 @@ const fleshyFinThickness = 0.03;
 function FleshyPectoralFin({ style, color }: { style: PectoralFinStyle; color: string }) {
   return (
     <mesh position={[0, 0, -fleshyFinThickness / 2]}>
-      <extrudeGeometry args={[style.shape, { depth: fleshyFinThickness, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.022, bevelThickness: 0.022, curveSegments: 16 }]} />
+      <extrudeGeometry args={[style.shape, { depth: fleshyFinThickness, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.012, bevelThickness: fleshyFinEdge, curveSegments: 16 }]} />
       <meshToonMaterial color={color} />
     </mesh>
   );

@@ -8,6 +8,7 @@ import type { AquaticModelProps } from "@/components/creature/AquaticCreatureMod
 import type { AquaticForm } from "@/lib/creature/aquaticForms";
 import { PatternedToonMaterial } from "@/components/creature/CreaturePatternMaterial";
 import { BodyAttachment, BodyProportions } from "@/components/creature/CreatureLook";
+import { withDetailRecipe } from "@/lib/creature/geometryDetail";
 
 type AdditionalForm = Exclude<AquaticForm, "fish" | "crab" | "jellyfish" | "octopus">;
 
@@ -476,6 +477,106 @@ function ShrimpModel(props: AquaticModelProps) {
   );
 }
 
+/** A side-view outline that answers where its top and bottom edges are at any x. */
+type Outline = { minX: number; maxX: number; span: (x: number) => [number, number] | null };
+
+function outlineOf(shape: THREE.Shape): Outline {
+  const points = shape.getPoints(24);
+  const xs = points.map((point) => point.x);
+  return {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    span(x) {
+      let bottom = Infinity;
+      let top = -Infinity;
+      for (let index = 0; index < points.length; index += 1) {
+        const a = points[index];
+        const b = points[(index + 1) % points.length];
+        if ((a.x - x) * (b.x - x) > 0 || a.x === b.x) continue;
+        const y = a.y + ((x - a.x) / (b.x - a.x)) * (b.y - a.y);
+        bottom = Math.min(bottom, y);
+        top = Math.max(top, y);
+      }
+      return top > bottom ? [bottom, top] : null;
+    },
+  };
+}
+
+/**
+ * Turns a side-view outline into a rounded, stretched sphere: every cross-section is an ellipse
+ * as tall as the outline there and `widthRatio` as wide. With `cover`, only the part of the
+ * surface below that second outline is built, so a belly can be laid over the body.
+ */
+function roundedBody(shape: THREE.Shape, widthRatio: number, cover?: THREE.Shape, inflate = 1) {
+  const outline = outlineOf(shape);
+  const covered = cover ? outlineOf(cover) : null;
+  return withDetailRecipe(32, (detail) => {
+    const stations = Math.max(10, Math.round(48 * detail));
+    const around = Math.max(8, Math.round(32 * detail));
+    const positions: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
+    const inset = (outline.maxX - outline.minX) * 0.002;
+    for (let station = 0; station <= stations; station += 1) {
+      // Cosine spacing packs more rings into the rounded nose and tail.
+      const t = (1 - Math.cos((station / stations) * Math.PI)) / 2;
+      const x = THREE.MathUtils.clamp(outline.minX + (outline.maxX - outline.minX) * t, outline.minX + inset, outline.maxX - inset);
+      const [bottom, top] = outline.span(x) ?? [0, 0];
+      const atEnd = station === 0 || station === stations;
+      const center = (top + bottom) / 2;
+      const radiusY = atEnd ? 0 : ((top - bottom) / 2) * inflate;
+      const radiusZ = radiusY * widthRatio;
+      // A belly runs from its top edge on the near side, under the body, to the same height on the far side.
+      let from = Math.PI / 2;
+      let to = -1.5 * Math.PI;
+      if (covered) {
+        const coverSpan = x >= covered.minX && x <= covered.maxX ? covered.span(x) : null;
+        const reach = coverSpan && radiusY > 0 ? THREE.MathUtils.clamp((coverSpan[1] - center) / radiusY, -1, 1) : -1;
+        from = Math.asin(reach);
+        to = -Math.PI - from;
+      }
+      for (let step = 0; step <= around; step += 1) {
+        const angle = from + (to - from) * (step / around);
+        const y = center + radiusY * Math.sin(angle);
+        positions.push(x, y, radiusZ * Math.cos(angle));
+        uvs.push(x, y);
+      }
+    }
+    for (let station = 0; station < stations; station += 1) {
+      for (let step = 0; step < around; step += 1) {
+        const a = station * (around + 1) + step;
+        const b = a + around + 1;
+        // Rings run toward +x and steps run down the near side, so this order faces the triangles outward.
+        indices.push(a, a + 1, b, b, a + 1, b + 1);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  });
+}
+
+/** How far out of the side of a `roundedBody` the skin sits at a given height, so marks can lie on it. */
+function roundedSurfaceZ(outline: Outline, widthRatio: number, x: number, y: number, lift = 0.006) {
+  const span = outline.span(THREE.MathUtils.clamp(x, outline.minX, outline.maxX));
+  if (!span) return 0;
+  const center = (span[0] + span[1]) / 2;
+  const radiusY = (span[1] - span[0]) / 2;
+  const height = THREE.MathUtils.clamp((y - center) / radiusY, -1, 1);
+  return radiusY * widthRatio * Math.sqrt(1 - height * height) + lift;
+}
+
+/** Moves each point of a side-view line onto the near (or far) skin of a `roundedBody`. */
+function onRoundedSurface(outline: Outline, widthRatio: number, points: Array<[number, number]>, side = 1) {
+  return new THREE.CatmullRomCurve3(points.map(([x, y]) => new THREE.Vector3(x, y, side * roundedSurfaceZ(outline, widthRatio, x, y))));
+}
+
+const whaleWidthRatio = 0.72;
+const dolphinWidthRatio = 0.74;
+
 function ArticulatedMammalTail({
   animated,
   colors,
@@ -528,7 +629,7 @@ function BlueWhaleTail({
     shape.bezierCurveTo(-0.94, 0, -0.94, -0.025, -0.9, -0.05);
     shape.bezierCurveTo(-0.6, -0.09, -0.24, -0.13, 0.08, -0.16);
     shape.closePath();
-    return shape;
+    return roundedBody(shape, 1);
   }, []);
   useFrame(({ clock }) => {
     if (animated === false) return;
@@ -539,8 +640,7 @@ function BlueWhaleTail({
 
   return (
     <group ref={stemRef} position={[-1.62, 0.08, 0]}>
-      <mesh name="Blue whale tail stock" position={[0, 0, -0.16]}>
-        <extrudeGeometry args={[stem, { depth: 0.32, bevelEnabled: true, bevelSegments: 1, bevelSize: 0.045, bevelThickness: 0.04, curveSegments: 12 }]} />
+      <mesh name="Blue whale tail stock" geometry={stem}>
         <PatternedToonMaterial color={colors.body} repeat={[0.8, 0.8]} wraps={false} />
       </mesh>
       <group ref={flukesRef} position={[-0.87, 0, 0]} rotation={[0.52, 0, 0]}>
@@ -605,38 +705,29 @@ function BlueWhaleModel(props: AquaticModelProps) {
     shape.closePath();
     return shape;
   }, []);
-  const mouth = useMemo(() => new THREE.CatmullRomCurve3([
-    new THREE.Vector3(1.73, -0.02, 0.245),
-    new THREE.Vector3(1.25, -0.11, 0.245),
-    new THREE.Vector3(0.7, -0.17, 0.245),
-    new THREE.Vector3(0.18, -0.18, 0.245),
-  ]), []);
+  const bodyGeometry = useMemo(() => roundedBody(body, whaleWidthRatio), [body]);
+  const bellyGeometry = useMemo(() => roundedBody(body, whaleWidthRatio, belly, 1.012), [body, belly]);
+  const outline = useMemo(() => outlineOf(body), [body]);
+  const mouth = useMemo(() => onRoundedSurface(outline, whaleWidthRatio, [[1.73, -0.02], [1.25, -0.11], [0.7, -0.17], [0.18, -0.18]]), [outline]);
   const throatGrooves = useMemo(() => Array.from({ length: 7 }, (_, index) => {
     const y = -0.22 - index * 0.034;
     const endX = 0.05 - index * 0.07;
-    return new THREE.CatmullRomCurve3([
-      new THREE.Vector3(1.52 - index * 0.025, y + 0.05, 0.25),
-      new THREE.Vector3(1.08, y, 0.25),
-      new THREE.Vector3(0.55, y - 0.015, 0.25),
-      new THREE.Vector3(endX, y + 0.01, 0.25),
-    ]);
-  }), []);
+    return onRoundedSurface(outline, whaleWidthRatio, [[1.52 - index * 0.025, y + 0.05], [1.08, y], [0.55, y - 0.015], [endX, y + 0.01]]);
+  }), [outline]);
+  const eyeZ = useMemo(() => roundedSurfaceZ(outline, whaleWidthRatio, 1.25, 0.09, 0), [outline]);
 
   return (
     <LivingGroup animated={props.animated} scale={props.scale} motion="glide">
       <BodyProportions>
         <BlueWhaleTail animated={props.animated} colors={colors} />
       </BodyProportions>
-      {/* Whales only ever swim across the frame without turning, so their parts are kept flat:
-          one bevel step keeps each outline while dropping the rounded edge. */}
+      {/* The body is a stretched sphere following the side outline; the pale belly wraps under it. */}
       <BodyProportions>
-        <mesh name="Blue whale body" position={[0, 0, -0.22]}>
-          <extrudeGeometry args={[body, { depth: 0.44, bevelEnabled: true, bevelSegments: 1, bevelSize: 0.07, bevelThickness: 0.065, curveSegments: 16 }]} />
+        <mesh name="Blue whale body" geometry={bodyGeometry}>
           <PatternedToonMaterial color={colors.body} repeat={[0.8, 0.8]} wraps={false} />
         </mesh>
-        <mesh name="Blue whale belly" position={[0, 0, 0.24]}>
-          <shapeGeometry args={[belly, 12]} />
-          <meshToonMaterial color={colors.light} side={THREE.DoubleSide} />
+        <mesh name="Blue whale belly" geometry={bellyGeometry}>
+          <meshToonMaterial color={colors.light} />
         </mesh>
       </BodyProportions>
       <BodyAttachment anchor={[0, 0.57, 0]}>
@@ -670,8 +761,8 @@ function BlueWhaleModel(props: AquaticModelProps) {
         ))}
       </BodyProportions>
       {[-1, 1].map((side) => (
-        <BodyAttachment key={`eye-${side}`} anchor={[1.25, 0.09, side * 0.255]}>
-        <group name={`Blue whale ${side > 0 ? "near" : "far"} eye`} position={[1.25, 0.09, side * 0.255]}>
+        <BodyAttachment key={`eye-${side}`} anchor={[1.25, 0.09, side * eyeZ]}>
+        <group name={`Blue whale ${side > 0 ? "near" : "far"} eye`} position={[1.25, 0.09, side * eyeZ]}>
           <mesh scale={[0.075, 0.07, 0.035]}>
             <sphereGeometry args={[1, 14, 10]} />
             <meshToonMaterial color="#F3F0E8" />
@@ -712,7 +803,7 @@ function DolphinTail({
     shape.bezierCurveTo(-0.8, 0, -0.8, -0.025, -0.75, -0.045);
     shape.bezierCurveTo(-0.5, -0.08, -0.2, -0.11, 0.06, -0.14);
     shape.closePath();
-    return shape;
+    return roundedBody(shape, 1);
   }, []);
   useFrame(({ clock }) => {
     if (animated === false) return;
@@ -723,8 +814,7 @@ function DolphinTail({
 
   return (
     <group ref={stemRef} position={[-1.2, 0.05, 0]}>
-      <mesh name="Dolphin tail stock" position={[0, 0, -0.13]}>
-        <extrudeGeometry args={[stem, { depth: 0.26, bevelEnabled: true, bevelSegments: 2, bevelSize: 0.038, bevelThickness: 0.035, curveSegments: 12 }]} />
+      <mesh name="Dolphin tail stock" geometry={stem}>
         <PatternedToonMaterial color={colors.body} repeat={[0.8, 0.8]} wraps={false} />
       </mesh>
       <group ref={flukesRef} position={[-0.73, 0, 0]} rotation={[0.54, 0, 0]}>
@@ -788,6 +878,9 @@ function DolphinModel(props: AquaticModelProps) {
     shape.closePath();
     return shape;
   }, []);
+  const bodyGeometry = useMemo(() => roundedBody(body, dolphinWidthRatio), [body]);
+  const bellyGeometry = useMemo(() => roundedBody(body, dolphinWidthRatio, belly, 1.012), [body, belly]);
+  const eyeZ = useMemo(() => roundedSurfaceZ(outlineOf(body), dolphinWidthRatio, 1.17, 0.13, 0), [body]);
   const mouth = useMemo(() => new THREE.CatmullRomCurve3([
     new THREE.Vector3(1.75, -0.045, 0.095),
     new THREE.Vector3(1.55, -0.055, 0.12),
@@ -799,13 +892,11 @@ function DolphinModel(props: AquaticModelProps) {
     <LivingGroup animated={props.animated} scale={props.scale} motion="glide">
       <BodyProportions>
         <DolphinTail animated={props.animated} colors={colors} />
-        <mesh name="Dolphin body" position={[0, 0, -0.19]}>
-          <extrudeGeometry args={[body, { depth: 0.38, bevelEnabled: true, bevelSegments: 2, bevelSize: 0.06, bevelThickness: 0.055, curveSegments: 16 }]} />
+        <mesh name="Dolphin body" geometry={bodyGeometry}>
           <PatternedToonMaterial color={colors.body} repeat={[0.8, 0.8]} wraps={false} />
         </mesh>
-        <mesh name="Dolphin belly" position={[0, 0, 0.205]}>
-          <shapeGeometry args={[belly, 12]} />
-          <meshToonMaterial color={colors.light} side={THREE.DoubleSide} />
+        <mesh name="Dolphin belly" geometry={bellyGeometry}>
+          <meshToonMaterial color={colors.light} />
         </mesh>
       </BodyProportions>
       <BodyAttachment anchor={[1.2, -0.035, 0]}>
@@ -843,8 +934,8 @@ function DolphinModel(props: AquaticModelProps) {
         </mesh>
       </BodyProportions>
       {[-1, 1].map((side) => (
-        <BodyAttachment key={`eye-${side}`} anchor={[1.17, 0.13, side * 0.215]}>
-        <group name={`Dolphin ${side > 0 ? "near" : "far"} eye`} position={[1.17, 0.13, side * 0.215]}>
+        <BodyAttachment key={`eye-${side}`} anchor={[1.17, 0.13, side * eyeZ]}>
+        <group name={`Dolphin ${side > 0 ? "near" : "far"} eye`} position={[1.17, 0.13, side * eyeZ]}>
           <mesh scale={[0.058, 0.055, 0.028]}>
             <sphereGeometry args={[1, 14, 10]} />
             <meshBasicMaterial color="#FFFFFF" />

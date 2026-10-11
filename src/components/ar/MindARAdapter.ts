@@ -88,6 +88,49 @@ type MindARNative = InstanceType<
   typeof import("mind-ar/dist/mindar-image-three.prod.js").MindARThree
 >;
 
+type MindARModules = [typeof import("mind-ar/dist/mindar-image-three.prod.js"), typeof THREEType];
+
+let modulesPreload: Promise<MindARModules> | null = null;
+const targetPreloads = new Map<string, Promise<boolean>>();
+
+function loadModules() {
+  modulesPreload ??= Promise.all([
+    import("mind-ar/dist/mindar-image-three.prod.js"),
+    import("three"),
+  ]).catch((error) => {
+    modulesPreload = null;
+    throw error;
+  });
+  return modulesPreload;
+}
+
+/** Downloads the target bundle into the browser cache, where MindAR's own request finds it; false if it is missing. */
+function loadTargets(imageTargetSrc: string) {
+  let preload = targetPreloads.get(imageTargetSrc);
+  if (!preload) {
+    preload = fetch(imageTargetSrc)
+      .then(async (response) => {
+        if (response.ok) await response.arrayBuffer();
+        return response.ok;
+      })
+      .catch((error) => {
+        targetPreloads.delete(imageTargetSrc);
+        throw error;
+      });
+    targetPreloads.set(imageTargetSrc, preload);
+  }
+  return preload;
+}
+
+/**
+ * Starts downloading MindAR, Three.js and the target bundle before the camera is asked for, so
+ * pressing "Start camera" only has to wait for the camera and the tracker to warm up.
+ */
+export function preloadMindAR(imageTargetSrc: string) {
+  void loadModules().catch(() => {});
+  void loadTargets(imageTargetSrc).catch(() => {});
+}
+
 export class MindARAdapter {
   private instance: MindARNative | null = null;
   private particles = new Map<number, NativeParticle>();
@@ -116,11 +159,12 @@ export class MindARAdapter {
       );
     }
 
-    const targetResponse = await fetch(this.options.imageTargetSrc, {
-      method: "HEAD",
-      cache: "no-store",
-    });
-    if (!targetResponse.ok) {
+    // Usually already under way since preloadMindAR, so this mostly waits for what is left.
+    const [targetsFound, modules] = await Promise.all([
+      loadTargets(this.options.imageTargetSrc).catch(() => true),
+      loadModules().catch((error: unknown) => error),
+    ]);
+    if (!targetsFound) {
       throw new ARAdapterError(
         "missing-targets",
         `No compiled MindAR target file was found at ${this.options.imageTargetSrc}.`,
@@ -129,11 +173,8 @@ export class MindARAdapter {
     if (this.stopped) return;
 
     try {
-      const [{ MindARThree }, THREE] = await Promise.all([
-        import("mind-ar/dist/mindar-image-three.prod.js"),
-        import("three"),
-      ]);
-      if (this.stopped) return;
+      if (!Array.isArray(modules)) throw modules;
+      const [{ MindARThree }, THREE] = modules as MindARModules;
       const mindar = new MindARThree({
         container,
         imageTargetSrc: this.options.imageTargetSrc,

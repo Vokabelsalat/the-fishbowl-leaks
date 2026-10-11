@@ -18,6 +18,8 @@ import { artifacts } from "@/data/artifacts";
 import { targetBundleVersion } from "@/data/targetBundle";
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 
+const imageTargetSrc = `/api/targets?v=${targetBundleVersion}`;
+
 const orbitCategories = Array.from(
   new Map(artifacts.map(({ theme, color }) => [theme, color])).entries(),
 );
@@ -122,6 +124,19 @@ function ARScannerComponent(
     [],
   );
 
+  // Fetch the tracker and its targets while the visitor reads the intro, not after they tap.
+  useEffect(() => {
+    let cancelled = false;
+    void import("@/components/ar/MindARAdapter")
+      .then(({ preloadMindAR }) => {
+        if (!cancelled) preloadMindAR(imageTargetSrc);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     onTargetFoundRef.current = onTargetFound;
     onTargetLostRef.current = onTargetLost;
@@ -146,7 +161,7 @@ function ARScannerComponent(
       const { MindARAdapter } = await import("@/components/ar/MindARAdapter");
       if (attempt !== startAttemptRef.current) return;
       const adapter = new MindARAdapter({
-        imageTargetSrc: `/api/targets?v=${targetBundleVersion}`,
+        imageTargetSrc,
         targets: artifacts.map(
           ({ id, targetIndex, particleForm, color }) => ({
             id,

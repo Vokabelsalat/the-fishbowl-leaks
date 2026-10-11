@@ -114,7 +114,16 @@ type CreatureMotion = {
   vx: number;
   vy: number;
   vz: number;
+  /** How far the creature's body reaches from its centre at unit depth scale; 0 until measured, and for whales. */
+  radius: number;
 };
+
+/** Share of a creature's measured size that counts as its body when creatures keep their distance. */
+const collisionBodyShare = 0.8;
+/** How quickly overlapping creatures are eased apart, per second. */
+const collisionPushRate = 2.6;
+/** How strongly a push also turns a creature away, so it swims off instead of being shoved along. */
+const collisionSteer = 1.4;
 
 /** A follower's place in its school, relative to the leader and its direction of travel. */
 type SchoolPlace = { leaderId: number; along: number; across: number; depth: number };
@@ -240,6 +249,7 @@ const FloatingCreature = memo(function FloatingCreature({
   });
   const motion = useRef<CreatureMotion>({
     initialized: false,
+    radius: 0,
     x: 0,
     y: 0,
     z: placement.z,
@@ -422,6 +432,16 @@ const FloatingCreature = memo(function FloatingCreature({
     if (!isWhale) state.x = THREE.MathUtils.clamp(state.x, -maxX, maxX);
     if (!isBottomDweller) state.y = THREE.MathUtils.clamp(state.y, -maxY, maxY);
 
+    // Measure the body once, so creatures can keep their distance. Whales pass far behind everyone.
+    if (!isWhale && state.radius === 0) {
+      const bounds = new THREE.Box3().setFromObject(directionRef.current);
+      const worldScale = swimRef.current.getWorldScale(new THREE.Vector3()).x || 1;
+      if (!bounds.isEmpty()) {
+        const [, middle, largest] = bounds.getSize(new THREE.Vector3()).toArray().sort((a, b) => a - b);
+        state.radius = ((middle + largest) / 4 / worldScale) * collisionBodyShare;
+      }
+    }
+
     // A school follower takes its place behind the leader and matches its course.
     const schoolPlace = schoolingRef?.current.places.get(contribution.id);
     const leader = schoolPlace && schoolPlace.leaderId !== contribution.id
@@ -451,6 +471,44 @@ const FloatingCreature = memo(function FloatingCreature({
       state.z += stepZ;
       state.vx = THREE.MathUtils.damp(state.vx, leader.vx, 4, delta);
       if (!isBottomDweller) state.vy = THREE.MathUtils.damp(state.vy, leader.vy, 4, delta);
+    }
+
+    // Creatures that bump into each other drift apart. The heavier one barely gives way, so big
+    // animals shoulder small ones aside. Schools and pairing couples swim close on purpose.
+    if (!isPairing && state.radius > 0 && actorRegistry) {
+      const ownScale = depthScaleAt(state.z);
+      const ownMass = (state.radius * ownScale) ** 3;
+      for (const [otherId, otherMotion] of actorRegistry.current) {
+        const other = otherMotion.current;
+        if (otherId === contribution.id || !other.initialized || other.radius === 0) continue;
+        const otherPlace = schoolPlace && schoolingRef?.current.places.get(otherId);
+        if (otherPlace && otherPlace.leaderId === schoolPlace.leaderId) continue;
+        const dx = state.x - other.x;
+        const dy = state.y - other.y;
+        const dz = state.z - other.z;
+        const otherRadius = other.radius * depthScaleAt(other.z);
+        const reach = state.radius * ownScale + otherRadius;
+        const distanceSq = dx * dx + dy * dy + dz * dz;
+        if (distanceSq >= reach * reach) continue;
+        const distance = Math.sqrt(distanceSq);
+        // Creatures in exactly the same spot part along a direction their ids settle on.
+        const away = distance > 0.0001
+          ? movementDirection.current.set(dx / distance, dy / distance, dz / distance)
+          : movementDirection.current.set(contribution.id < otherId ? 1 : -1, 0, 0);
+        const otherMass = otherRadius ** 3;
+        const giveWay = otherMass / (ownMass + otherMass);
+        const push = (reach - distance) * giveWay;
+        const ease = 1 - Math.exp(-collisionPushRate * delta);
+        state.x += away.x * push * ease;
+        if (!isBottomDweller) state.y += away.y * push * ease;
+        state.z += away.z * push * ease;
+        state.vx += away.x * push * collisionSteer * delta * swimSpeed;
+        if (!isBottomDweller) state.vy += away.y * push * collisionSteer * delta * swimSpeed;
+        if (state.vz !== 0 && Math.sign(state.vz) !== Math.sign(away.z) && Math.abs(away.z) > 0.5) state.vz = -state.vz;
+      }
+      state.x = THREE.MathUtils.clamp(state.x, -maxX, maxX);
+      if (!isBottomDweller) state.y = THREE.MathUtils.clamp(state.y, -maxY, maxY);
+      state.z = THREE.MathUtils.clamp(state.z, backDepth, frontDepth);
     }
 
     const pairing = pairingRef?.current;

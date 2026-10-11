@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas, type ThreeEvent } from "@react-three/fiber";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { AquaticCreatureModel } from "@/components/creature/AquaticCreatureModel";
@@ -193,6 +194,7 @@ function MarineSnow({ seed }: { seed: string }) {
 /** `width` fixes the poster's size in pixels for exports; without it the poster fits the window. */
 export function CreaturePoster({ seed, width, pose }: { seed: string; width?: number; pose?: string }) {
   const initialPoses = useMemo(() => parsePoses(pose), [pose]);
+  const router = useRouter();
 
   return (
     <main className="grid min-h-dvh place-items-center bg-black">
@@ -232,6 +234,17 @@ export function CreaturePoster({ seed, width, pose }: { seed: string; width?: nu
           </h1>
         </header>
       </article>
+      {/* Exports set a fixed width; the button stays out of those captures. */}
+      {!width && (
+        <button
+          type="button"
+          className="fixed right-6 bottom-6 z-10 flex min-h-12 items-center gap-4 border border-white/40 bg-[var(--abyss)] px-5 text-base text-[var(--foam)] transition-colors hover:border-white"
+          onClick={() => router.push(`/poster?seed=${crypto.randomUUID().slice(0, 8)}`)}
+        >
+          New poster
+          <span aria-hidden="true">→</span>
+        </button>
+      )}
     </main>
   );
 }

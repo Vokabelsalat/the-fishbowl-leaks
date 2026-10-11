@@ -27,6 +27,7 @@ export const marinePalettes: readonly CreatureColorPalette[] = [
   { body: "#9f8865", head: "#766650", belly: "#dfd2af", fin: "#a27c45", marking: "#4d4639" },
   { body: "#625b91", head: "#414978", belly: "#e5dca9", fin: "#d3a943", marking: "#30354f" },
   { body: "#a65e40", head: "#7d4635", belly: "#e6d3b8", fin: "#bd815c", marking: "#4b312b" },
+  { body: "#c4473d", head: "#963232", belly: "#f0d8c6", fin: "#e0a04c", marking: "#4a2427" },
 ];
 
 function hashUnit(value: string) {

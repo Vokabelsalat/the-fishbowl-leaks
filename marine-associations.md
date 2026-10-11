@@ -1,0 +1,1258 @@
+# Marine associations for narrative writing
+
+An expansive word and image bank for *The Fishbowl Leaks*. The entries move between marine biology, ecology, sensory language, and metaphor. They are prompts rather than finished claims: terms can be combined, contradicted, made literal, or allowed to mutate across the exhibition.
+
+## Species and beings
+
+### Microscopic and drifting life
+
+- phytoplankton
+- zooplankton
+- diatoms, glass-walled and light-fed
+- dinoflagellates turning water luminous
+- coccolithophores in plates of chalk
+- cyanobacteria
+- radiolarians with mineral skeletons
+- foraminifera carrying chambered shells
+- copepods, minute grazers in the dark
+- krill moving as a single cloud
+- amphipods
+- arrow worms
+- sea butterflies, pelagic snails with wing-like feet
+- sea angels hunting through open water
+- comb jellies splitting light into rainbows
+- salps forming transparent chains
+- larval fish, not yet resembling their adult bodies
+- coral larvae searching for a place to settle
+- drifting eggs
+- marine snow crowded with microbes
+- the invisible majority of the ocean
+- a bloom seen from orbit
+- a whole food web suspended in a drop
+
+### Soft-bodied drifters
+
+- moon jelly
+- lion's mane jellyfish
+- box jellyfish
+- Portuguese man o' war, a colony mistaken for one animal
+- siphonophores assembled from specialized bodies
+- giant phantom jelly
+- upside-down jellyfish farming algae
+- immortal jellyfish returning to an earlier life stage
+- sea nettles
+- gelatinous bells
+- trailing tentacles
+- transparent bodies
+- radial symmetry
+- pulsing propulsion
+- a nervous system without a brain
+- a creature made mostly of seawater
+- a body almost indistinguishable from its environment
+
+### Cephalopods and other molluscs
+
+- common octopus
+- giant Pacific octopus
+- mimic octopus borrowing the gestures of other species
+- blue-ringed octopus, warning written in color
+- dumbo octopus hovering above the abyss
+- blanket octopus unfurling a membrane
+- vampire squid living on falling debris
+- cuttlefish speaking through skin
+- bobtail squid carrying luminous bacteria
+- reef squid flashing in polarized patterns
+- nautilus and its logarithmic chambers
+- paper nautilus making a temporary shell
+- giant squid known first through fragments
+- colossal squid with rotating hooks
+- squid ink becoming cloud, decoy, disappearance
+- chromatophores opening and closing like pixels
+- distributed intelligence in eight arms
+- an arm tasting what it touches
+- soft bodies passing through hard boundaries
+- mussels fastening themselves with byssal threads
+- oysters building reefs from generations of shells
+- scallops swimming by clapping their valves
+- limpets gripping wave-beaten rock
+- chitons armored with eight plates
+- nudibranchs wearing their chemistry as color
+- sea hares releasing purple ink
+- cone snails hunting with venomous harpoons
+- cowries polishing their shells with living mantle
+- shipworms tunnelling through submerged wood
+
+### Crustaceans and arthropods
+
+- hermit crabs inhabiting borrowed architecture
+- decorator crabs wearing fragments of their surroundings
+- spider crabs gathering into moulting congregations
+- ghost crabs reading vibrations through sand
+- fiddler crabs signalling with one enlarged claw
+- porcelain crabs filtering food with feathered mouthparts
+- horseshoe crabs, ancient shoreline visitors
+- mantis shrimp seeing polarized light
+- pistol shrimp snapping water into shock and flash
+- cleaner shrimp setting up stations on the reef
+- lobsters navigating by scent and touch
+- spiny lobsters marching in single file
+- barnacles cemented headfirst to stone and hull
+- goose barnacles drifting on wreckage
+- isopods replacing the tongue of a fish
+- whale lice travelling on living islands
+- moulting as escape from an old boundary
+- an abandoned exoskeleton still shaped like its owner
+
+### Echinoderms and strange geometries
+
+- sea stars moving on hundreds of tube feet
+- brittle stars rowing their arms across the seabed
+- basket stars unfolding fractal branches at night
+- crown-of-thorns starfish
+- sunflower sea stars
+- sea urchins grazing forests into barrens
+- sand dollars buried beneath the surface
+- heart urchins
+- sea cucumbers recycling the seafloor
+- sea pigs walking across abyssal mud
+- feather stars catching currents with many arms
+- radial bodies without a front
+- regeneration from a fragment
+- a stomach extended outside the body
+- hydraulics in miniature
+- pentagonal symmetry hidden inside flesh
+
+### Reef builders and attached lives
+
+- coral polyps building cities from their skeletons
+- staghorn coral
+- brain coral
+- elkhorn coral
+- mushroom coral
+- fire coral, an animal disguised as stone
+- soft coral bending like vegetation
+- sea fans facing the current
+- black coral growing in deep water
+- cold-water coral reefs beyond sunlight
+- anemones holding territories with stinging threads
+- tube anemones
+- hydroids branching across submerged surfaces
+- bryozoans forming lace-like colonies
+- sponges filtering the sea through porous bodies
+- glass sponges with silica scaffolds
+- barrel sponges, the redwoods of the reef
+- tunicates and sea squirts
+- colonial ascidians spreading across rock
+- individual lives disappearing into a colony
+- reef as animal architecture
+- skeleton becoming habitat after death
+
+### Fish of reefs and coasts
+
+- clownfish sheltering among anemone tentacles
+- parrotfish grinding coral into sand
+- cleaner wrasse attending larger fish
+- butterflyfish moving in pairs
+- angelfish
+- damselfish farming small algal gardens
+- surgeonfish grazing as a school
+- triggerfish defending a cone of water
+- pufferfish inflating into another shape
+- porcupinefish armoured by expansion
+- boxfish enclosed in a rigid geometry
+- lionfish opening a fan of venomous spines
+- frogfish using a lure made from its own body
+- scorpionfish disappearing into the reef
+- stonefish as animate geology
+- seahorses holding by their tails
+- pipefish, narrow as stems
+- leafy seadragons drifting as vegetation
+- mandarinfish flashing at dusk
+- gobies sharing burrows with shrimp
+- mudskippers crossing the border between water and land
+- flying fish escaping one medium through another
+- remoras travelling by attachment
+- pilot fish accompanying sharks
+- eels threading through crevices
+- moray eels breathing with open mouths
+- garden eels rising from the sand like grass
+- groupers changing sex over a lifetime
+- wrasses changing role, body, and color
+
+### Open-water fish
+
+- herring schools folding like metallic fabric
+- sardine run
+- anchovies flashing in synchrony
+- mackerel stripes
+- tuna built for continuous motion
+- swordfish crossing thermal boundaries
+- marlin with electric blue bars
+- mahi-mahi changing color after capture
+- ocean sunfish basking at the surface
+- mola larvae wearing temporary spines
+- oarfish, ribbon-like and rarely seen
+- coelacanth surviving outside an expected history
+- tarpon rolling at the surface
+- barracuda suspended in attention
+- flying fish launching into air
+- school as swarm intelligence
+- bait ball tightening around an empty center
+- silver flanks becoming a collective mirror
+- one body turns and thousands answer
+
+### Sharks, rays, and ancient cartilaginous bodies
+
+- whale shark carrying a constellation of spots
+- basking shark filtering plankton
+- great white shark sensing electrical fields
+- hammerhead seeing along the width of its head
+- thresher shark striking with its tail
+- Greenland shark moving through centuries
+- goblin shark extending its jaws
+- cookiecutter shark taking circular samples
+- lantern shark producing its own light
+- reef sharks resting in currents
+- sawfish reading buried prey
+- manta ray performing underwater flight
+- mobula rays leaping above the surface
+- stingrays buried under sand
+- electric rays generating a charge
+- skates laying mermaid's purses
+- chimaeras, ghost sharks of deep water
+- dermal denticles turning skin into teeth
+- a skeleton made of cartilage
+- senses tuned to pressure, scent, and electricity
+- survival older than the names humans gave it
+
+### Marine reptiles, birds, and mammals
+
+- green turtles grazing seagrass meadows
+- leatherback turtles following jellyfish into cold water
+- hatchlings navigating by reflected light
+- sea snakes breathing at the surface
+- marine iguanas diving to graze algae
+- saltwater crocodiles moving between river and sea
+- penguins flying through water
+- albatrosses orbiting oceans
+- gannets piercing the surface
+- cormorants drying outstretched wings
+- puffins carrying rows of fish
+- petrels smelling their way across open water
+- gulls following ships and refuse
+- terns hovering before the plunge
+- pelicans turning throat pouches into nets
+- seals between shore and depth
+- sea lions barking at the boundary
+- walruses reading the seabed with whiskers
+- sea otters wrapping themselves in kelp
+- polar bears waiting where water becomes ice
+- manatees grazing warm shallows
+- dugongs shaping seagrass landscapes
+- dolphins exchanging signature whistles
+- porpoises surfacing without spectacle
+- orcas carrying local cultures and hunting traditions
+- humpback whales revising their songs
+- sperm whales clicking into the deep
+- blue whales sustained by minute prey
+- narwhals carrying a sensory tooth
+- bowhead whales living beneath ice
+- beaked whales disappearing into long dives
+- whale fall becoming an ecosystem
+- breath made visible at the surface
+- a song travelling farther than the singer can see
+
+### Deep-sea and abyssal life
+
+- anglerfish carrying a lure of living light
+- black seadevils
+- viperfish with teeth too large for concealment
+- gulper eels turning mouth into net
+- fangtooth fish
+- barreleye fish looking upward through a transparent head
+- tripod fish standing above the sediment
+- hatchetfish counter-illuminating their silhouettes
+- dragonfish producing red light others cannot see
+- bristlemouths, perhaps the most numerous vertebrates on Earth
+- snailfish living in ocean trenches
+- hagfish tying themselves in knots
+- giant isopods
+- yeti crabs farming bacteria on their claws
+- tube worms without mouths or stomachs
+- vent shrimp crowded around chemical heat
+- dumbo octopuses above the abyssal plain
+- vampire squid folding itself inside out
+- deep scattering layer rising every night
+- bioluminescent alarms
+- pressure that would collapse an air-filled body
+- cold darkness interrupted by living signals
+- life powered by chemistry rather than sunlight
+- an organism known only from one specimen
+- a species described from what washed ashore
+
+## Habitats and ocean spaces
+
+- tide pool
+- rock pool left behind by the sea
+- intertidal zone, repeatedly drowned and exposed
+- splash zone
+- rocky shore
+- sandy beach
+- shingle beach
+- mudflat holding the record of each tide
+- salt marsh
+- mangrove roots making a nursery
+- seagrass meadow
+- kelp forest
+- oyster reef
+- coral reef
+- lagoon
+- estuary mixing river memory with salt water
+- river mouth
+- fjord
+- sea loch
+- coastal shelf
+- continental slope
+- submarine canyon
+- open ocean
+- pelagic zone
+- twilight zone
+- midnight zone
+- abyssal plain
+- hadal trench
+- hydrothermal vent
+- cold seep
+- brine pool, a lake beneath the sea
+- whale fall
+- seamount
+- mid-ocean ridge
+- underwater volcano
+- island arc
+- atoll encircling a vanished volcano
+- ice edge
+- under-ice world
+- polynya, open water surrounded by sea ice
+- Sargasso Sea held by currents rather than coastlines
+- floating kelp raft
+- drifting log as a temporary island
+- shipwreck becoming reef
+- harbor wall colonized by filter feeders
+- pier pilings layered with life
+- ballast tank as accidental habitat
+- aquarium as compressed ocean
+- glass wall as a manufactured shoreline
+- drain, pipe, crack, overflow, outlet
+- open water beyond the tank
+
+## Ecological relationships
+
+- symbiosis
+- mutualism
+- commensalism
+- parasitism
+- predation
+- grazing
+- scavenging
+- decomposition
+- competition for space
+- cooperation without intention
+- cleaner and client
+- host and guest
+- parasite and shelter
+- predator and prey trading positions
+- coral and photosynthetic algae
+- bobtail squid and luminous bacteria
+- clownfish and anemone
+- goby and snapping shrimp
+- remora and shark
+- hermit crab and borrowed shell
+- whale and barnacle
+- sea otter, urchin, and kelp
+- shark, ray, and cleaner wrasse
+- mangrove roots sheltering juveniles
+- oyster shells accumulating into refuge
+- one species engineering a world for others
+- ecosystem engineer
+- keystone predator
+- foundation species
+- indicator species
+- umbrella species
+- invasive species
+- endemic species
+- cryptic species
+- pioneer species
+- opportunist
+- specialist
+- generalist
+- filter feeder
+- suspension feeder
+- deposit feeder
+- grazer
+- ambush predator
+- apex predator
+- detritivore
+- scavenger
+- parasite
+- host
+- vector
+- nursery
+- refuge
+- corridor
+- spawning ground
+- feeding ground
+- migratory route
+- ecological niche
+- trophic cascade
+- food web rather than food chain
+- a network held together by appetite
+- a body feeding another body without meeting it
+- death redistributed as habitat
+
+## Processes, cycles, and transformations
+
+- tide rising
+- tide withdrawing
+- spring tide
+- neap tide
+- tidal pulse
+- current
+- countercurrent
+- upwelling carrying nutrients toward light
+- downwelling carrying oxygen into depth
+- overturning circulation
+- thermocline
+- halocline
+- pycnocline
+- stratification
+- mixing
+- turbulence
+- eddy
+- gyre
+- rip current
+- longshore drift
+- undertow
+- swell arriving from a distant storm
+- wave breaking
+- foam line
+- salt spray
+- evaporation
+- condensation
+- rain returning to the sea
+- river carrying land into ocean
+- erosion
+- sedimentation
+- accretion
+- dissolution
+- calcification
+- bioerosion
+- photosynthesis
+- chemosynthesis
+- respiration
+- carbon fixation
+- carbon sinking
+- nutrient cycling
+- nitrogen fixation
+- oxygen production
+- deoxygenation
+- decomposition consuming oxygen
+- bloom
+- spawning
+- broadcast spawning synchronized with moon and temperature
+- fertilization in open water
+- larval dispersal
+- settlement
+- metamorphosis
+- recruitment
+- moulting
+- regeneration
+- migration
+- vertical migration every dusk and dawn
+- homing
+- stranding
+- beaching
+- bleaching
+- colonization
+- succession
+- disturbance and recovery
+- extinction
+- speciation
+- adaptation
+- acclimation
+- dormancy
+- diapause
+- hatching
+- sinking
+- resurfacing
+- dissolving
+- leaking
+- overflowing
+- escaping
+- dispersing
+- recombining
+
+## Collective movement and distributed intelligence
+
+- school
+- shoal
+- swarm
+- bloom
+- colony
+- reef
+- pod
+- raft
+- aggregation
+- migration
+- feeding frenzy
+- spawning aggregation
+- synchronized turning
+- alignment without a leader
+- local decisions producing a global shape
+- a crowd that behaves like weather
+- bodies coordinating through pressure waves
+- signals passing faster than individuals travel
+- each creature following only its nearest neighbors
+- collective vigilance
+- collective confusion
+- safety through resemblance
+- the group opening around a predator
+- a bait ball forming under pressure
+- a murmuration beneath the surface
+- the edge of the group constantly exchanged
+- no fixed center
+- no permanent leader
+- the individual briefly legible, then absorbed
+- a colony mistaken for an organism
+- an organism mistaken for a landscape
+- an ecosystem mistaken for scenery
+
+## Bodies, anatomy, and forms
+
+- fin
+- flipper
+- fluke
+- tail
+- tentacle
+- arm
+- sucker
+- siphon
+- mantle
+- gill
+- spiracle
+- lateral line
+- swim bladder
+- oil-filled liver
+- ampullae sensing electricity
+- whisker
+- baleen
+- beak
+- rostrum
+- carapace
+- shell
+- valve
+- operculum
+- spine
+- barb
+- hook
+- harpoon tooth
+- radula
+- byssal thread
+- tube foot
+- polyp
+- medusa
+- zooid
+- colony
+- holdfast
+- pneumatocyst, a bladder lifting kelp toward light
+- chromatophore
+- photophore
+- reflective scale
+- transparent tissue
+- countershading
+- counterillumination
+- iridescence
+- bioluminescence
+- fluorescence
+- mucus veil
+- protective slime
+- ink cloud
+- venom
+- toxin
+- armor
+- soft tissue inside mineral architecture
+- branching
+- spiralling
+- bilateral symmetry
+- radial symmetry
+- fractal repetition
+- modular growth
+- regeneration
+- a mouth with no head
+- a stomach with no mouth
+- eyes adapted to blue darkness
+- many hearts
+- distributed nerves
+- body as shelter
+- body as lure
+- body as disguise
+- body as message
+- body as archive
+
+## Senses, signals, and communication
+
+- echolocation
+- electrical reception
+- magnetic navigation
+- polarized vision
+- ultraviolet pattern
+- color change
+- pressure sensing
+- vibration through water
+- chemical trail
+- pheromone plume
+- scent carried downstream
+- taste through skin
+- touch at a distance through a current
+- whale song
+- dolphin whistle
+- sperm-whale clicks
+- snapping shrimp crackle
+- reef sound guiding larvae home
+- drumming fish
+- croaking fish
+- shell tapped against stone
+- fin display
+- threat posture
+- courtship dance
+- flashing skin
+- waves of color travelling across a cuttlefish
+- light organs blinking in species-specific rhythms
+- counterillumination erasing a silhouette
+- camouflage becoming conversation
+- a signal intended for one species intercepted by another
+- noise masking a call
+- silence as failed transmission
+- the ocean as a medium of messages
+
+## Colors, light, and visibility
+
+- ultramarine
+- cobalt
+- turquoise
+- aquamarine
+- sea-glass green
+- kelp brown
+- eelgrass green
+- coral pink
+- anemone orange
+- shell white
+- nacre
+- mother-of-pearl
+- squid-ink black
+- abyssal black
+- whale-grey
+- foam white
+- rust on a submerged hull
+- red light disappearing first with depth
+- blue light travelling farthest
+- silver flashes from turning fish
+- structural color without pigment
+- oil-slick iridescence
+- transparent until illuminated
+- translucent organs
+- a shadow passing beneath
+- sun glitter
+- caustic light rippling over sand
+- bioluminescent wake
+- milky sea glowing to the horizon
+- green flash at sunset
+- moon path over water
+- darkness with points of living light
+- visibility measured in meters
+- camouflage as a change of allegiance
+- color used as warning, seduction, disguise, or speech
+
+## Textures, materials, and surfaces
+
+- wet skin
+- slick scales
+- sharkskin rough in one direction
+- rubbery kelp
+- velvet anemone
+- glassy jelly
+- chalky coral skeleton
+- nacreous shell
+- porous sponge
+- brittle star arm
+- leathery turtle shell
+- blubber
+- bristles
+- baleen fringe
+- barnacle crust
+- salt crystal
+- sand grain
+- silt cloud
+- ooze
+- mud
+- slime
+- mucus
+- foam
+- froth
+- bubble film
+- wrack
+- driftwood polished by water
+- rope furred with algae
+- metal softened by rust
+- plastic made smooth by waves
+- ghost net continuing to fish
+- glass becoming sea glass
+- a surface continuously rewritten by water
+
+## Sounds and silences
+
+- wash
+- surge
+- hiss
+- rush
+- slap
+- crash
+- rumble
+- roar
+- trickle
+- drip
+- bubble
+- crackle of a living reef
+- click train
+- whistle
+- pulse
+- low-frequency moan
+- ice singing under pressure
+- stones rolling in surf
+- shells ticking against one another
+- rain striking the surface from above
+- propeller noise arriving before the vessel
+- sonar ping
+- distant engine
+- hull groan
+- water amplified inside a shell
+- sound travelling farther underwater
+- a call crossing darkness
+- acoustic territory
+- a quiet reef after bleaching
+- silence that is actually beyond human hearing
+
+## Verbs for marine movement
+
+- drift
+- float
+- hover
+- glide
+- dart
+- pulse
+- undulate
+- spiral
+- coil
+- unfurl
+- billow
+- stream
+- trail
+- fan
+- flare
+- flash
+- shimmer
+- school
+- swarm
+- shoal
+- congregate
+- scatter
+- breach
+- dive
+- plunge
+- sink
+- rise
+- surface
+- submerge
+- suspend
+- migrate
+- navigate
+- home
+- orient
+- anchor
+- attach
+- encrust
+- burrow
+- tunnel
+- bore
+- cling
+- graze
+- filter
+- sift
+- scavenge
+- engulf
+- ambush
+- lure
+- stalk
+- flee
+- camouflage
+- mimic
+- moult
+- hatch
+- spawn
+- settle
+- metamorphose
+- regenerate
+- calcify
+- erode
+- dissolve
+- bleach
+- strand
+- wash ashore
+- leak
+- seep
+- spill
+- overflow
+- escape
+- disperse
+- permeate
+- merge
+- divide
+- fragment
+- reassemble
+
+## Ocean weather and physical forces
+
+- wind over water
+- fetch
+- swell
+- storm surge
+- rogue wave
+- whitecap
+- breaker
+- tidal bore
+- monsoon
+- cyclone
+- waterspout
+- fog bank
+- sea smoke
+- rain curtain
+- lightning reflected in black water
+- pressure front
+- thermal expansion
+- sea-level rise
+- wave energy
+- buoyancy
+- drag
+- lift
+- compression
+- pressure increasing with depth
+- salt changing density
+- warm current meeting cold current
+- surface tension holding a temporary world
+- gravity expressed as tide
+- the moon pulling on every open body of water
+
+## Time, memory, and marine archives
+
+- daily tide
+- lunar cycle
+- seasonal migration
+- spawning clock
+- coral growth band
+- shell growth ring
+- fish otolith recording temperature and movement
+- shark vertebrae holding years
+- whale earwax preserving a chemical history
+- sediment core
+- ice core
+- microfossil
+- fossil reef
+- ancient seabed raised into mountain
+- salt deposited by a vanished sea
+- shipwreck timestamped by corrosion
+- message in a bottle
+- drift route reconstructed after arrival
+- memory carried in migration
+- inherited navigation
+- a beach rearranged overnight
+- slow geological time inside a living exhibit
+- centuries contained in a long-lived shark
+- an ocean retaining heat after the atmosphere changes
+- carbon stored below the reach of memory
+- a species remembered only by a shell
+- an extinct sea persisting in limestone
+- every layer a former surface
+
+## Boundaries, containers, and leaks
+
+- aquarium glass
+- tank seam
+- waterline
+- shoreline
+- tidemark
+- thermocline
+- reef edge
+- continental shelf break
+- membrane
+- shell
+- egg case
+- tidal gate
+- harbor wall
+- dam
+- lock
+- net
+- cage
+- bottle
+- ballast tank
+- plastic bag mistaken for prey
+- a specimen jar
+- a label pinned to a fluid body
+- a taxonomy trying to hold change still
+- condensation outside the tank
+- a hairline crack
+- salt gathering around a leak
+- pressure on the glass
+- a filter clogged with life
+- overflow channel
+- water finding the lowest opening
+- the contained becoming the carrier
+- inside and outside exchanging molecules
+- the wall becoming habitat
+- escape through a pipe
+- invasive arrival through ballast water
+- spores and larvae crossing unnoticed
+- a closed system that was never closed
+- the museum leaking into the ecosystem
+- the ecosystem leaking into the museum
+- open water as both freedom and exposure
+
+## Ecological stress, damage, and uncertainty
+
+- coral bleaching
+- marine heatwave
+- ocean acidification
+- deoxygenation
+- dead zone
+- eutrophication
+- harmful algal bloom
+- oil slick
+- chemical runoff
+- sewage plume
+- sediment smothering a reef
+- bottom trawling
+- bycatch
+- overfishing
+- ghost fishing
+- shark finning
+- entanglement
+- ship strike
+- propeller wound
+- underwater noise
+- sonar disturbance
+- light pollution on nesting beaches
+- plastic ingestion
+- microplastics inside plankton
+- synthetic fibers in deep-sea sediment
+- abandoned fishing line woven into a nest
+- warming water shifting a species' range
+- larvae arriving where no habitat remains
+- invasive species travelling on a hull
+- pathogens moving with trade
+- sea-level rise drowning a salt marsh against a seawall
+- coastal squeeze
+- collapsing kelp forest
+- urchin barren
+- disappearing sea ice
+- freshening polar water
+- changing currents
+- mismatched seasonal timing
+- a food web losing one quiet connection
+- baseline shifting between generations
+- extinction before description
+- resilience mistaken for invulnerability
+- recovery that does not recreate the former world
+- adaptation with limits
+- refuge becoming too small
+- uncertainty as an ecological condition
+
+## Repair, resilience, and reciprocity
+
+- coral gardening
+- oyster reef restoration
+- seagrass planting
+- kelp forest recovery
+- mangrove regeneration
+- marine protected area
+- no-take zone
+- fish returning to an abandoned harbor
+- whales returning to former routes
+- removing a dam to reconnect river and sea
+- ghost-net retrieval
+- assisted coral spawning
+- artificial reef
+- living shoreline
+- species refuge
+- climate refuge
+- recovery after disturbance
+- recolonization
+- larval connectivity
+- genetic diversity as stored possibility
+- redundancy in a food web
+- cooperation across species
+- tending rather than controlling
+- restoration without pretending to reverse time
+- making room for self-repair
+- monitoring as sustained attention
+- reciprocity with a system that cannot speak in human terms
+- stewardship giving way to kinship
+- protection as restraint
+- leaving habitat undisturbed
+- an empty zone that is full of recovery
+
+## Scientific and classificatory language
+
+- specimen
+- holotype
+- taxonomy
+- phylogeny
+- morphology
+- anatomy
+- genotype
+- phenotype
+- lineage
+- clade
+- population
+- community
+- assemblage
+- biomass
+- biodiversity
+- abundance
+- distribution
+- range
+- habitat
+- niche
+- transect
+- quadrat
+- sample
+- survey
+- census
+- tag
+- acoustic receiver
+- satellite track
+- environmental DNA
+- water sample containing traces of unseen bodies
+- remotely operated vehicle
+- submersible
+- depth profile
+- bathymetry
+- current model
+- species described and species unresolved
+- common name and scientific name
+- name changing when relationships are redrawn
+- a specimen separated from its behavior
+- life reduced to a point on a map
+- uncertainty hidden inside a clean category
+- the gap between what is measured and what is alive
+
+## Human histories and ocean infrastructures
+
+- navigation by stars, currents, birds, and swell
+- lighthouse
+- buoy
+- beacon
+- harbor
+- breakwater
+- pier
+- jetty
+- seawall
+- canal
+- cable laid across the seabed
+- pipeline
+- oil platform becoming habitat
+- offshore wind turbine
+- tidal generator
+- desalination intake
+- shipping lane
+- ballast water
+- container lost overboard
+- ferry wake
+- submarine cable carrying images beneath migrating whales
+- sonar map
+- bathymetric chart
+- ship's log
+- tide table
+- fishing ground
+- fish market
+- aquarium trade
+- pearl diving
+- sponge diving
+- seaweed farming
+- mussel ropes
+- salmon cage
+- trawler
+- longline
+- purse seine
+- net as tool, boundary, trap, and image
+- knot
+- rope
+- anchor scar
+- dredged channel
+- artificial island
+- coastal landfill
+- drowned settlement
+- wreck as grave, archive, and habitat
+- ocean as route, resource, border, and relative
+
+## Mythic, cultural, and imaginative beings
+
+- mermaid
+- selkie
+- kraken
+- leviathan
+- sea serpent
+- siren
+- ghost ship
+- drowned city
+- ship swallowed by fog
+- whale mistaken for an island
+- world carried on a turtle
+- shell held to the ear
+- pearls formed around irritation
+- messages sealed in bottles
+- maps ending in sea monsters
+- sailors naming constellations above an uncharted sea
+- transformation from human to seal, fish, foam, or coral
+- the sea as origin
+- the sea as afterlife
+- the sea as archive
+- the sea as threshold
+- the sea as mirror
+- the sea as other planet
+- the monster as an animal seen incompletely
+- the mythical creature assembled from real fragments
+- a taxonomy of imagined species
+
+## Productive contradictions
+
+- fluid architecture
+- transparent camouflage
+- living geology
+- animal forest
+- stationary animal
+- swimming plant
+- individual colony
+- collective body
+- ancient newborn
+- soft armor
+- luminous darkness
+- silent communication
+- blind navigation
+- poisonous beauty
+- fragile reef, immense structure
+- microscopic bloom, planetary effect
+- vast ocean, narrow habitat
+- open water, invisible boundary
+- slow current, global circulation
+- freedom without shelter
+- attachment as mobility
+- drifting as navigation
+- camouflage as display
+- predation as intimacy
+- death as foundation
+- skeleton as city
+- waste as food
+- collapse as succession
+- leak as connection
+- containment producing escape
+- the aquarium preserving and imprisoning at once
+- a species becoming visible only as it disappears
+
+## Narrative images and sentence seeds
+
+- The tank remembers being ocean.
+- The glass does not break; it becomes permeable.
+- A creature assembles itself from what the visitors leave behind.
+- Every label loosens when submerged.
+- The species escapes first through language.
+- A school passes through the room without agreeing where the room ends.
+- The water carries one artwork into another.
+- A particle settles, feeds, divides, and becomes weather.
+- The archive grows gills.
+- The walls begin filtering rather than separating.
+- What looks like debris becomes a nursery.
+- What looks like one body is a negotiation among many.
+- The creature wears its environment until disguise becomes identity.
+- Its color is not decoration but warning, memory, and invitation.
+- A crack appears as a new migratory route.
+- The exhibition develops tides.
+- Visitors leave currents rather than footprints.
+- Each encounter changes the chemistry of the shared water.
+- An object sinks out of classification and enters relation.
+- The specimen refuses to remain singular.
+- Names detach and drift toward other bodies.
+- The fishbowl leaks into an ocean already inside it.
+- A reef forms from abandoned categories.
+- The collective screen becomes a spawning ground for unfinished stories.
+- Memory behaves like plankton: dispersed, consumed, transformed.
+- The creature survives by becoming unreadable.
+- The creature survives by joining a larger pattern.
+- The creature survives by changing what survival means.
+- One visitor's ending becomes another species' habitat.
+- The border accumulates life until it is no longer only a border.
+- The glass reflects the observer back as part of the enclosure.
+- Open water does not promise safety; it promises relation.
+- The final form is temporary, like every coastline.
+
+## Combinations for generative writing
+
+These structures can turn entries from the lists above into short narrative material.
+
+- **Species + unexpected action:** “The diatom remembers.” “The octopus archives.” “The barnacle migrates.”
+- **Habitat + bodily trait:** “A reef with chromatophore walls.” “An estuary with a lateral line.”
+- **Process + emotion:** “A tide of hesitation.” “Larval dispersal as longing.” “Upwelling as recollection.”
+- **Scientific term + sensory image:** “A transect through blue noise.” “A depth profile written in salt.”
+- **Damage + repair:** “The bleached colony recruits color.” “A ghost net becomes an oyster frame.”
+- **Container + ecological process:** “The display case begins to spawn.” “The label undergoes metamorphosis.”
+- **Individual + collective:** “One fish turns; the school becomes a sentence.”
+- **Body + infrastructure:** “Gills in the ventilation system.” “A cable colonized by polyps.”
+- **Museum + ocean:** “The gallery develops a thermocline.” “The archive enters the food web.”
+- **Verb chain:** attach → feed → moult → drift → settle → leak → recombine
+
+## Especially resonant clusters for *The Fishbowl Leaks*
+
+### Containment becoming ecology
+
+- tank → tide pool → estuary → open water
+- glass → membrane → habitat → dissolving boundary
+- display → observation → participation → entanglement
+- specimen → organism → colony → ecosystem
+- category → mutation → relation → collective life
+
+### Fragment becoming creature
+
+- particle → plankton → larva → body
+- debris → attachment point → reef
+- shell fragment → borrowed home
+- separate limbs → distributed intelligence
+- abandoned text → drifting signal
+- visitor trace → environmental memory
+
+### Order becoming movement
+
+- grid → school
+- catalogue → food web
+- sequence → current
+- label → lure
+- classification → symbiosis
+- archive → sediment
+- database → spawning ground
+- interface → permeable skin
+
+### Leak becoming narrative
+
+- crack → current → corridor
+- drip → accumulation → overflow
+- escaped organism → invasive presence or liberated kin
+- lost boundary → new vulnerability
+- mixture → hybrid → unclassifiable species
+- one tank's waste → another body's food
+- private journey → shared habitat
+- ending → dispersal

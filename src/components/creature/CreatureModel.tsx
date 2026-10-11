@@ -648,6 +648,19 @@ export function CreatureModel({
 
   const headX = proportions.length * 0.62;
   const tailX = -proportions.length * 1.02;
+  // The head is a squashed sphere set slightly toward the near side. Both eyes are flat discs on
+  // its actual skin, sunk in a little, so on a thin fish neither eye can stand off the head.
+  const headCenterZ = 0.02;
+  const headRadii = [0.7 * proportions.head, 0.7 * proportions.height * 0.9, 0.7 * proportions.depth * 0.96];
+  const eyeSkinDepth = headRadii[2] * Math.sqrt(Math.max(0, 1 - (0.24 / 0.7) ** 2 - ((proportions.height * 0.28 - 0.02) / headRadii[1]) ** 2));
+  const eyeSink = 0.02;
+  // The side fins grow from the body's actual skin at their roots, sunk in a little, rather than
+  // at a fixed depth beside it; low on the belly the body is much narrower than at its middle.
+  const bodySkin = (x: number, y: number) => 0.86 * proportions.depth * Math.sqrt(Math.max(0, 1 - (x / (0.86 * proportions.length)) ** 2 - (y / (0.86 * proportions.height)) ** 2));
+  const pectoralSkin = bodySkin(proportions.length * 0.24, -proportions.height * 0.08);
+  const pelvicSkin = bodySkin(-proportions.length * 0.18, -proportions.height * 0.62);
+  const finRootSink = 0.02;
+  const eyeFlatten = 0.5;
 
   return (
     <group ref={groupRef} scale={scale}>
@@ -705,9 +718,9 @@ export function CreatureModel({
         position={[-proportions.length * 0.18, -proportions.height * 0.62, 0]}
       >
         {[1, -1].map((side) => (
-          <BodyAttachment key={side} anchor={[0, 0, side * proportions.depth * 0.66]}>
+          <BodyAttachment key={side} anchor={[0, 0, side * pelvicSkin]}>
           <group
-            position={[0, 0, side * (proportions.depth * 0.66 + 0.015)]}
+            position={[0, 0, side * (pelvicSkin - finRootSink)]}
             scale={[pelvicStyle.width * 1.24, proportions.height * pelvicStyle.height * 1.18, 1]}
           >
             <PectoralFin
@@ -728,9 +741,9 @@ export function CreatureModel({
         position={[proportions.length * 0.24, -proportions.height * 0.08, 0]}
       >
         {[1, -1].map((side) => (
-          <BodyAttachment key={side} anchor={[0, 0, side * proportions.depth * 0.9]}>
+          <BodyAttachment key={side} anchor={[0, 0, side * pectoralSkin]}>
           <group
-            position={[0, 0, side * (proportions.depth * 0.9 + 0.018)]}
+            position={[0, 0, side * (pectoralSkin - finRootSink)]}
             scale={[pectoralStyle.width * 1.2, proportions.height * pectoralStyle.height * 1.16, 1]}
           >
             <PectoralFin
@@ -749,8 +762,10 @@ export function CreatureModel({
         <group
           ref={(node) => { eyeRefs.current[index] = node; }}
           key={side}
-          position={[headX + proportions.head * 0.24, proportions.height * 0.28, side * proportions.depth * 0.7]}
+          position={[headX + proportions.head * 0.24, proportions.height * 0.28, headCenterZ + side * (eyeSkinDepth - eyeSink)]}
           rotation={[0, side > 0 ? 0 : Math.PI, 0]}
+          // Flattened into discs set in the side of the head, like a real fish's eyes, so they never stand off a thin head.
+          scale={[1, 1, eyeFlatten]}
         >
           <mesh>
             <sphereGeometry args={[0.14, 18, 14]} />

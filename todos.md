@@ -1,3 +1,5 @@
+Cover image
+something else than leak droplet
 
 maybe we try to assemble the creature from parts which are picked by the user
 
@@ -18,9 +20,8 @@ hat
 
 take out the piano track
 
-Cover image
 Refined narrative
-something else than leak droplet
 integrate three quick scales
 integrate questionaire in the end
 fix up the buttons and the user guidance
+show again which song is currently playing

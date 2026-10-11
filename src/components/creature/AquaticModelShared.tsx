@@ -1,9 +1,10 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { createContext, useContext, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as THREE from "three";
 import type { CreaturePiece } from "@/components/creature/CreatureModel";
+import { applyAddonModelOverrides } from "@/lib/creature/addonOverrides";
 import type { AquaticForm } from "@/lib/creature/aquaticForms";
 import { creatureColorPalette, type CreatureColorPalette } from "@/lib/creature/colorPalettes";
 import { withDetailRecipe } from "@/lib/creature/geometryDetail";
@@ -361,6 +362,30 @@ function AquaticTraitForm({ partId, color, highlighted }: { partId: CreaturePart
   }
 }
 
+/** An add-on with the adjustments saved for it in the creature editor, on every creature that carries it. */
+export function AquaticAddon({ partId, color, highlighted = false }: { partId: CreaturePartId; color: string; highlighted?: boolean }) {
+  const ref = useRef<THREE.Group>(null);
+
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const apply = () => applyAddonModelOverrides(root, partId);
+    const handleUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<{ partId?: CreaturePartId }>).detail;
+      if (!detail?.partId || detail.partId === partId) apply();
+    };
+    apply();
+    window.addEventListener("addon-model-overrides-updated", handleUpdate);
+    return () => window.removeEventListener("addon-model-overrides-updated", handleUpdate);
+  }, [partId]);
+
+  return (
+    <group ref={ref}>
+      <AquaticTraitForm partId={partId} color={color} highlighted={highlighted} />
+    </group>
+  );
+}
+
 const traitMarksTag = "aquaticTraitMarks";
 const skinInset = 0.02;
 
@@ -546,7 +571,7 @@ export function TraitMarks({
             <group rotation={rotation}>
               <GrowingTrait active={grows} held={emerging && !growth.growing}>
                 <group scale={layout.scale * (highlighted ? 1.18 : 1)}>
-                  <AquaticTraitForm partId={piece.partId} color={color} highlighted={highlighted} />
+                  <AquaticAddon partId={piece.partId} color={color} highlighted={highlighted} />
                 </group>
               </GrowingTrait>
             </group>

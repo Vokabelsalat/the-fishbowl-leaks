@@ -6,13 +6,15 @@ import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } fro
 import * as THREE from "three";
 import { AquariumPlant, editorPlantSpecs, plantKindLabels, plantKinds, type PlantKind } from "@/components/collective/AquariumDioramaPlants";
 import { AquaticCreatureModel } from "@/components/creature/AquaticCreatureModel";
-import { TraitPreviewContext, type TraitMount } from "@/components/creature/AquaticModelShared";
+import { AquaticAddon, TraitPreviewContext, type TraitMount } from "@/components/creature/AquaticModelShared";
 import { caudalTailShapes, dorsalFinStyles, pectoralFinStyles, pelvicFinStyles } from "@/components/creature/CreatureModel";
 import { artifacts } from "@/data/artifacts";
 import { aquaticForms, aquaticFormLabels, type AquaticForm } from "@/lib/creature/aquaticForms";
 import type { CreaturePiece } from "@/components/creature/CreatureModel";
 import { clearCreatureModelOverrides, meshKey, saveCreatureModelOverrides, type SavedNodeTransform } from "@/lib/creature/modelOverrides";
 import { clearPlantModelOverrides, savePlantModelOverrides } from "@/lib/creature/plantOverrides";
+import { clearAddonModelOverrides, saveAddonModelOverrides } from "@/lib/creature/addonOverrides";
+import type { CreaturePartId } from "@/types/exhibition";
 
 type ProductionShape = {
   id: string;
@@ -121,14 +123,34 @@ function initialShapes() {
   }])) as Record<string, EditedShape>;
 }
 
-export function CreatureShapeEditor() {
-  const [view, setView] = useState<"models" | "shapes" | "plants">("models");
-  if (view === "models") return <AquaticModelEditor onShowShapes={() => setView("shapes")} onShowPlants={() => setView("plants")} />;
-  if (view === "shapes") return <ProductionShapeEditor onShowModels={() => setView("models")} onShowPlants={() => setView("plants")} />;
-  return <PlantModelEditor onShowModels={() => setView("models")} onShowShapes={() => setView("shapes")} />;
+type EditorView = "models" | "addons" | "shapes" | "plants";
+
+const editorViews: Array<{ view: EditorView; label: string }> = [
+  { view: "models", label: "Creature models" },
+  { view: "addons", label: "Add-ons" },
+  { view: "shapes", label: "Bézier shapes" },
+  { view: "plants", label: "Plants" },
+];
+
+function EditorViewLinks({ current, onShow }: { current: EditorView; onShow: (view: EditorView) => void }) {
+  return (
+    <div className="flex gap-2">
+      {editorViews.filter(({ view }) => view !== current).map(({ view, label }) => (
+        <button key={view} type="button" className="border border-white/20 px-3 py-2 text-xs text-white/60 hover:border-white/40 hover:text-white" onClick={() => onShow(view)}>{label}</button>
+      ))}
+    </div>
+  );
 }
 
-function ProductionShapeEditor({ onShowModels, onShowPlants }: { onShowModels: () => void; onShowPlants: () => void }) {
+export function CreatureShapeEditor() {
+  const [view, setView] = useState<EditorView>("models");
+  if (view === "models") return <AquaticModelEditor onShow={setView} />;
+  if (view === "addons") return <AddonModelEditor onShow={setView} />;
+  if (view === "shapes") return <ProductionShapeEditor onShow={setView} />;
+  return <PlantModelEditor onShow={setView} />;
+}
+
+function ProductionShapeEditor({ onShow }: { onShow: (view: EditorView) => void }) {
   const [shapes, setShapes] = useState(initialShapes);
   const [selectedId, setSelectedId] = useState(productionShapes[0].id);
   const selected = shapes[selectedId];
@@ -170,10 +192,7 @@ function ProductionShapeEditor({ onShowModels, onShowPlants }: { onShowModels: (
         </div>
         <div className="flex items-center gap-5">
           <p className="font-mono text-xs text-white/40">THREE.Shape · normalized model space</p>
-          <div className="flex gap-2">
-            <button type="button" className="border border-white/20 px-3 py-2 text-xs text-white/60 hover:border-white/40 hover:text-white" onClick={onShowModels}>Creature models</button>
-            <button type="button" className="border border-white/20 px-3 py-2 text-xs text-white/60 hover:border-white/40 hover:text-white" onClick={onShowPlants}>Plants</button>
-          </div>
+          <EditorViewLinks current="shapes" onShow={onShow} />
         </div>
       </header>
 
@@ -289,7 +308,7 @@ function readTransform(object: THREE.Object3D): NodeTransform {
   };
 }
 
-function AquaticModelEditor({ onShowShapes, onShowPlants }: { onShowShapes: () => void; onShowPlants: () => void }) {
+function AquaticModelEditor({ onShow }: { onShow: (view: EditorView) => void }) {
   const [form, setForm] = useState<AquaticForm>("fish");
   const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -387,10 +406,7 @@ function AquaticModelEditor({ onShowShapes, onShowPlants }: { onShowShapes: () =
         </div>
         <div className="flex items-center gap-5">
           <p className="font-mono text-xs text-white/40">Click a mesh to edit it</p>
-          <div className="flex gap-2">
-            <button type="button" className="border border-white/20 px-3 py-2 text-xs text-white/60 hover:border-white/40 hover:text-white" onClick={onShowShapes}>Bézier shapes</button>
-            <button type="button" className="border border-white/20 px-3 py-2 text-xs text-white/60 hover:border-white/40 hover:text-white" onClick={onShowPlants}>Plants</button>
-          </div>
+          <EditorViewLinks current="models" onShow={onShow} />
         </div>
       </header>
 
@@ -556,7 +572,7 @@ function AquaticModelEditor({ onShowShapes, onShowPlants }: { onShowShapes: () =
   );
 }
 
-function PlantModelEditor({ onShowModels, onShowShapes }: { onShowModels: () => void; onShowShapes: () => void }) {
+function PlantModelEditor({ onShow }: { onShow: (view: EditorView) => void }) {
   const [kind, setKind] = useState<PlantKind>("kelp");
   const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -660,10 +676,7 @@ function PlantModelEditor({ onShowModels, onShowShapes }: { onShowModels: () => 
         </div>
         <div className="flex items-center gap-5">
           <p className="font-mono text-xs text-white/40">Click a mesh to edit it</p>
-          <div className="flex gap-2">
-            <button type="button" className="border border-white/20 px-3 py-2 text-xs text-white/60 hover:border-white/40 hover:text-white" onClick={onShowModels}>Creature models</button>
-            <button type="button" className="border border-white/20 px-3 py-2 text-xs text-white/60 hover:border-white/40 hover:text-white" onClick={onShowShapes}>Bézier shapes</button>
-          </div>
+          <EditorViewLinks current="plants" onShow={onShow} />
         </div>
       </header>
 
@@ -756,6 +769,216 @@ function PlantModelEditor({ onShowModels, onShowShapes }: { onShowModels: () => 
             </>
           ) : (
             <div><h2 className="font-display text-xl">Plant controls</h2><p className="mt-3 text-sm leading-relaxed text-white/45">Select a visible stem, blade, leaf, tip, or base in the plant to expose its construction and transforms.</p></div>
+          )}
+        </aside>
+      </div>
+    </main>
+  );
+}
+
+const editorAddons = [...new Map(artifacts.map((artifact) => [artifact.creaturePart.id, {
+  partId: artifact.creaturePart.id,
+  label: artifact.creaturePart.label,
+  color: artifact.color,
+}])).values()];
+
+function AddonModelEditor({ onShow }: { onShow: (view: EditorView) => void }) {
+  const [partId, setPartId] = useState<CreaturePartId>(editorAddons[0].partId);
+  const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [transform, setTransform] = useState<NodeTransform | null>(null);
+  const [pending, setPending] = useState<Record<string, SavedNodeTransform>>({});
+  const [saveStatus, setSaveStatus] = useState("Saved changes are used by this add-on on every creature.");
+  const [hiddenFeatures, setHiddenFeatures] = useState<HiddenFeature[]>([]);
+  const [addonRevision, setAddonRevision] = useState(0);
+  const addonRootRef = useRef<THREE.Group>(null);
+  const initialTransforms = useRef(new Map<string, NodeTransform>());
+  const addon = editorAddons.find((item) => item.partId === partId) ?? editorAddons[0];
+
+  const clearSelection = () => {
+    setSelectedObject(null);
+    setSelectedKey(null);
+    setTransform(null);
+  };
+
+  const selectObject = (object: THREE.Object3D) => {
+    const key = addonRootRef.current ? meshKey(addonRootRef.current, object) : null;
+    const next = readTransform(object);
+    if (!initialTransforms.current.has(object.uuid)) initialTransforms.current.set(object.uuid, next);
+    setSelectedObject(object);
+    setSelectedKey(key);
+    setTransform(next);
+  };
+
+  const updateTransform = (changes: Partial<NodeTransform>) => {
+    if (!selectedObject || !transform) return;
+    const next = { ...transform, ...changes };
+    selectedObject.position.set(next.x, next.y, next.z);
+    selectedObject.scale.set(next.scaleX, next.scaleY, next.scaleZ);
+    selectedObject.rotation.set(
+      THREE.MathUtils.degToRad(next.rotationX),
+      THREE.MathUtils.degToRad(next.rotationY),
+      THREE.MathUtils.degToRad(next.rotationZ),
+    );
+    setTransform(next);
+    if (selectedKey) {
+      setPending((current) => ({ ...current, [selectedKey]: next }));
+      setSaveStatus("Unsaved changes");
+    }
+  };
+
+  const resetNode = () => {
+    if (!selectedObject) return;
+    const initial = initialTransforms.current.get(selectedObject.uuid);
+    if (initial) updateTransform(initial);
+  };
+
+  const setFeatureVisibility = (key: string, visible: boolean) => {
+    if (!addonRootRef.current) return;
+    let meshIndex = 0;
+    addonRootRef.current.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      if (`mesh-${meshIndex}` === key) object.visible = visible;
+      meshIndex += 1;
+    });
+  };
+
+  const hideSelectedFeature = () => {
+    if (!selectedObject || !selectedKey) return;
+    const label = selectedObject.name || `${selectedObject.type} · ${selectedKey}`;
+    setFeatureVisibility(selectedKey, false);
+    setHiddenFeatures((current) => current.some((feature) => feature.key === selectedKey)
+      ? current
+      : [...current, { key: selectedKey, label }]);
+    clearSelection();
+  };
+
+  const showFeature = (key: string) => {
+    setFeatureVisibility(key, true);
+    setHiddenFeatures((current) => current.filter((feature) => feature.key !== key));
+  };
+
+  const showAllFeatures = () => {
+    hiddenFeatures.forEach((feature) => setFeatureVisibility(feature.key, true));
+    setHiddenFeatures([]);
+  };
+
+  const changeAddon = (nextPartId: CreaturePartId) => {
+    setPartId(nextPartId);
+    clearSelection();
+    setPending({});
+    setHiddenFeatures([]);
+    setSaveStatus("Saved changes are used by this add-on on every creature.");
+    initialTransforms.current.clear();
+  };
+
+  const geometry = selectedObject instanceof THREE.Mesh ? selectedObject.geometry : null;
+  const construction = geometry
+    ? JSON.stringify({ type: geometry.type, parameters: geometry.parameters ?? {} }, null, 2)
+    : "Select a visible part of the add-on to inspect its geometry.";
+
+  return (
+    <main className="shape-editor film-grain min-h-dvh bg-[var(--abyss)] text-[var(--foam)]">
+      <header className="shape-editor-header flex items-end justify-between border-b border-white/15 px-8 py-6 lg:px-10">
+        <div>
+          <h1 className="font-display text-3xl tracking-[-0.035em]">Add-on model editor</h1>
+          <p className="mt-1 text-sm text-white/48">Production add-ons rendered directly through AquaticModelShared.tsx.</p>
+        </div>
+        <div className="flex items-center gap-5">
+          <p className="font-mono text-xs text-white/40">Click a mesh to edit it</p>
+          <EditorViewLinks current="addons" onShow={onShow} />
+        </div>
+      </header>
+
+      <div className="shape-editor-workspace grid min-h-0 grid-cols-[17rem_minmax(0,1fr)_22rem]">
+        <nav className="min-h-0 overflow-y-auto border-r border-white/15 px-4 py-5" aria-label="Creature add-ons">
+          <h2 className="mb-4 px-3 font-display text-lg">Add-ons</h2>
+          <ul className="space-y-1">
+            {editorAddons.map((item) => (
+              <li key={item.partId}>
+                <button type="button" className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-sm transition-colors ${partId === item.partId ? "bg-white/10 text-white" : "text-white/55 hover:bg-white/5 hover:text-white/80"}`} onClick={() => changeAddon(item.partId)}>
+                  <span>{item.label}</span><span className="size-2" style={{ backgroundColor: item.color }} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <section className="shape-editor-stage min-w-0 px-6 py-5 lg:px-8" aria-label={`${addon.label} model canvas`}>
+          <div className="mb-4">
+            <p className="text-sm text-white/42">AquaticModelShared.tsx</p>
+            <h2 className="font-display text-2xl">{addon.label}</h2>
+          </div>
+          <div className="shape-editor-canvas relative overflow-hidden border border-white/18 bg-black/20">
+            <Canvas orthographic camera={{ position: [0, 0.35, 10], zoom: 360, near: 0.1, far: 40 }} dpr={[1, 1.5]} onPointerMissed={clearSelection}>
+              <color attach="background" args={["#06151b"]} />
+              <gridHelper args={[6, 60, "#31565a", "#153238"]} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -1.2]} />
+              <ambientLight intensity={1.8} />
+              <directionalLight position={[3, 5, 8]} intensity={2.6} color="#fff4df" />
+              <pointLight position={[-4, 2, 5]} intensity={2.2} color="#58d6ff" />
+              <group
+                key={`${partId}-${addonRevision}`}
+                ref={addonRootRef}
+                onPointerDown={(event: ThreeEvent<PointerEvent>) => {
+                  event.stopPropagation();
+                  selectObject(event.object);
+                }}
+              >
+                <AquaticAddon partId={partId} color={addon.color} />
+              </group>
+              {selectedObject instanceof THREE.Mesh && <SelectedMeshBlink object={selectedObject} />}
+              <OrbitControls target={[0, 0.35, 0]} enablePan enableRotate enableZoom minZoom={150} maxZoom={900} />
+            </Canvas>
+          </div>
+          <p className="mt-4 border-t border-white/12 pt-4 text-sm leading-relaxed text-white/45">The add-on is shown in its mount frame: the origin sits on the creature&apos;s skin, up points away from the body and right points toward the head. Each saved adjustment is applied to this add-on on every creature, wherever it is mounted. Drag the empty canvas to orbit, scroll to zoom, or click a part to edit it.</p>
+        </section>
+
+        <aside className="shape-editor-controls min-h-0 overflow-y-auto border-l border-white/15 px-5 py-5">
+          {hiddenFeatures.length > 0 && (
+            <section className="mb-5 border-b border-white/12 pb-5" aria-labelledby="hidden-addon-features-title">
+              <div className="mb-3 flex items-center justify-between gap-4">
+                <h2 id="hidden-addon-features-title" className="font-display text-xl">Hidden features</h2>
+                <button type="button" className="text-xs text-white/55 hover:text-white" onClick={showAllFeatures}>Show all</button>
+              </div>
+              <ul className="space-y-1">
+                {hiddenFeatures.map((feature) => (
+                  <li key={feature.key} className="flex items-center justify-between gap-3 border border-white/12 px-3 py-2">
+                    <span className="min-w-0 truncate text-sm text-white/62">{feature.label}</span>
+                    <button type="button" className="shrink-0 text-xs text-white/55 hover:text-white" onClick={() => showFeature(feature.key)}>Show</button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {selectedObject && transform ? (
+            <>
+              <div className="flex items-start justify-between gap-4 border-b border-white/12 pb-4">
+                <div><h2 className="font-display text-xl">{selectedObject.name || selectedObject.type}</h2><p className="mt-1 font-mono text-[10px] text-white/38">{geometry?.type ?? selectedObject.type}</p></div>
+                <div className="flex shrink-0 gap-2">
+                  <button type="button" className="border border-white/18 px-2.5 py-1.5 text-xs text-white/48 hover:border-white/35 hover:text-white" onClick={hideSelectedFeature}>Hide feature</button>
+                  <button type="button" className="border border-white/18 px-2.5 py-1.5 text-xs text-white/48 hover:border-white/35 hover:text-white" onClick={resetNode}>Reset part</button>
+                </div>
+              </div>
+              <div className="space-y-5 py-5">
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" className="bg-[var(--phosphor)] px-3 py-2.5 text-sm text-[var(--abyss)] disabled:cursor-not-allowed disabled:opacity-35" disabled={Object.keys(pending).length === 0} onClick={() => { saveAddonModelOverrides(partId, pending); setPending({}); setSaveStatus("Saved and active on every creature"); }}>Save to app</button>
+                  <button type="button" className="border border-white/20 px-3 py-2.5 text-sm text-white/58 hover:border-white/40 hover:text-white" onClick={() => { clearAddonModelOverrides(partId); clearSelection(); setPending({}); setHiddenFeatures([]); initialTransforms.current.clear(); setAddonRevision((current) => current + 1); setSaveStatus("Saved overrides removed for this add-on"); }}>Restore original</button>
+                </div>
+                <p className="text-xs leading-relaxed text-white/40">{saveStatus}</p>
+                <ModelControl label="Translate X" value={transform.x} min={-1.5} max={1.5} step={0.005} onChange={(x) => updateTransform({ x })} />
+                <ModelControl label="Translate Y" value={transform.y} min={-1.5} max={1.5} step={0.005} onChange={(y) => updateTransform({ y })} />
+                <ModelControl label="Translate Z" value={transform.z} min={-1.5} max={1.5} step={0.005} onChange={(z) => updateTransform({ z })} />
+                <div className="border-t border-white/12 pt-5"><ModelControl label="Scale X" value={transform.scaleX} min={0.05} max={3} step={0.01} onChange={(scaleX) => updateTransform({ scaleX })} /></div>
+                <ModelControl label="Scale Y" value={transform.scaleY} min={0.05} max={3} step={0.01} onChange={(scaleY) => updateTransform({ scaleY })} />
+                <ModelControl label="Scale Z" value={transform.scaleZ} min={0.05} max={3} step={0.01} onChange={(scaleZ) => updateTransform({ scaleZ })} />
+                <div className="border-t border-white/12 pt-5"><ModelControl label="Rotate X" value={transform.rotationX} min={-180} max={180} step={1} suffix="°" onChange={(rotationX) => updateTransform({ rotationX })} /></div>
+                <ModelControl label="Rotate Y" value={transform.rotationY} min={-180} max={180} step={1} suffix="°" onChange={(rotationY) => updateTransform({ rotationY })} />
+                <ModelControl label="Rotate Z" value={transform.rotationZ} min={-180} max={180} step={1} suffix="°" onChange={(rotationZ) => updateTransform({ rotationZ })} />
+                <label className="block border-t border-white/12 pt-5"><span className="mb-2 block text-sm text-white/68">Geometry construction</span><textarea className="min-h-44 w-full resize-y border border-white/16 bg-black/25 p-3 font-mono text-xs leading-relaxed text-white/60 outline-none" value={construction} readOnly /></label>
+              </div>
+            </>
+          ) : (
+            <div><h2 className="font-display text-xl">Add-on controls</h2><p className="mt-3 text-sm leading-relaxed text-white/45">Select a visible spine, fin, horn, shell, streamer, or other part of the add-on to expose its construction and transforms.</p></div>
           )}
         </aside>
       </div>

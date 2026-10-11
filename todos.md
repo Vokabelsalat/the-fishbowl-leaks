@@ -7,10 +7,6 @@ The crabs and the clamps need to be really at the bottom of the aquarium so far 
 
 The release animation of the creature needs to be smoother. Drop the creature into the collective screen with a smooth animation.
 
-integrate three quick scales
-
-
-
 tentacles as addons
 scaling the base shape
 fins
@@ -21,3 +17,10 @@ bow
 hat
 
 take out the piano track
+
+Cover image
+Refined narrative
+something else than leak droplet
+integrate three quick scales
+integrate questionaire in the end
+fix up the buttons and the user guidance

@@ -114,6 +114,26 @@ function PairOfEyes({ x = 0.34, y = 0.25, z = 0.55, animated }: { x?: number; y?
 }
 
 const turtleShellTop = { center: [0, 0.03, 0.24] as Point3, radii: [0.92 * 0.92, 0.58 * 0.92, 0.18 * 0.92] as Point3 };
+/** How far forward of straight out a front flipper's upper arm reaches, and how far it bends back at the elbow. */
+const turtleArmReach = 0.35;
+const turtleElbowBend = 1.15;
+/** A back flipper points back and out, this far round from straight ahead. */
+const turtleLegAngle = Math.PI - 0.75;
+/**
+ * A front flipper's blade, from the elbow (x = 0) to its tip: a full, rounded leading edge on the
+ * side toward the head (-y), a straighter trailing edge, and a narrow rounded tip.
+ */
+const turtleFlipperGeometry = (() => {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -0.07);
+  shape.bezierCurveTo(0.25, -0.18, 0.62, -0.15, 0.9, -0.03);
+  shape.bezierCurveTo(0.95, -0.01, 0.94, 0.03, 0.88, 0.03);
+  shape.bezierCurveTo(0.6, 0.03, 0.3, 0.11, 0, 0.07);
+  shape.closePath();
+  const depth = 0.02;
+  return new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: 0.022, bevelSize: 0.02, bevelSegments: 3, curveSegments: 16 })
+    .translate(0, 0, -depth / 2);
+})();
 const turtleHead = { center: [1.12, 0.02, 0] as Point3, radii: [0.46 * 0.75, 0.38 * 0.75, 0.34 * 0.75] as Point3 };
 
 function TurtleModel(props: AquaticModelProps) {
@@ -147,20 +167,31 @@ function TurtleModel(props: AquaticModelProps) {
           <CartoonEye position={[0, 0, 0]} animated={props.animated} phase={index ? 0.2 : -0.2} />
         </group>
       ))}
-      {[-1, 1].flatMap((side) => [-1, 1].map((front) => (
-        <PivotedPart
-          key={`${side}-${front}`}
-          center={[front * 0.62, side * 0.68, -0.02]}
-          pivot={[front * 0.16, side * 0.68, -0.02]}
-          angle={side * (front > 0 ? -0.58 : 0.58)}
-          animated={props.animated}
-          phase={side * 0.8 + front}
-          amount={0.12}
-          speed={1.45}
-        >
-          <mesh scale={[0.48, 0.2, 0.09]}><sphereGeometry args={[1, 18, 12]} /><meshToonMaterial color={colors.accent} /></mesh>
-        </PivotedPart>
-      )))}
+      {[-1, 1].map((side) => (
+        // A front flipper reaches out from the shoulder and bends back at the elbow into a long, swept blade.
+        <group key={`arm-${side}`} position={[0.46, side * 0.5, -0.03]}>
+          <MovingPart animated={props.animated} phase={side * 0.8} amount={0.16} speed={1.45}>
+            <group rotation={[0, 0, side * (Math.PI / 2 - turtleArmReach)]}>
+              <mesh position={[0.16, 0, 0]} scale={[0.2, 0.1, 0.075]}><sphereGeometry args={[1, 14, 10]} /><meshToonMaterial color={colors.accent} /></mesh>
+              {/* Mirrored on the left, so the full leading edge faces the head on both sides. */}
+              <group position={[0.3, 0, 0]} rotation={[0, 0, side * turtleElbowBend]} scale={[1, side, 1]}>
+                <mesh position={[-0.04, 0, 0]} geometry={turtleFlipperGeometry}><meshToonMaterial color={colors.accent} /></mesh>
+              </group>
+            </group>
+          </MovingPart>
+        </group>
+      ))}
+      {[-1, 1].map((side) => (
+        // A back flipper is a short, rounded paddle beside the tail, angled back like a rudder.
+        <group key={`leg-${side}`} position={[-0.62, side * 0.42, -0.04]}>
+          <MovingPart animated={props.animated} phase={side * 0.8 + 1.6} amount={0.1} speed={1.45}>
+            <mesh position={[0.2 * Math.cos(side * turtleLegAngle), 0.2 * Math.sin(side * turtleLegAngle), 0]} rotation={[0, 0, side * turtleLegAngle]} scale={[0.27, 0.15, 0.05]}>
+              <sphereGeometry args={[1, 16, 10]} />
+              <meshToonMaterial color={colors.accent} />
+            </mesh>
+          </MovingPart>
+        </group>
+      ))}
       <mesh position={[-1.15, 0, 0]} rotation={[0, 0, Math.PI / 2]} scale={[0.2, 0.34, 0.12]}>
         <coneGeometry args={[1, 1, 12]} />
         <meshToonMaterial color={colors.light} />

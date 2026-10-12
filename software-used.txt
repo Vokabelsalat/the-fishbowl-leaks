@@ -1,1 +1,1 @@
-Next.js, three.js, MindAR, Tailwind CSS, SQLite, Node.js, Claude Code, Codex,Inkscape, Visual Studio Code
+Next.js, three.js, MindAR, Tailwind CSS, SQLite, Node.js, Claude Code, Codex, Inkscape, Visual Studio Code

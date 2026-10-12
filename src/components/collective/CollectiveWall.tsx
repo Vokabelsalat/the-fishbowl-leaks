@@ -13,7 +13,7 @@ import { NarrativeLine, NarrativeLines } from "@/components/collective/Narrative
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 import { creatureFitMargin } from "@/components/creature/CreatureCanvas";
 import { formatRenderStats, type RenderStatsReport } from "@/components/development/RenderStats";
-import { meshQualityPresets, minimumMeshQuality, useBatchMeshes, useMeshQuality, useMergeStaticMeshes, useReduceGeometryDetail } from "@/lib/development/renderSettings";
+import { meshQualityPresets, minimumMeshQuality, useMeshQuality } from "@/lib/development/renderSettings";
 import { activeVisualizationCopy, collectiveCapacity } from "@/config/visualization";
 import { compartmentLabels, compartmentWalls, holeHalfHeight, tankBreakdown, wallOpening } from "@/lib/collective/tankCompartments";
 import { artifacts } from "@/data/artifacts";
@@ -32,6 +32,8 @@ const osloClock = new Intl.DateTimeFormat("en-GB", {
   hourCycle: "h23",
 });
 
+// The test time slider and the switch between the aquarium and the heatmap exist only during development.
+const isDevelopment = process.env.NODE_ENV !== "production";
 // Debug readout: always on during development, and with `?stats` in the URL on a production server.
 const noSubscription = () => () => { };
 
@@ -46,28 +48,6 @@ function formatMinute(value: number) {
   const hours = Math.floor(value / 60);
   const minutes = value % 60;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-}
-
-function RenderSwitch({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      className="flex items-center gap-3 transition-colors hover:text-white/70"
-      onClick={() => onChange(!checked)}
-    >
-      <span
-        className={`relative h-4 w-7 rounded-full border transition-colors ${checked ? "border-[var(--phosphor)] bg-[var(--phosphor)]/25" : "border-white/30 bg-black/20"}`}
-        aria-hidden="true"
-      >
-        <span
-          className={`absolute top-1/2 left-0.5 size-2.5 -translate-y-1/2 rounded-full transition-transform ${checked ? "translate-x-3 bg-[var(--phosphor)]" : "translate-x-0 bg-white/45"}`}
-        />
-      </span>
-      {label}
-    </button>
-  );
 }
 
 function MeshQualityControl({ quality, onChange }: { quality: number; onChange: (quality: number) => void }) {
@@ -110,12 +90,15 @@ function MeshQualityControl({ quality, onChange }: { quality: number; onChange: 
   );
 }
 
-export function CollectiveWall() {
+export function CollectiveWall({ initialView = "collective" }: {
+  /** The view the wall opens with; in production it stays there, since the switch exists only during development. */
+  initialView?: "collective" | "heatmap";
+}) {
   const [contributions, setContributions] = useState<ExhibitionContribution[]>([]);
   const [heatmap, setHeatmap] = useState<CollectiveHeatDatum[]>([]);
   // The poll returns a fresh heatmap every time; only a changed one should re-render the wall.
   const heatmapSignature = useRef("");
-  const [view, setView] = useState<"collective" | "heatmap">("collective");
+  const [view, setView] = useState(initialView);
   const [active, setActive] = useState<ExhibitionContribution | null>(null);
   const [selectedContribution, setSelectedContribution] = useState<ExhibitionContribution | null>(null);
   const [connected, setConnected] = useState(true);
@@ -132,9 +115,6 @@ export function CollectiveWall() {
   const arrivalCreatureRef = useRef<HTMLDivElement>(null);
   const [releasedArrival, setReleasedArrival] = useState<CreatureArrival | null>(null);
   const renderStatsRef = useRef<HTMLSpanElement>(null);
-  const [mergeStaticMeshes, setMergeStaticMeshes] = useMergeStaticMeshes();
-  const [reduceGeometryDetail, setReduceGeometryDetail] = useReduceGeometryDetail();
-  const [batchMeshes, setBatchMeshes] = useBatchMeshes();
   const [meshQuality, setMeshQuality] = useMeshQuality();
   // Written straight into the element, so the readout never re-renders the wall.
   const showRenderStatsReport = useCallback((report: RenderStatsReport) => {
@@ -142,7 +122,7 @@ export function CollectiveWall() {
   }, []);
   const showRenderStats = useSyncExternalStore(
     noSubscription,
-    () => process.env.NODE_ENV !== "production" || new URLSearchParams(window.location.search).has("stats"),
+    () => isDevelopment || new URLSearchParams(window.location.search).has("stats"),
     () => false,
   );
 
@@ -203,14 +183,16 @@ export function CollectiveWall() {
             const known = new Set(current.map((item) => item.id));
             return [...current, ...data.contributions.filter((item) => !known.has(item.id))].slice(-collectiveCapacity);
           });
-          if (initialized.current) {
+          // The seed creatures are already in the tank when the day begins, so they never arrive.
+          const arrivals = data.contributions.filter((item) => !item.dailySeed);
+          if (initialized.current && arrivals.length > 0) {
             if (!activeRef.current) {
-              const [next, ...remaining] = data.contributions;
+              const [next, ...remaining] = arrivals;
               activeRef.current = next;
               setActive(next);
               queueRef.current.push(...remaining);
             } else {
-              queueRef.current.push(...data.contributions);
+              queueRef.current.push(...arrivals);
             }
           }
         }
@@ -282,15 +264,24 @@ export function CollectiveWall() {
   const visibleHeatmap = useMemo(
     () => liveTime
       ? heatmap
-      : aggregateContributionDwellTimes(visibleContributions, artifacts.map((artifact) => artifact.id)),
+      : aggregateContributionDwellTimes(
+        visibleContributions.filter((contribution) => !contribution.dailySeed),
+        artifacts.map((artifact) => artifact.id),
+      ),
     [heatmap, liveTime, visibleContributions],
   );
   const latestContribution = recentContributions[0];
   const previousContributions = recentContributions.slice(1);
   const dayProgress = clockMinutes / MINUTES_IN_DAY;
-  // The walls break with every creature of the day. Only the latest are loaded, and the ones left out
-  // are older than all of them, so at a test time they count as already released.
-  const breakdown = tankBreakdown(visibleContributions.length + Math.max(0, dayCreatureCount - contributions.length));
+  // The walls break with every visitor's creature of the day; the seed creatures the tank opens with
+  // break nothing. Only the latest are loaded, and the ones left out are older than all of them, so
+  // they count as released once the oldest loaded one is, and not at an earlier test time.
+  const loadedVisitorCreatures = contributions.filter((contribution) => !contribution.dailySeed);
+  const visibleVisitorCreatures = visibleContributions.filter((contribution) => !contribution.dailySeed);
+  const leftOutVisitorCount = visibleVisitorCreatures[0] && visibleVisitorCreatures[0].id === loadedVisitorCreatures[0]?.id
+    ? Math.max(0, dayCreatureCount - loadedVisitorCreatures.length)
+    : 0;
+  const breakdown = tankBreakdown(visibleVisitorCreatures.length + leftOutVisitorCount);
   const wallStyle = { "--tank-progress": dayProgress, "--tank-breakdown": breakdown } as CSSProperties;
 
   return (
@@ -334,9 +325,9 @@ export function CollectiveWall() {
             arrival={releasedArrival}
             onSelectContribution={setSelectedContribution}
             onRenderStats={showRenderStats ? showRenderStatsReport : undefined}
-            mergeStaticMeshes={mergeStaticMeshes}
-            batchMeshes={batchMeshes}
-            reduceGeometryDetail={reduceGeometryDetail}
+            mergeStaticMeshes
+            batchMeshes
+            reduceGeometryDetail
             meshQuality={meshQuality}
           />
         </div>
@@ -347,10 +338,11 @@ export function CollectiveWall() {
       <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between">
         <div className="p-8">
           <h1 className="font-display text-xl tracking-[-0.03em] lg:text-2xl">The Fishbowl Leaks</h1>
-          <AquariumAudio />
+          {/* The heatmap page stays silent, so it never plays over the aquarium beside it. */}
+          {initialView === "collective" && <AquariumAudio />}
           {/* <p className="mt-1 text-sm text-white/45">Shared aquarium · daily cycle</p> */}
         </div>
-        <div className="absolute left-1/2 flex -translate-x-1/2 rounded-full border border-white/12 bg-black/20 p-1 text-[10px] tracking-[0.18em] backdrop-blur-md" role="group" aria-label="Collective view">
+        {isDevelopment && <div className="absolute left-1/2 flex -translate-x-1/2 rounded-full border border-white/12 bg-black/20 p-1 text-[10px] tracking-[0.18em] backdrop-blur-md" role="group" aria-label="Collective view">
           <button
             type="button"
             className={`rounded-full px-4 py-2 transition-colors ${view === "collective" ? "bg-white/12 text-white/85" : "text-white/35 hover:text-white/60"}`}
@@ -367,14 +359,11 @@ export function CollectiveWall() {
           >
             Activity
           </button>
-        </div>
+        </div>}
         <div className="flex items-center gap-6 text-xs tracking-[0.18em] text-white/42 p-8">
           {/* Debug controls sit on their own row, so they never run into the view switch. */}
           {showRenderStats && view === "collective" && (
             <div className="absolute right-8 top-20 flex items-center gap-6">
-              <RenderSwitch label="Merged meshes" checked={mergeStaticMeshes} onChange={setMergeStaticMeshes} />
-              <RenderSwitch label="Batched draws" checked={batchMeshes} onChange={setBatchMeshes} />
-              <RenderSwitch label="Reduced detail" checked={reduceGeometryDetail} onChange={setReduceGeometryDetail} />
               <MeshQualityControl quality={meshQuality} onChange={setMeshQuality} />
               <span ref={renderStatsRef} aria-hidden="true" />
             </div>
@@ -387,7 +376,7 @@ export function CollectiveWall() {
         </div>
       </header>
 
-      {!visibleActive && <input
+      {isDevelopment && !visibleActive && <input
         className="tank-time-slider absolute inset-x-0 bottom-[var(--collective-recents-height)] z-40 w-full translate-y-1/2"
         type="range"
         aria-label="Test time of day"
@@ -404,12 +393,13 @@ export function CollectiveWall() {
         onDoubleClick={() => setLiveTime(true)}
       />}
 
-      {view === "collective" && visibleContributions.length === 0 && ready && (
+      {/* The tank stays ordered, with only its seed creatures, until the first visitor's creature arrives. */}
+      {view === "collective" && visibleVisitorCreatures.length === 0 && ready && (
         <div className="absolute inset-0 flex items-center justify-center text-center">
           <div>
             <div className="mx-auto mb-8 size-2 rounded-full bg-white/70 shadow-[0_0_32px_10px_rgba(255,255,255,.24)] animate-breathe" />
             <p className="font-display text-3xl text-white/72">The tank is ordered. For now.</p>
-            <p className="mt-3 text-sm text-white/40">Waiting for the first visitor specimen</p>
+            <p className="mt-3 text-sm text-white/40">Waiting for further visitor specimen</p>
           </div>
         </div>
       )}

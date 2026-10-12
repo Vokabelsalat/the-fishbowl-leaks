@@ -216,6 +216,20 @@ const arrivalSinkSeconds = 4.2;
 const arrivalSettleSeconds = 1.8;
 const arrivalDepth = 1;
 
+type DepartureMotion = {
+  startedAt: number;
+  /** -1 to leave through the left side, 1 through the right. */
+  direction: number;
+  done: boolean;
+};
+
+/** How fast a creature swims out of the tank once newer creatures have taken its place. */
+const departureSpeed = 1.4;
+/** How long it takes to speed up to that pace. */
+const departureRampSeconds = 3;
+/** A creature that has not left by now is removed anyway. */
+const departureMaxSeconds = 45;
+
 type BabyCreature = {
   contribution: ExhibitionContribution;
   spawnPosition: [number, number, number];
@@ -234,6 +248,9 @@ type FloatingCreatureProps = {
   juvenile?: boolean;
   spawnPosition?: [number, number, number];
   arrival?: CreatureArrival;
+  /** Set once newer creatures have taken this one's place: it swims out of the tank, then reports it is gone. */
+  departing?: boolean;
+  onDeparted?: (id: number) => void;
   onSelect?: (contribution: ExhibitionContribution) => void;
   mergeStaticMeshes?: boolean;
   reduceGeometryDetail?: boolean;
@@ -252,6 +269,8 @@ const FloatingCreature = memo(function FloatingCreature({
   juvenile = false,
   spawnPosition,
   arrival,
+  departing = false,
+  onDeparted,
   onSelect,
   mergeStaticMeshes = false,
   reduceGeometryDetail = false,
@@ -268,6 +287,7 @@ const FloatingCreature = memo(function FloatingCreature({
   const floorOffsetRef = useRef<number | null>(null);
   const arrivalPending = useRef(Boolean(arrival));
   const arrivalMotion = useRef<ArrivalMotion | null>(null);
+  const departureMotion = useRef<DepartureMotion | null>(null);
   const isBottomDweller = contribution.creatureForm === "crab" || contribution.creatureForm === "clam";
   const isWhale = contribution.creatureForm === "whale";
   const formSpeed = collectiveFormSpeed[contribution.creatureForm];
@@ -323,14 +343,15 @@ const FloatingCreature = memo(function FloatingCreature({
     targetOrientation.current.multiply(pitchOrientation.current);
   };
 
+  // A departing creature leaves the registry, so the others no longer bump into it, school or pair with it.
   useEffect(() => {
-    if (juvenile || !actorRegistry) return;
+    if (juvenile || !actorRegistry || departing) return;
     const registry = actorRegistry.current;
     registry.set(contribution.id, motion);
     return () => {
       registry.delete(contribution.id);
     };
-  }, [actorRegistry, contribution.id, juvenile]);
+  }, [actorRegistry, contribution.id, departing, juvenile]);
 
   useEffect(() => {
     if (!isWhale || !whaleLanes) return;
@@ -438,6 +459,44 @@ const FloatingCreature = memo(function FloatingCreature({
       swimRef.current.scale.setScalar(scale);
       return;
     }
+
+    // A departing creature heads for the nearer side of the tank and swims out of view, ignoring the
+    // others and the walls; whales keep their course and simply do not come round again.
+    if (departing) {
+      departureMotion.current ??= {
+        startedAt: elapsed,
+        direction: isWhale ? Math.sign(state.vx) || 1 : state.x < 0 ? -1 : 1,
+        done: false,
+      };
+      const departure = departureMotion.current;
+      if (departure.done) return;
+      const age = elapsed - departure.startedAt;
+      const exitX = isWhale
+        ? whaleTravelEdge
+        : viewport.width / 2 + Math.max(state.radius, 0.4) * depthScaleAt(state.z) * 2.5;
+      if (Math.abs(state.x) > exitX || age > departureMaxSeconds) {
+        departure.done = true;
+        swimRef.current.visible = false;
+        onDeparted?.(contribution.id);
+        return;
+      }
+      const ramp = THREE.MathUtils.smoothstep(age, 0, departureRampSeconds);
+      state.vx = departure.direction * THREE.MathUtils.lerp(placement.speed, Math.max(placement.speed, departureSpeed), ramp);
+      state.vy = isBottomDweller || isWhale ? 0 : THREE.MathUtils.damp(state.vy, 0, 1.2, delta);
+      state.vz = THREE.MathUtils.damp(state.vz, 0, 1.2, delta);
+      aimTowardVelocity(state.vx, state.vy, state.vz);
+      // It turns towards the exit before it sets off.
+      const departureFacingError = directionRef.current.quaternion.angleTo(targetOrientation.current);
+      const departureForwardMotion = THREE.MathUtils.smoothstep(Math.PI / 2 - departureFacingError, 0, Math.PI / 2);
+      state.x += state.vx * delta * departureForwardMotion;
+      state.y = isBottomDweller ? floorYAt(state.z) : state.y + state.vy * delta * departureForwardMotion;
+      state.z += state.vz * delta * departureForwardMotion;
+      swimRef.current.position.set(state.x, state.y, state.z);
+      swimRef.current.scale.setScalar(depthScaleAt(state.z));
+      directionRef.current.quaternion.slerp(targetOrientation.current, 1 - Math.exp(-2.5 * delta));
+      return;
+    }
+
     const settle = THREE.MathUtils.smoothstep(arrivalAge - arrivalSinkSeconds, 0, arrivalSettleSeconds);
 
     if (!isWhale && state.x > maxX - turnZone && state.vx > 0) state.vx = -Math.abs(state.vx);
@@ -1106,13 +1165,37 @@ export function CollectiveCreatureField({
   const pairingRef = useRef<PairingEvent | null>(null);
   const schoolingRef = useRef<Schooling>({ places: new Map(), schools: [], cooldownUntil: new Map() });
   const adults = useMemo(() => contributions.slice(-collectiveCapacity), [contributions]);
+  // Creatures that newer ones pushed out of the latest contributions stay until they have swum out of
+  // the tank. When the tank empties, a new day has begun, and they leave at once.
+  const [departing, setDeparting] = useState<ExhibitionContribution[]>([]);
+  const [previousAdults, setPreviousAdults] = useState(adults);
+  if (previousAdults !== adults) {
+    const staying = new Set(adults.map((contribution) => contribution.id));
+    const left = previousAdults.filter((contribution) => !staying.has(contribution.id));
+    setPreviousAdults(adults);
+    if (adults.length === 0) {
+      if (departing.length > 0) setDeparting([]);
+    } else if (left.length > 0 || departing.some((contribution) => staying.has(contribution.id))) {
+      setDeparting([...departing.filter((contribution) => !staying.has(contribution.id)), ...left]);
+    }
+  }
+  const handleDeparted = useCallback((id: number) => {
+    setDeparting((current) => current.filter((contribution) => contribution.id !== id));
+  }, []);
+  const departingIds = useMemo(() => new Set(departing.map((contribution) => contribution.id)), [departing]);
+  // Staying and departing creatures share one list, so a creature keeps its place and motion when it starts to leave.
+  const swimmers = useMemo(() => [...adults, ...departing], [adults, departing]);
   const whales = useMemo(
-    () => adults.filter((contribution) => contribution.creatureForm === "whale"),
-    [adults],
+    () => swimmers.filter((contribution) => contribution.creatureForm === "whale"),
+    [swimmers],
   );
   const tankAdults = useMemo(
     () => adults.filter((contribution) => contribution.creatureForm !== "whale"),
     [adults],
+  );
+  const tankSwimmers = useMemo(
+    () => swimmers.filter((contribution) => contribution.creatureForm !== "whale"),
+    [swimmers],
   );
   const handleBaby = useCallback((event: PairingEvent) => {
     setBabies((current) => [...current, createBaby(event)].slice(-8));
@@ -1139,6 +1222,8 @@ export function CollectiveCreatureField({
             contribution={contribution}
             progress={progress}
             whaleLanes={whaleLanes}
+            departing={departingIds.has(contribution.id)}
+            onDeparted={handleDeparted}
             mergeStaticMeshes={mergeStaticMeshes}
             reduceGeometryDetail={reduceGeometryDetail}
             meshQuality={meshQuality}
@@ -1164,12 +1249,14 @@ export function CollectiveCreatureField({
           schoolingRef={schoolingRef}
         />
         <PairingHeart pairingRef={pairingRef} />
-        {tankAdults.map((contribution) => (
+        {tankSwimmers.map((contribution) => (
           <FloatingCreature
             key={contribution.id}
             contribution={contribution}
             progress={progress}
             breakdownRef={breakdownRef}
+            departing={departingIds.has(contribution.id)}
+            onDeparted={handleDeparted}
             mergeStaticMeshes={mergeStaticMeshes}
             reduceGeometryDetail={reduceGeometryDetail}
             meshQuality={meshQuality}

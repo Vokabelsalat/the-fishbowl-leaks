@@ -27,6 +27,8 @@ export type ExhibitionContribution = {
   parts: SharedCreaturePart[];
   narrative: string[];
   createdAt: string;
+  /** A synthetic creature the day's tank opened with, not a visitor's; it stays out of the heatmap and the walls' breakdown. */
+  dailySeed?: boolean;
 };
 
 export type CollectiveHeatDatum = {

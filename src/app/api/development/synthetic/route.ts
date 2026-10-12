@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   clearSyntheticContributions();
   if (active) {
     for (const contribution of createSyntheticDataset(getCycleStartIso())) {
-      createContribution({ ...contribution, synthetic: true });
+      createContribution({ ...contribution, synthetic: "test-dataset" });
     }
   }
 

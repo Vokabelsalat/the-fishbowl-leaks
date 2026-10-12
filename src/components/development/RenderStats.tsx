@@ -4,12 +4,11 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 
 const updateEverySeconds = 0.5;
-const numberFormat = new Intl.NumberFormat("en-GB");
 
 export type RenderStatsReport = { fps: number; meshes: number; drawCalls: number; triangles: number; pixelRatio: number };
 
-export function formatRenderStats({ fps, meshes, drawCalls, triangles, pixelRatio }: RenderStatsReport) {
-  return `${fps} fps · ${numberFormat.format(meshes)} meshes · ${numberFormat.format(drawCalls)} draws · ${numberFormat.format(Math.round(triangles / 1000))}k triangles · ${pixelRatio.toFixed(2)}× resolution`;
+export function formatRenderStats({ fps, pixelRatio }: RenderStatsReport) {
+  return `${fps} fps · ${pixelRatio.toFixed(2)}× resolution`;
 }
 
 /**

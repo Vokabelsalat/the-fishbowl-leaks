@@ -56,7 +56,9 @@ export function useBatchMeshes() {
 }
 
 const MESH_QUALITY_KEY = "after-augmented-reality:mesh-quality";
-const meshQualityFallback = { value: 1 };
+/** The medium level of detail, used until another one is chosen in this browser. */
+const defaultMeshQuality = 0.9;
+const meshQualityFallback = { value: defaultMeshQuality };
 
 /** The named mesh qualities; each is the share of a shape's full segments it keeps. */
 export const meshQualityPresets = [
@@ -70,7 +72,7 @@ export const minimumMeshQuality = 0.1;
 function readMeshQuality() {
   try {
     const stored = Number(window.localStorage.getItem(MESH_QUALITY_KEY));
-    return stored >= minimumMeshQuality && stored <= 1 ? stored : 1;
+    return stored >= minimumMeshQuality && stored <= 1 ? stored : defaultMeshQuality;
   } catch {
     return meshQualityFallback.value;
   }
@@ -78,7 +80,7 @@ function readMeshQuality() {
 
 /** How much of their full segment count the aquarium's creatures keep, from 0.1 to 1 (the full model). */
 export function useMeshQuality() {
-  const quality = useSyncExternalStore(subscribe, readMeshQuality, () => 1);
+  const quality = useSyncExternalStore(subscribe, readMeshQuality, () => defaultMeshQuality);
   const setQuality = useCallback((next: number) => {
     meshQualityFallback.value = next;
     try {

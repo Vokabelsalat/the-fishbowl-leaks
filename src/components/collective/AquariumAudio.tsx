@@ -86,7 +86,8 @@ export function AquariumAudio() {
     };
   }, []);
 
-  return currentTrack ? (
+  // The playing track is named only during development; the exhibition plays it unannounced.
+  return currentTrack && process.env.NODE_ENV !== "production" ? (
     <p className="mt-2 font-display text-xl leading-snug" role="status">
       Playing: {currentTrack}
     </p>

@@ -7,6 +7,7 @@ import type { ExhibitionContribution, SharedCreaturePart } from "@/types/contrib
 import { artifactById } from "@/data/artifacts";
 import { artifacts } from "@/data/artifacts";
 import { aggregateContributionDwellTimes } from "@/lib/contributions/heatmap";
+import { createDailySeeds } from "@/lib/contributions/dailySeeds";
 import { isAquaticForm, type AquaticForm } from "@/lib/creature/aquaticForms";
 import { generateJourneyNarrative } from "@/lib/narrative/generateJourneyNarrative";
 import {
@@ -28,15 +29,25 @@ type ContributionRow = {
   glyphs_json: string;
   narrative_json: string;
   tank_breakdown: number;
+  synthetic_kind: SyntheticKind | null;
   created_at: string;
 };
+
+/**
+ * Why a synthetic contribution exists; visitors' own contributions have none. Every synthetic row
+ * also has `is_synthetic = 1`.
+ * - `test-dataset`: a full test day, switched on and off during development.
+ * - `daily-seed`: one of the creatures that open every day's tank, so it never stands empty. They
+ *   stay out of the heatmap and the walls' breakdown, and belong in no analysis of visitors.
+ */
+export type SyntheticKind = "test-dataset" | "daily-seed";
 
 const globalForDatabase = globalThis as typeof globalThis & {
   exhibitionDatabase?: DatabaseSync;
   exhibitionDatabaseSchemaVersion?: number;
 };
 
-const DATABASE_SCHEMA_VERSION = 6;
+const DATABASE_SCHEMA_VERSION = 7;
 
 const exhibitionClock = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Oslo",
@@ -107,6 +118,7 @@ function openDatabase() {
         glyphs_json TEXT NOT NULL,
         narrative_json TEXT NOT NULL,
         is_synthetic INTEGER NOT NULL DEFAULT 0,
+        synthetic_kind TEXT,
         tank_breakdown REAL NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
       );
@@ -122,6 +134,11 @@ function openDatabase() {
     }
     if (!contributionColumns.some((column) => column.name === "is_synthetic")) {
       database.exec("ALTER TABLE contributions ADD COLUMN is_synthetic INTEGER NOT NULL DEFAULT 0");
+    }
+    // Synthetic rows from before the daily seeds all belong to the test dataset.
+    if (!contributionColumns.some((column) => column.name === "synthetic_kind")) {
+      database.exec("ALTER TABLE contributions ADD COLUMN synthetic_kind TEXT");
+      database.exec("UPDATE contributions SET synthetic_kind = 'test-dataset' WHERE is_synthetic = 1");
     }
     if (!contributionColumns.some((column) => column.name === "creature_palette_json")) {
       database.exec("ALTER TABLE contributions ADD COLUMN creature_palette_json TEXT");
@@ -205,13 +222,27 @@ function deserialize(row: ContributionRow): ExhibitionContribution {
       { breakdown: row.tank_breakdown ?? 0 },
     ),
     createdAt: row.created_at,
+    ...(row.synthetic_kind === "daily-seed" ? { dailySeed: true } : {}),
   };
 }
 
+let seededCycleStart: string | null = null;
+
+/** Puts the day's seed creatures into the tank once a day, before any visitor's creature. */
+function ensureDailySeeds() {
+  const cycleStart = cycleStartIso();
+  if (seededCycleStart === cycleStart) return;
+  for (const seed of createDailySeeds(cycleStart, getCycleDate())) {
+    createContribution({ ...seed, synthetic: "daily-seed" });
+  }
+  seededCycleStart = cycleStart;
+}
+
 export function listContributions(afterId = 0, limit = 80) {
+  ensureDailySeeds();
   const rows = openDatabase()
     .prepare(
-      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, created_at
+      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, synthetic_kind, created_at
        FROM contributions
        WHERE id > ? AND created_at >= ?
        ORDER BY id ASC
@@ -225,9 +256,9 @@ export function listContributions(afterId = 0, limit = 80) {
 export function getCollectiveHeatmap() {
   const rows = openDatabase()
     .prepare(
-      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, created_at
+      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, synthetic_kind, created_at
        FROM contributions
-       WHERE created_at >= ?
+       WHERE created_at >= ? AND synthetic_kind IS NOT 'daily-seed'
        ORDER BY id ASC`,
     )
     .all(cycleStartIso()) as unknown as ContributionRow[];
@@ -250,13 +281,14 @@ export function createContribution(input: {
   /** How far the tank's compartments had broken apart when the creature was released. */
   tankBreakdown?: number;
   createdAt?: string;
-  synthetic?: boolean;
+  synthetic?: SyntheticKind;
 }) {
+  if (!input.synthetic) ensureDailySeeds();
   const database = openDatabase();
   database
     .prepare(
-      `INSERT INTO contributions (public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, is_synthetic, tank_breakdown, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO contributions (public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, is_synthetic, synthetic_kind, tank_breakdown, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(session_id) DO NOTHING`,
     )
     .run(
@@ -269,13 +301,14 @@ export function createContribution(input: {
       JSON.stringify(input.parts),
       JSON.stringify(input.narrative),
       input.synthetic ? 1 : 0,
+      input.synthetic ?? null,
       input.tankBreakdown ?? 0,
       input.createdAt ?? new Date().toISOString(),
     );
 
   const row = database
     .prepare(
-      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, created_at
+      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, synthetic_kind, created_at
        FROM contributions
        WHERE session_id = ?`,
     )
@@ -284,13 +317,13 @@ export function createContribution(input: {
   return deserialize(row);
 }
 
-/** How many creatures were released into today's tank. */
+/** How many creatures were released into today's tank, not counting the seed creatures it opened with. */
 export function getContributionCount() {
   const row = openDatabase()
     .prepare(
       `SELECT COUNT(*) AS count
        FROM contributions
-       WHERE created_at >= ?`,
+       WHERE created_at >= ? AND synthetic_kind IS NOT 'daily-seed'`,
     )
     .get(cycleStartIso()) as unknown as { count: number };
   return row.count;
@@ -301,7 +334,7 @@ export function getSyntheticContributionCount() {
     .prepare(
       `SELECT COUNT(*) AS count
        FROM contributions
-       WHERE is_synthetic = 1 AND created_at >= ?`,
+       WHERE synthetic_kind = 'test-dataset' AND created_at >= ?`,
     )
     .get(cycleStartIso()) as unknown as { count: number };
   return row.count;
@@ -309,7 +342,7 @@ export function getSyntheticContributionCount() {
 
 export function clearSyntheticContributions() {
   const result = openDatabase()
-    .prepare("DELETE FROM contributions WHERE is_synthetic = 1")
+    .prepare("DELETE FROM contributions WHERE synthetic_kind = 'test-dataset'")
     .run();
   return Number(result.changes);
 }

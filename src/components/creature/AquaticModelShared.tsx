@@ -488,6 +488,18 @@ function AquaticTraitForm({ partId, color, highlighted }: { partId: CreaturePart
           ))}
         </group>
       );
+    case "fortune-cards":
+      // Three cards fanned out from one corner, like a tarot spread held in a hand.
+      return (
+        <group position={[0, -0.06, -0.02]}>
+          {[-0.42, 0, 0.42].map((angle) => (
+            <group key={angle} rotation={[0, 0, angle]}>
+              <mesh position={[0, 0.27, angle * 0.06]}><boxGeometry args={[0.24, 0.4, 0.035]} />{material}</mesh>
+              <mesh position={[0, 0.3, angle * 0.06 + 0.02]}><sphereGeometry args={[0.045, 12, 8]} /><TraitMaterial color={color} highlighted={highlighted} glow={0.9} /></mesh>
+            </group>
+          ))}
+        </group>
+      );
     case "crystal-spines":
       return <mesh geometry={traitGeometries.thorn}><TraitMaterial color={color} highlighted={highlighted} opacity={0.86} /></mesh>;
     case "helping-arms":

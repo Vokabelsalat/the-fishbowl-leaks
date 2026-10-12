@@ -169,6 +169,16 @@ function AbstractPart({ piece }: { piece: CreaturePiece }) {
           ))}
         </group>
       );
+    case "fortune-cards":
+      return (
+        <group position={[-0.36, 1.42, 0.04]}>
+          {[-0.42, 0, 0.42].map((angle) => (
+            <group key={angle} rotation={[0, 0, angle]}>
+              <mesh position={[0, 0.3, angle * 0.05]}><boxGeometry args={[0.28, 0.46, 0.04]} />{material}</mesh>
+            </group>
+          ))}
+        </group>
+      );
     case "spark-plume":
       return (
         <group position={[0.36, 1.5, 0.08]}>

@@ -48,8 +48,44 @@ export function ArtifactContent({ artifact, onContinue, mini = false }: Artifact
         {expanded && (
           <div className="mt-6 border-t border-white/15 pt-5">
             <p className="text-sm text-white/50">Tank classification: {artifact.classification}</p>
-            <p className="mt-4 text-base leading-7 text-white/78">{artifact.shortText}</p>
-            <p className="mt-4 text-sm text-white/50">Traits carried forward: {artifact.visualTraits.join(" · ")}</p>
+            {artifact.description.split("\n\n").map((paragraph) => (
+              <p key={paragraph} className="mt-4 text-base leading-7 text-white/78">{paragraph}</p>
+            ))}
+            <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm leading-6">
+              <dt className="text-white/50">Work</dt>
+              <dd className="text-white/78">{[...artifact.workType, artifact.year].join(" · ")}</dd>
+              {artifact.platforms.length > 0 && (
+                <>
+                  <dt className="text-white/50">Platforms</dt>
+                  <dd className="text-white/78">{artifact.platforms.join(", ")}</dd>
+                </>
+              )}
+              {artifact.technicalDetails && (
+                <>
+                  <dt className="text-white/50">Technical details</dt>
+                  <dd className="text-white/78">{artifact.technicalDetails}</dd>
+                </>
+              )}
+              {artifact.links.length > 0 && (
+                <>
+                  <dt className="text-white/50">{artifact.links.length > 1 ? "Links" : "Link"}</dt>
+                  <dd className="min-w-0">
+                    {artifact.links.map((link) => (
+                      <a
+                        key={link}
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block wrap-break-word text-white/78 underline underline-offset-4 transition-colors hover:text-white"
+                      >
+                        {new URL(link).hostname.replace(/^www\./, "")}
+                      </a>
+                    ))}
+                  </dd>
+                </>
+              )}
+            </dl>
+            <p className="mt-5 text-sm text-white/50">Traits carried forward: {artifact.visualTraits.join(" · ")}</p>
           </div>
         )}
 

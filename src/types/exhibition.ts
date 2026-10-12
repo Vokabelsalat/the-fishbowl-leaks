@@ -45,7 +45,8 @@ export type CreaturePartId =
   | "crystal-spines"
   | "sand-hourglass"
   | "spark-plume"
-  | "barcode-fin";
+  | "barcode-fin"
+  | "fortune-cards";
 
 export type CreaturePart = {
   id: CreaturePartId;
@@ -83,7 +84,15 @@ export type ExhibitionArtifact = {
   color: string;
   /** Foreground color used when the constellation is shown on white. */
   alternativeColor: string;
-  shortText: string;
+  /** The full exhibition text; paragraphs are separated by a blank line. */
+  description: string;
+  /** Kinds of work, e.g. "Augmented Reality" or "Work in progress". */
+  workType: string[];
+  year: number;
+  /** Software, services and materials the artists name. */
+  platforms: string[];
+  technicalDetails?: string;
+  links: string[];
   narrativeWords: string[];
   creaturePart: CreaturePart;
   marineType: string;

@@ -22,4 +22,5 @@ export const constellationOrientations: Record<string, Orientation> = {
   "fiery-sparks-of-light": { yaw: 0.5, pitch: -0.16, roll: 0 },
   "fishbowl-leaks": { yaw: -2.9324, pitch: -0.1659, roll: -1.5099 },
   "realidad-mitigada": { yaw: -0.1925, pitch: 0.1213, roll: 0 },
+  "earth-fortunes": { yaw: 0.5, pitch: -0.16, roll: 0 },
 };

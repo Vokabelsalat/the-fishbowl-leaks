@@ -113,6 +113,11 @@ function WhaleDepthVeil() {
   );
 }
 
+/** Shows the given cursor over the tank's canvas. */
+function setCanvasCursor(canvas: HTMLCanvasElement, cursor: string) {
+  canvas.style.cursor = cursor;
+}
+
 /** Half the width and height of the tank creatures swim in, inside the viewport's margins. */
 function tankHalfWidth(viewport: { width: number }) {
   return Math.max(1.6, viewport.width / 2 - 0.9);
@@ -736,11 +741,11 @@ const FloatingCreature = memo(function FloatingCreature({
       onPointerEnter={(event) => {
         if (!onSelect || juvenile) return;
         event.stopPropagation();
-        canvas.style.cursor = "pointer";
+        setCanvasCursor(canvas, "pointer");
       }}
       onPointerLeave={() => {
         if (!onSelect || juvenile) return;
-        canvas.style.cursor = "default";
+        setCanvasCursor(canvas, "default");
       }}
     >
       <group ref={directionRef} rotation={[0, startsFacingLeft ? Math.PI : 0, 0]}>

@@ -10,6 +10,7 @@ import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 import { artifacts } from "@/data/artifacts";
 import { creaturePattern, patternForTraitCount } from "@/lib/creature/patterns";
 import { cast } from "@/components/poster/posterCast";
+import { posterTagline } from "@/components/poster/tutorialCopy";
 
 function seededRandom(seed: string) {
   let hash = 2166136261;
@@ -206,7 +207,7 @@ function MarineSnow({ seed }: { seed: string }) {
  * The poster itself. `width` fixes its size in pixels for exports; without it the poster fits the window.
  * `landscape` lays it out 3:2 wide instead of 2:3 tall.
  */
-export function PosterArtwork({ seed, width, pose, landscape = false, paused = false }: { seed: string; width?: number; pose?: string; landscape?: boolean; paused?: boolean }) {
+export function PosterArtwork({ seed, width, pose, landscape = false, paused = false, bare = false }: { seed: string; width?: number; pose?: string; landscape?: boolean; paused?: boolean; bare?: boolean }) {
   const initialPoses = useMemo(() => parsePoses(pose), [pose]);
   const ratio = landscape ? 2 / 3 : 3 / 2;
   const fitToWindow = landscape ? "w-[min(100vw,150dvh)]" : "h-[min(100dvh,150vw)]";
@@ -241,33 +242,38 @@ export function PosterArtwork({ seed, width, pose, landscape = false, paused = f
         </Canvas>
       </div>
       <div className="creature-poster-fade pointer-events-none absolute inset-x-0 bottom-0 h-[34%]" aria-hidden="true" />
-      <header className="creature-poster-title pointer-events-none absolute inset-x-0 bottom-[6.5%] text-center">
-        <p className="mb-[0.9em] text-[0.17em] tracking-[0.02em] text-white/80">It was built to classify. It could not contain them.</p>
-        <h1 className="font-display leading-[0.78] tracking-[-0.075em]">
-          The Fishbowl
-          <span className="block italic text-[var(--phosphor)]">Leaks</span>
-        </h1>
-      </header>
+      {/* A bare poster leaves out the words, for exports that set them as editable text. */}
+      {!bare && (
+        <header className="creature-poster-title pointer-events-none absolute inset-x-0 bottom-[6.5%] text-center">
+          <p className="mb-[0.9em] text-[0.17em] tracking-[0.02em] text-white/80">{posterTagline}</p>
+          <h1 className="font-display leading-[0.78] tracking-[-0.075em]">
+            The Fishbowl
+            <span className="block italic text-[var(--phosphor)]">Leaks</span>
+          </h1>
+        </header>
+      )}
     </article>
   );
 }
+
+type ExportKind = "image" | "tutorial" | "svg";
 
 /** Exports go through a development route that captures the pages with a headless Chrome. */
 const canExport = process.env.NODE_ENV !== "production";
 
 /** The current poster's link parameters, kept in the address bar as creatures are posed. */
-function exportHref(kind: "image" | "tutorial") {
+function exportHref(kind: ExportKind) {
   const params = new URLSearchParams(window.location.search);
   params.set("kind", kind);
   return `/api/development/poster-export?${params}`;
 }
 
-export function CreaturePoster({ seed, width, pose, landscape = false }: { seed: string; width?: number; pose?: string; landscape?: boolean }) {
+export function CreaturePoster({ seed, width, pose, landscape = false, bare = false }: { seed: string; width?: number; pose?: string; landscape?: boolean; bare?: boolean }) {
   const router = useRouter();
   const [paused, setPaused] = useState(false);
-  const [exporting, setExporting] = useState<"image" | "tutorial" | null>(null);
+  const [exporting, setExporting] = useState<ExportKind | null>(null);
 
-  const exportFile = async (kind: "image" | "tutorial") => {
+  const exportFile = async (kind: ExportKind) => {
     setExporting(kind);
     try {
       const response = await fetch(exportHref(kind));
@@ -291,7 +297,7 @@ export function CreaturePoster({ seed, width, pose, landscape = false }: { seed:
     <main className="grid min-h-dvh place-items-center bg-black">
       {/* Keeps the development badge out of poster captures. */}
       <style>{"nextjs-portal { display: none; }"}</style>
-      <PosterArtwork seed={seed} width={width} pose={pose} landscape={landscape} paused={paused} />
+      <PosterArtwork seed={seed} width={width} pose={pose} landscape={landscape} paused={paused} bare={bare} />
       {/* Exports set a fixed width; the buttons stay out of those captures. */}
       {!width && (
         <div className="fixed right-6 bottom-6 z-10 flex gap-3">
@@ -302,6 +308,9 @@ export function CreaturePoster({ seed, width, pose, landscape = false }: { seed:
               </button>
               <button type="button" className={buttonClass} disabled={exporting !== null} onClick={() => exportFile("tutorial")}>
                 {exporting === "tutorial" ? "Exporting A4 tutorial, about a minute…" : "Export A4 tutorial"}
+              </button>
+              <button type="button" className={buttonClass} disabled={exporting !== null} onClick={() => exportFile("svg")}>
+                {exporting === "svg" ? "Exporting editable SVG, about a minute…" : "Export editable SVG"}
               </button>
             </>
           )}

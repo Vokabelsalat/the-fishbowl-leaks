@@ -78,6 +78,7 @@ Open `/poster` in development, click **New poster** until the cast fits (drag a 
 
 - **Export image** downloads the poster as a PNG, 2400 × 3600 px (3600 × 2400 px with `format=landscape`).
 - **Export A4 tutorial** downloads an A4 PDF to hang in the exhibition: the poster in its landscape layout, three steps on how to take part, the QR code and the dark Fishbowl Leaks target as an example, which visitors can scan right there. The sheet itself is at `/poster/tutorial?seed=<seed>`.
+- **Export editable SVG** downloads the same A4 sheet as an SVG for Inkscape, Illustrator or Affinity: the rendered sea is one embedded image, while the poster title, heading, steps, QR code (vector) and example target (vector circles) are separate named elements you can move, scale and rewrite. The texts use Iowan Old Style and Avenir Next, which come with macOS. The words are shared with the sheet page in `src/components/poster/tutorialCopy.ts`.
 
 Both exports load the pages in the installed Google Chrome in headless mode, which takes about a minute. Set `CHROME_PATH` to use another Chrome or Chromium. The export route only works during development.
 

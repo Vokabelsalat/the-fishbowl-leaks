@@ -4,11 +4,11 @@ import Image from "next/image";
 import { PosterArtwork } from "@/components/poster/CreaturePoster";
 import { ConstellationTargetImage } from "@/components/poster/ConstellationTargetImage";
 import { artifactById } from "@/data/artifacts";
+import { tutorialExampleArtifactId, tutorialHeading, tutorialSteps } from "@/components/poster/tutorialCopy";
 
 /** A4 is 210 mm wide; the poster spans it edge to edge, measured in CSS pixels at 96 per inch. */
 const sheetWidthPixels = (210 / 25.4) * 96;
-/** The poster carries the Fishbowl Leaks target on dark, so the example on the sheet can be scanned too. */
-const exampleArtifact = artifactById.get("fishbowl-leaks")!;
+const exampleArtifact = artifactById.get(tutorialExampleArtifactId)!;
 
 /**
  * The A4 sheet that hangs in the exhibition: the poster across the top and the few steps it takes to
@@ -22,7 +22,7 @@ export function PosterTutorialSheet({ seed, pose }: { seed: string; pose?: strin
 
       <section className="flex flex-1 flex-col px-[14mm] pt-[8mm] pb-[12mm]" aria-labelledby="tutorial-title">
         <h2 id="tutorial-title" className="font-display text-[30pt] leading-none tracking-[-0.04em]">
-          Grow your own story creature
+          {tutorialHeading}
         </h2>
 
         <ol className="mt-[9mm] grid grid-cols-2 gap-x-[10mm] gap-y-[8mm]">
@@ -33,7 +33,7 @@ export function PosterTutorialSheet({ seed, pose }: { seed: string; pose?: strin
             </div>
             <p className="mt-[5mm] flex gap-[3mm] text-[11.5pt] leading-[1.35]">
               <span className="font-display text-[20pt] leading-none text-[var(--phosphor)]">1</span>
-              <span>Scan the code to open the aquarium on your phone, or visit aar.kusnick.com.</span>
+              <span>{tutorialSteps[0]}</span>
             </p>
           </li>
           <li className="flex flex-col">
@@ -42,13 +42,13 @@ export function PosterTutorialSheet({ seed, pose }: { seed: string; pose?: strin
             </div>
             <p className="mt-[5mm] flex gap-[3mm] text-[11.5pt] leading-[1.35]">
               <span className="font-display text-[20pt] leading-none text-[var(--phosphor)]">2</span>
-              <span>Look around the exhibition for constellations like this one and scan them. Every artwork changes your creature.</span>
+              <span>{tutorialSteps[1]}</span>
             </p>
           </li>
           <li className="col-span-2">
             <p className="flex gap-[3mm] text-[11.5pt] leading-[1.35]">
               <span className="font-display text-[20pt] leading-none text-[var(--phosphor)]">3</span>
-              <span>Finish your story and release your creature into the shared aquarium on the big screen.</span>
+              <span>{tutorialSteps[2]}</span>
             </p>
           </li>
         </ol>

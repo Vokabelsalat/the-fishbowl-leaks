@@ -12,7 +12,7 @@ function freshSeed() {
 }
 
 export default async function PosterPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const { seed, width, pose, format } = await searchParams;
+  const { seed, width, pose, format, bare } = await searchParams;
   const fixedWidth = Number(width);
   return (
     <CreaturePoster
@@ -21,6 +21,7 @@ export default async function PosterPage({ searchParams }: { searchParams: Promi
       width={Number.isFinite(fixedWidth) && fixedWidth > 0 ? fixedWidth : undefined}
       pose={typeof pose === "string" ? pose : undefined}
       landscape={format === "landscape"}
+      bare={bare === "1"}
     />
   );
 }

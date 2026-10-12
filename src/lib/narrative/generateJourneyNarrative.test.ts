@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { artifacts } from "@/data/artifacts";
 import { artworkBanks, exhibitionNarrativeThemes, sentenceTemplates, themeBanks } from "@/data/narrativeGrammar";
 import { generateJourneyNarrative } from "@/lib/narrative/generateJourneyNarrative";
+import { parseNarrativeLine, plainNarrativeLine } from "@/lib/narrative/narrativeMarkup";
 import type { Discovery } from "@/store/journeySlice";
 
 function discoveries(ids: string[]): Discovery[] {
@@ -83,5 +84,40 @@ describe("generateJourneyNarrative", () => {
 
   it("waits quietly before the first scan", () => {
     expect(generateJourneyNarrative([], artifacts)).toEqual(["The fishbowl waits."]);
+  });
+
+  it("leaves stories untouched while the tank is whole", () => {
+    const route = discoveries(artifacts.slice(0, 8).map(({ id }) => id));
+    expect(generateJourneyNarrative(route, artifacts, { breakdown: 0 })).toEqual(generateJourneyNarrative(route, artifacts));
+    expect(generateJourneyNarrative(route, artifacts).join(" ")).not.toContain("[[");
+  });
+
+  it("replaces more classifying words the further the tank has broken, keeping the old ones", () => {
+    const routes = artifacts.map((_, start) => discoveries([0, 3, 6, 9].map((step) => artifacts[(start + step) % artifacts.length].id)));
+    const replacements = (breakdown: number) => routes
+      .flatMap((route) => generateJourneyNarrative(route, artifacts, { breakdown }))
+      .flatMap(parseNarrativeLine)
+      .filter((segment) => "replaced" in segment);
+    expect(replacements(0.3).length).toBeGreaterThan(0);
+    expect(replacements(1).length).toBeGreaterThan(replacements(0.3).length);
+    replacements(1).forEach((segment) => {
+      if (!("replaced" in segment)) return;
+      expect(segment.replaced).not.toBe(segment.by);
+      expect(segment.replaced.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("never replaces an artwork's own subject", () => {
+    for (const artifact of artifacts) {
+      const subjects = artworkBanks[artifact.id].NP.subject;
+      const [line] = generateJourneyNarrative(discoveries([artifact.id]), artifacts, { breakdown: 1 });
+      const replaced = parseNarrativeLine(line).flatMap((segment) => ("replaced" in segment ? [segment.replaced.toLowerCase()] : []));
+      expect(replaced.some((word) => subjects.map((subject) => subject.toLowerCase()).includes(word)), line).toBe(false);
+    }
+  });
+
+  it("reads as a plain sentence with only the new words", () => {
+    expect(plainNarrativeLine("Frida's villa [[resurfaced>>leaked]] past the [[glass wall>>crack]].")).toBe("Frida's villa leaked past the crack.");
+    expect(parseNarrativeLine("A [[net>>gap]] opened.")).toEqual([{ text: "A " }, { replaced: "net", by: "gap" }, { text: " opened." }]);
   });
 });

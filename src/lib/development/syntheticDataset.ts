@@ -2,6 +2,7 @@ import { artifacts } from "@/data/artifacts";
 import { calculateDwellTimes } from "@/lib/contributions/dwellTime";
 import { aquaticForms, type AquaticForm } from "@/lib/creature/aquaticForms";
 import { generateJourneyNarrative } from "@/lib/narrative/generateJourneyNarrative";
+import { tankBreakdown } from "@/lib/collective/tankCompartments";
 import type { SharedCreaturePart } from "@/types/contribution";
 import { creatureColorPalette, type CreatureColorPalette } from "@/lib/creature/colorPalettes";
 import { creaturePattern, type CreaturePattern } from "@/lib/creature/patterns";
@@ -31,6 +32,7 @@ export type SyntheticContribution = {
   creatureProportions: CreatureProportions;
   parts: SharedCreaturePart[];
   narrative: string[];
+  tankBreakdown: number;
   createdAt: string;
 };
 
@@ -107,6 +109,8 @@ export function createSyntheticDataset(
       };
     });
 
+    // Visitors finish in order through the day, so each one breaks the walls a little further.
+    const breakdown = tankBreakdown(visitorIndex + 1);
     const publicId = `synthetic-${dayKey}-${String(visitorIndex + 1).padStart(3, "0")}`;
     const sessionId = `synthetic:${dayKey}:${String(visitorIndex + 1).padStart(3, "0")}`;
     return {
@@ -117,7 +121,8 @@ export function createSyntheticDataset(
       creaturePattern: creaturePattern(sessionId),
       creatureProportions: creatureProportions(sessionId),
       parts,
-      narrative: generateJourneyNarrative(discoveries, artifacts),
+      narrative: generateJourneyNarrative(discoveries, artifacts, { breakdown }),
+      tankBreakdown: breakdown,
       createdAt: new Date(completedAt).toISOString(),
     };
   });

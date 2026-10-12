@@ -9,6 +9,7 @@ import {
   listContributions,
 } from "@/lib/contributions/database";
 import { generateJourneyNarrative } from "@/lib/narrative/generateJourneyNarrative";
+import { tankBreakdown } from "@/lib/collective/tankCompartments";
 import { calculateDwellTimes } from "@/lib/contributions/dwellTime";
 import { isAquaticForm, pickAquaticForm } from "@/lib/creature/aquaticForms";
 import { creatureColorPalette, isCreatureColorPalette } from "@/lib/creature/colorPalettes";
@@ -160,7 +161,9 @@ export async function POST(request: Request) {
       ...(discovery.feedback !== undefined ? { feedback: discovery.feedback } : {}),
     };
   });
-  const narrative = generateJourneyNarrative(submission.discoveries, artifacts);
+  // The walls have broken as far as this creature, counted with the day's others, takes them.
+  const breakdown = tankBreakdown(getContributionCount() + 1);
+  const narrative = generateJourneyNarrative(submission.discoveries, artifacts, { breakdown });
   const contribution = createContribution({
     publicId: randomUUID(),
     sessionId: submission.sessionId,
@@ -170,6 +173,7 @@ export async function POST(request: Request) {
     creatureProportions: submission.creatureProportions,
     parts,
     narrative,
+    tankBreakdown: breakdown,
   });
 
   return Response.json({ contribution }, { status: 201, headers: responseHeaders });

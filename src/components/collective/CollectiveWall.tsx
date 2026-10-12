@@ -9,6 +9,7 @@ import { AquariumAudio } from "@/components/collective/AquariumAudio";
 import { SpecimenDialog } from "@/components/collective/SpecimenDialog";
 import { PathVisualization } from "@/components/visualization/PathVisualization";
 import { FitText } from "@/components/ui/FitText";
+import { NarrativeLine, NarrativeLines } from "@/components/collective/NarrativeLine";
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 import { creatureFitMargin } from "@/components/creature/CreatureCanvas";
 import { formatRenderStats, type RenderStatsReport } from "@/components/development/RenderStats";
@@ -430,7 +431,7 @@ export function CollectiveWall() {
             </div>
             <div className="collective-story-narrative pt-6 font-display text-[clamp(1.3rem,1.8vw,2rem)] leading-[1.22] tracking-[-0.025em]">
               {visibleActive.narrative.map((line, index) => (
-                <p key={`${index}-${line}`} className="mb-4">{line}</p>
+                <p key={`${index}-${line}`} className="mb-4"><NarrativeLine line={line} /></p>
               ))}
             </div>
           </div>
@@ -458,7 +459,7 @@ export function CollectiveWall() {
                 <p className="mb-3 shrink-0 text-sm text-white/40">Latest released story</p>
                 <FitText className="font-display text-[clamp(1.15rem,1.45vw,1.75rem)] leading-[1.12] tracking-[-0.025em] text-white/82">
                   {/* One flowing paragraph uses the panel's width, so long stories need fewer lines and keep a larger size. */}
-                  <p>{latestContribution.narrative.join(" ")}</p>
+                  <p><NarrativeLines lines={latestContribution.narrative} /></p>
                 </FitText>
                 <p className="mt-4 shrink-0 text-[10px] tracking-[0.2em] text-white/30">
                   {latestContribution.parts.length} {latestContribution.parts.length === 1 ? "encounter" : "encounters"}
@@ -478,7 +479,7 @@ export function CollectiveWall() {
                     />
                   </div>
                   <p className="line-clamp-2 font-display text-sm leading-[1.15] tracking-[-0.015em] text-white/60">
-                    {contribution.narrative.join(" ")}
+                    <NarrativeLines lines={contribution.narrative} />
                   </p>
                 </article>
               ))}

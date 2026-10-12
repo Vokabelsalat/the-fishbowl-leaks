@@ -124,3 +124,30 @@ export const artworkBanks: Record<string, ArtworkBank> = {
   "realidad-mitigada": { NP: { subject: ["a resistant poem", "the marked barcode", "a hybrid book", "an augmented verse"] }, VBD: { motion: ["resisted", "shifted", "surfaced", "glitched"] } },
   "earth-fortunes": { NP: { subject: ["a climate tarot card", "the future forecast", "an energy reading", "the fortune teller's card"] }, VBD: { motion: ["turned", "surfaced", "shifted", "flickered"] } },
 };
+
+export type LeakingSlot = Exclude<Slot, "subject">;
+
+/**
+ * Words that take over from the tank's classifying vocabulary once its compartments break apart.
+ * A replaced word stays visible, crossed out, in front of its replacement.
+ */
+export const leakBanks: Record<LeakingSlot, readonly string[]> = {
+  boundary: ["crack", "breach", "open seam", "torn net", "gap", "spill", "burst wall", "missing pane"],
+  quality: ["leaking", "unsorted", "unlabelled", "spilling", "porous", "unclassified", "loose", "overflowing"],
+  place: ["open water", "spillway", "overflow", "unmapped current", "flood", "open sea", "runoff", "outflow"],
+  trace: ["drift", "spill", "loose label", "stray signal", "runoff", "seep", "torn tag", "escaped sample"],
+  motion: ["leaked", "spilled", "seeped", "escaped", "overflowed", "slipped", "dissolved", "drifted loose"],
+};
+
+/**
+ * How readily each kind of word gives way as the tank breaks down: the walls go first, then the
+ * labels describing things, the places and traces, and finally how things move. The artworks'
+ * own subjects are never replaced.
+ */
+export const leakReadiness: Record<LeakingSlot, number> = {
+  boundary: 1,
+  quality: 0.85,
+  place: 0.65,
+  trace: 0.5,
+  motion: 0.35,
+};

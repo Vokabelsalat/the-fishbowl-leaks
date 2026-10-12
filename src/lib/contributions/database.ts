@@ -27,6 +27,7 @@ type ContributionRow = {
   creature_proportions_json: string | null;
   glyphs_json: string;
   narrative_json: string;
+  tank_breakdown: number;
   created_at: string;
 };
 
@@ -35,7 +36,7 @@ const globalForDatabase = globalThis as typeof globalThis & {
   exhibitionDatabaseSchemaVersion?: number;
 };
 
-const DATABASE_SCHEMA_VERSION = 5;
+const DATABASE_SCHEMA_VERSION = 6;
 
 const exhibitionClock = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Oslo",
@@ -106,6 +107,7 @@ function openDatabase() {
         glyphs_json TEXT NOT NULL,
         narrative_json TEXT NOT NULL,
         is_synthetic INTEGER NOT NULL DEFAULT 0,
+        tank_breakdown REAL NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
       );
       CREATE INDEX IF NOT EXISTS idx_contributions_created_at
@@ -129,6 +131,10 @@ function openDatabase() {
     }
     if (!contributionColumns.some((column) => column.name === "creature_proportions_json")) {
       database.exec("ALTER TABLE contributions ADD COLUMN creature_proportions_json TEXT");
+    }
+    // Stories saved before the tank broke apart keep a breakdown of 0, so none of their words change.
+    if (!contributionColumns.some((column) => column.name === "tank_breakdown")) {
+      database.exec("ALTER TABLE contributions ADD COLUMN tank_breakdown REAL NOT NULL DEFAULT 0");
     }
     globalForDatabase.exhibitionDatabaseSchemaVersion = DATABASE_SCHEMA_VERSION;
   }
@@ -196,6 +202,7 @@ function deserialize(row: ContributionRow): ExhibitionContribution {
         discoveredAt: createdAt + part.sequence,
       })),
       artifacts,
+      { breakdown: row.tank_breakdown ?? 0 },
     ),
     createdAt: row.created_at,
   };
@@ -204,7 +211,7 @@ function deserialize(row: ContributionRow): ExhibitionContribution {
 export function listContributions(afterId = 0, limit = 80) {
   const rows = openDatabase()
     .prepare(
-      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, created_at
+      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, created_at
        FROM contributions
        WHERE id > ? AND created_at >= ?
        ORDER BY id ASC
@@ -218,7 +225,7 @@ export function listContributions(afterId = 0, limit = 80) {
 export function getCollectiveHeatmap() {
   const rows = openDatabase()
     .prepare(
-      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, created_at
+      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, created_at
        FROM contributions
        WHERE created_at >= ?
        ORDER BY id ASC`,
@@ -240,14 +247,16 @@ export function createContribution(input: {
   creatureProportions: CreatureProportions;
   parts: SharedCreaturePart[];
   narrative: string[];
+  /** How far the tank's compartments had broken apart when the creature was released. */
+  tankBreakdown?: number;
   createdAt?: string;
   synthetic?: boolean;
 }) {
   const database = openDatabase();
   database
     .prepare(
-      `INSERT INTO contributions (public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, is_synthetic, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO contributions (public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, is_synthetic, tank_breakdown, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(session_id) DO NOTHING`,
     )
     .run(
@@ -260,12 +269,13 @@ export function createContribution(input: {
       JSON.stringify(input.parts),
       JSON.stringify(input.narrative),
       input.synthetic ? 1 : 0,
+      input.tankBreakdown ?? 0,
       input.createdAt ?? new Date().toISOString(),
     );
 
   const row = database
     .prepare(
-      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, created_at
+      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, created_at
        FROM contributions
        WHERE session_id = ?`,
     )

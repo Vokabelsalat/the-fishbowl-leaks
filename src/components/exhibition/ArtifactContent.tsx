@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, useState } from "react";
 import type { ExhibitionArtifact } from "@/types/exhibition";
 import { ScrollNotice } from "@/components/ui/ScrollNotice";
@@ -47,6 +48,17 @@ export function ArtifactContent({ artifact, onContinue, mini = false }: Artifact
         </p>
 
         <div className="mt-6 border-t border-white/15 pt-5">
+          {artifact.image && (
+            // Tall pictures are capped in height so the text stays in reach on a phone.
+            <Image
+              src={encodeURI(artifact.image.src)}
+              alt={`${artifact.title} by ${artifact.artist}`}
+              width={artifact.image.width}
+              height={artifact.image.height}
+              sizes="(min-width: 36rem) 36rem, 100vw"
+              className="mb-5 block h-auto max-h-[42dvh] w-auto max-w-full"
+            />
+          )}
           <p className="text-sm text-white/50">Tank classification: {artifact.classification}</p>
           {artifact.description.split("\n\n").map((paragraph) => (
             <p key={paragraph} className="mt-4 text-base leading-7 text-white/78">{paragraph}</p>

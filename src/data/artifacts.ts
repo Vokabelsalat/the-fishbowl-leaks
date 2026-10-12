@@ -449,6 +449,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2026,
     platforms: ["Blender", "3ds Max", "Mistika", "DaVinci Resolve", "Photoshop", "RealityCapture", "Pro Tools"],
     links: [],
+    image: { src: "/images/findingfrida Medium.jpeg", width: 640, height: 360 },
     narrativeWords: ["remember", "archive", "return", "resonate"],
     creaturePart: {
       id: "memory-crown",
@@ -473,6 +474,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2026,
     platforms: [],
     links: [],
+    image: { src: "/images/Historically Yours_Podcast Cover Medium.jpeg", width: 640, height: 640 },
     narrativeWords: ["remember", "record", "revisit", "inherit"],
     creaturePart: {
       id: "archive-ears",
@@ -496,6 +498,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2026,
     platforms: [],
     links: [],
+    image: { src: "/images/fromingridtobergen Medium.jpeg", width: 453, height: 640 },
     narrativeWords: ["trace", "route", "carry", "return"],
     creaturePart: {
       id: "route-tail",
@@ -519,6 +522,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2026,
     platforms: [],
     links: [],
+    image: { src: "/images/yourupdatehasfailed Medium.jpeg", width: 640, height: 360 },
     narrativeWords: ["update", "error", "restart", "persist"],
     creaturePart: {
       id: "signal-antenna",
@@ -543,6 +547,7 @@ const exhibitionSources: ArtifactSource[] = [
     platforms: ["Runway", "Seedance 2.0", "Lumina Dream Machine", "Adobe Premiere", "Adobe Audition", "ChatGPT Image", "Adobe Firefly", "Claude (coding)", "ElevenLabs", "Python", "Carpentry"],
     technicalDetails: "Installation with five channel video and two channel audio",
     links: [],
+    image: { src: "/images/grandhotel Medium.jpeg", width: 640, height: 358 },
     narrativeWords: ["enter", "corridor", "wander", "transform"],
     creaturePart: {
       id: "cockatoo-beak",
@@ -566,6 +571,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2026,
     platforms: ["OpenCV.js"],
     links: [],
+    image: { src: "/images/Glasslike-catalog-image-300 Medium.jpeg", width: 640, height: 453 },
     narrativeWords: ["touch", "surface", "refract", "fold"],
     creaturePart: {
       id: "glass-wings",
@@ -589,6 +595,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2009,
     platforms: [],
     links: [],
+    image: { src: "/images/frompage Medium.jpeg", width: 640, height: 360 },
     narrativeWords: ["read", "letter", "decode", "respond"],
     creaturePart: {
       id: "page-fins",
@@ -613,6 +620,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2026,
     platforms: [],
     links: [],
+    image: { src: "/images/bybannen Medium.jpeg", width: 640, height: 640 },
     narrativeWords: ["move", "balance", "glide", "arrive"],
     creaturePart: {
       id: "surfer-feet",
@@ -636,6 +644,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2023,
     platforms: [],
     links: [],
+    image: { src: "/images/EMPEREUR_Still_001-Amandine-Gabard-scaled Medium.jpeg", width: 640, height: 457 },
     narrativeWords: ["speak", "silence", "reach", "remember"],
     creaturePart: {
       id: "inner-eye",
@@ -706,6 +715,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2022,
     platforms: [],
     links: [],
+    image: { src: "/images/Goliath Medium.jpeg", width: 640, height: 360 },
     narrativeWords: ["play", "world", "connect", "return"],
     creaturePart: {
       id: "goliath-horns",
@@ -729,6 +739,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2026,
     platforms: [],
     links: [],
+    image: { src: "/images/munch-in-his-winter-studio-in-ekely-on-his-seventy-fifth-birthday-1938-photogrpahy-by-ragnvald-vaering- Medium.jpeg", width: 472, height: 640 },
     narrativeWords: ["archive", "crystal", "echo", "recover"],
     creaturePart: {
       id: "crystal-spines",
@@ -754,6 +765,7 @@ const exhibitionSources: ArtifactSource[] = [
     platforms: ["Adobe Aero", "Unity", "DALL•E 3", "Adobe Photoshop", "ElevenLabs"],
     technicalDetails: "AR experience for Android tablets",
     links: [],
+    image: { src: "/images/Screenshot_2025-11-21_11-40-20 Medium.jpeg", width: 640, height: 425 },
     narrativeWords: ["sand", "revisit", "haunt", "recombine"],
     creaturePart: {
       id: "sand-hourglass",
@@ -778,6 +790,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2021,
     platforms: [],
     links: [],
+    image: { src: "/images/Fiery Medium.jpeg", width: 640, height: 357 },
     narrativeWords: ["ignite", "speak", "resist", "appear"],
     creaturePart: {
       id: "spark-plume",
@@ -802,6 +815,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2026,
     platforms: [],
     links: [],
+    image: { src: "/images/fishbowl-leaks-poster Medium.jpeg", width: 426, height: 640 },
     narrativeWords: ["contain", "leak", "gather", "evolve"],
     creaturePart: {
       id: "helping-arms",
@@ -825,6 +839,7 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2022,
     platforms: [],
     links: [],
+    image: { src: "/images/realidadmitigada Medium.jpeg", width: 640, height: 452 },
     narrativeWords: ["scan", "mitigate", "testify", "spread"],
     creaturePart: {
       id: "barcode-fin",

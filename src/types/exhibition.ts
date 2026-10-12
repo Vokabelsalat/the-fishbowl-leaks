@@ -92,6 +92,8 @@ export type ExhibitionArtifact = {
   platforms: string[];
   technicalDetails?: string;
   links: string[];
+  /** A picture of the work from public/images, listed in the `image` column of public/exhibition.csv. */
+  image?: { src: `/images/${string}`; width: number; height: number };
   narrativeWords: string[];
   creaturePart: CreaturePart;
   marineType: string;

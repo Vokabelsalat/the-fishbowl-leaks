@@ -15,7 +15,7 @@ import { creatureFitMargin } from "@/components/creature/CreatureCanvas";
 import { formatRenderStats, type RenderStatsReport } from "@/components/development/RenderStats";
 import { meshQualityPresets, minimumMeshQuality, useMeshQuality } from "@/lib/development/renderSettings";
 import { activeVisualizationCopy, collectiveCapacity } from "@/config/visualization";
-import { compartmentLabels, compartmentWalls, holeHalfHeight, tankBreakdown, wallOpening } from "@/lib/collective/tankCompartments";
+import { compartmentLabels, compartmentWalls, holeHalfHeight, tankBreakdown, tankLook, wallOpening } from "@/lib/collective/tankCompartments";
 import { artifacts } from "@/data/artifacts";
 import { aggregateContributionDwellTimes } from "@/lib/contributions/heatmap";
 import type { CollectiveHeatDatum, ExhibitionContribution } from "@/types/contribution";
@@ -291,10 +291,17 @@ export function CollectiveWall({ initialView = "collective" }: {
     ? Math.max(0, dayCreatureCount - loadedVisitorCreatures.length)
     : 0;
   const breakdown = tankBreakdown(visibleVisitorCreatures.length + leftOutVisitorCount);
-  const wallStyle = { "--tank-progress": dayProgress, "--tank-breakdown": breakdown } as CSSProperties;
+  const look = tankLook(breakdown);
+  const wallStyle = {
+    "--tank-progress": dayProgress,
+    "--tank-breakdown": breakdown,
+    "--tank-blue": look.blue,
+    "--tank-sea": look.sea,
+  } as CSSProperties;
 
   return (
     <main className="collective-wall biome-field film-grain relative h-screen overflow-hidden bg-[var(--abyss)] text-[var(--foam)]" style={wallStyle} aria-label={`Collective exhibition ${activeVisualizationCopy.collectivePlace}`}>
+      <div className="tank-open-sea pointer-events-none absolute inset-0" aria-hidden="true" />
       <BiomeBackdrop progress={dayProgress} surfaceRays />
       {/* The separators are drawn flat over the tank, so they fade out while the view circles it. */}
       <div className={`tank-compartments pointer-events-none absolute inset-0 transition-opacity duration-700 ${orbiting ? "opacity-0" : ""}`} aria-hidden="true">

@@ -39,6 +39,22 @@ export function tankBreakdown(creatureCount: number) {
   return Math.min(1, Math.max(0, creatureCount / fullBreakdownCreatures));
 }
 
+/** By this many creatures the tank's green-tinted water has turned into a blue aquarium's. */
+export const blueAquariumCreatures = 30;
+
+/**
+ * Where the tank's look stands for a breakdown: `blue` runs from the green-tinted aquarium (0) to
+ * the blue one (1) over the first `blueAquariumCreatures`, then `sea` from the blue aquarium (0) to
+ * the open sea (1) as the last walls break.
+ */
+export function tankLook(breakdown: number) {
+  const blueAt = tankBreakdown(blueAquariumCreatures);
+  return {
+    blue: Math.min(1, Math.max(0, breakdown / blueAt)),
+    sea: Math.min(1, Math.max(0, (breakdown - blueAt) / (1 - blueAt))),
+  };
+}
+
 /** How far one wall's hole has opened, from 0 (sealed) to 1 (burst). */
 export function wallOpening(breakdown: number, wallIndex: number) {
   return Math.min(1, Math.max(0, (breakdown - compartmentWalls[wallIndex].crackAt) / wallOpeningSpan));

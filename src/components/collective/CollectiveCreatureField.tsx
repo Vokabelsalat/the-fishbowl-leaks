@@ -15,7 +15,7 @@ import { creaturePattern, patternForTraitCount } from "@/lib/creature/patterns";
 import { creatureProportions } from "@/lib/creature/proportions";
 import type { ExhibitionContribution } from "@/types/contribution";
 import { collectiveCapacity } from "@/config/visualization";
-import { canPassWall, compartmentAt, compartmentBounds, compartmentLabels, compartmentWalls, separatedByWall, wallX } from "@/lib/collective/tankCompartments";
+import { canPassWall, compartmentAt, compartmentBounds, compartmentLabels, compartmentWalls, separatedByWall, tankLook, wallX } from "@/lib/collective/tankCompartments";
 import { RenderStats, type RenderStatsReport } from "@/components/development/RenderStats";
 
 function seededUnit(seed: number) {
@@ -69,8 +69,59 @@ const collectiveFormSpeed: Record<AquaticForm, number> = {
 };
 
 /** The haze's colour, and how much of it covers whatever lies deep enough: what four see-through haze planes used to add up to. */
-const hazeColor = "#0b2a33";
-const hazeStrength = 0.253;
+/**
+ * The tank starts as a green-tinted aquarium, turns into a blue one and then into the open sea as its
+ * walls break down (see `tankLook`), so each look has its haze, whale veil and lights.
+ */
+type TankLook = {
+  haze: THREE.Color;
+  veil: THREE.Color;
+  veilOpacity: number;
+  /** The lamp's light from above, and its strength; the warm sand lights the creatures from below. */
+  skyColor: THREE.Color;
+  sky: number;
+  ambient: number;
+  sun: number;
+};
+const greenAquariumLook: TankLook = {
+  haze: new THREE.Color("#145a46"),
+  veil: new THREE.Color("#0a3d33"),
+  veilOpacity: 0.56,
+  skyColor: new THREE.Color("#dcffe6"),
+  sky: 1.35,
+  ambient: 0.55,
+  sun: 2.6,
+};
+const blueAquariumLook: TankLook = {
+  ...greenAquariumLook,
+  haze: new THREE.Color("#0b4f6e"),
+  veil: new THREE.Color("#073a56"),
+  skyColor: new THREE.Color("#d4f6ff"),
+};
+const openSeaLook: TankLook = {
+  haze: new THREE.Color("#0b2a33"),
+  veil: new THREE.Color("#071421"),
+  veilOpacity: 0.62,
+  skyColor: new THREE.Color("#d4f6ff"),
+  sky: 0,
+  ambient: 1.5,
+  sun: 2.4,
+};
+
+/** Sets `target` to the tank's colour for the look, from green through blue to the open sea. */
+function lookColor(target: THREE.Color, pick: (look: TankLook) => THREE.Color, look: ReturnType<typeof tankLook>) {
+  return target.lerpColors(pick(greenAquariumLook), pick(blueAquariumLook), look.blue).lerp(pick(openSeaLook), look.sea);
+}
+
+/** The tank's value for the look, from green through blue to the open sea. */
+function lookValue(pick: (look: TankLook) => number, look: ReturnType<typeof tankLook>) {
+  return THREE.MathUtils.lerp(
+    THREE.MathUtils.lerp(pick(greenAquariumLook), pick(blueAquariumLook), look.blue),
+    pick(openSeaLook),
+    look.sea,
+  );
+}
+const hazeStrength = 0.24;
 /** The haze begins at the first depth and is complete at the second, thickening smoothly in between. */
 const hazeStartDepth = 1.18;
 const hazeFullDepth = -0.92;
@@ -82,7 +133,8 @@ const fogMix = "smoothstep( fogNear, fogFar, vFogDepth )";
  * Hazes creatures by their depth while they are drawn, instead of covering the whole screen with
  * see-through planes. The whale veil behind the tank is hazed too, which carries the haze over the backdrop.
  */
-function DepthHaze() {
+function DepthHaze({ breakdownRef }: { breakdownRef: MutableRefObject<number> }) {
+  const fogRef = useRef<THREE.Fog>(null);
   // three's linear fog fades all the way into its colour; the aquarium's stops at `hazeStrength`, so the
   // whales far behind the tank stay visible. Shaders compiled while it is shown pick this up; the poster's fog does not.
   useLayoutEffect(() => {
@@ -93,7 +145,11 @@ function DepthHaze() {
     };
   }, []);
 
-  return <fog attach="fog" args={[hazeColor, cameraDepth - hazeStartDepth, cameraDepth - hazeFullDepth]} />;
+  useFrame(() => {
+    if (fogRef.current) lookColor(fogRef.current.color, (look) => look.haze, tankLook(breakdownRef.current));
+  });
+
+  return <fog ref={fogRef} attach="fog" args={[greenAquariumLook.haze, cameraDepth - hazeStartDepth, cameraDepth - hazeFullDepth]} />;
 }
 
 /** How long the development tour pulls back from the tank, and how long it then takes to circle it once. */
@@ -144,16 +200,52 @@ function TankOrbit({ request, children }: { request: number; children: ReactNode
   return <group ref={groupRef}>{children}</group>;
 }
 
-function WhaleDepthVeil() {
+/** The tank's lights, from the aquarium's lamp to the open sea's even daylight as the walls break down. */
+function TankLights({ breakdownRef }: { breakdownRef: MutableRefObject<number> }) {
+  const skyRef = useRef<THREE.HemisphereLight>(null);
+  const ambientRef = useRef<THREE.AmbientLight>(null);
+  const sunRef = useRef<THREE.DirectionalLight>(null);
+
+  useFrame(() => {
+    const look = tankLook(breakdownRef.current);
+    if (skyRef.current) {
+      skyRef.current.intensity = lookValue((tank) => tank.sky, look);
+      lookColor(skyRef.current.color, (tank) => tank.skyColor, look);
+    }
+    if (ambientRef.current) ambientRef.current.intensity = lookValue((tank) => tank.ambient, look);
+    if (sunRef.current) sunRef.current.intensity = lookValue((tank) => tank.sun, look);
+  });
+
+  // Sky, ground and one sun only: coloured point lights this far from the tank fade to almost nothing yet cost every pixel.
+  return (
+    <>
+      <hemisphereLight ref={skyRef} args={[greenAquariumLook.skyColor, "#d9a46b", greenAquariumLook.sky]} />
+      <ambientLight ref={ambientRef} intensity={greenAquariumLook.ambient} />
+      <directionalLight ref={sunRef} position={[2, 5, 8]} intensity={greenAquariumLook.sun} color="#FFF4DF" />
+    </>
+  );
+}
+
+function WhaleDepthVeil({ breakdownRef }: { breakdownRef: MutableRefObject<number> }) {
   const viewport = useThree((state) => state.viewport);
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null);
+
+  useFrame(() => {
+    const material = materialRef.current;
+    if (!material) return;
+    const look = tankLook(breakdownRef.current);
+    lookColor(material.color, (tank) => tank.veil, look);
+    material.opacity = lookValue((tank) => tank.veilOpacity, look);
+  });
 
   return (
     <mesh position={[0, 0, -3.35]} renderOrder={-1}>
       <planeGeometry args={[viewport.width + 2, viewport.height + 2]} />
       <meshBasicMaterial
-        color="#071421"
+        ref={materialRef}
+        color={greenAquariumLook.veil}
         transparent
-        opacity={0.62}
+        opacity={greenAquariumLook.veilOpacity}
         depthWrite={false}
         toneMapped={false}
       />
@@ -1285,15 +1377,17 @@ export function CollectiveCreatureField({
       camera={{ position: [0, 0, cameraDepth], zoom: 82, near: 0.1, far: 90 }}
       dpr={pixelRatio}
       gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
+      // Neutral tone mapping keeps saturated colours saturated, where the default washes them out.
+      onCreated={({ gl }) => {
+        gl.toneMapping = THREE.NeutralToneMapping;
+      }}
     >
       <PerformanceMonitor factor={1} onChange={adjustPixelRatio} onFallback={settleOnLowestPixelRatio} />
       {onRenderStats && <RenderStats onReport={onRenderStats} />}
-      <DepthHaze />
+      <DepthHaze breakdownRef={breakdownRef} />
       <BreakdownEaser breakdown={breakdown} breakdownRef={breakdownRef} />
       <TankOrbit request={orbitRequest}>
-        {/* Ambient and one sun only: coloured point lights this far from the tank fade to almost nothing yet cost every pixel. */}
-        <ambientLight intensity={1.5} />
-        <directionalLight position={[2, 5, 8]} intensity={2.4} color="#FFF4DF" />
+        <TankLights breakdownRef={breakdownRef} />
         <TankMeshBatches enabled={batchMeshes && mergeStaticMeshes}>
           {whales.map((contribution) => (
             <FloatingCreature
@@ -1310,7 +1404,7 @@ export function CollectiveCreatureField({
               onSelect={onSelectContribution}
             />
           ))}
-          <WhaleDepthVeil />
+          <WhaleDepthVeil breakdownRef={breakdownRef} />
           <AquariumDioramaPlants layer="back" />
           <PairingDirector
             contributions={tankAdults}

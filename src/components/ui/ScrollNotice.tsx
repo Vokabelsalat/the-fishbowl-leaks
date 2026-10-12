@@ -6,11 +6,17 @@ import { useCallback, useEffect, useState } from "react";
 type ScrollNoticeProps = {
   containerRef?: RefObject<HTMLElement | null>;
   label?: string;
+  /**
+   * "screen" pins the notice to the top of the screen; "container" sits it at the bottom of the
+   * nearest positioned parent, for scroll areas inside panels that would otherwise cover it.
+   */
+  placement?: "screen" | "container";
 };
 
 export function ScrollNotice({
   containerRef,
   label = "More below — scroll to continue",
+  placement = "screen",
 }: ScrollNoticeProps) {
   const [visible, setVisible] = useState(false);
 
@@ -62,7 +68,12 @@ export function ScrollNotice({
   if (!visible) return null;
 
   return (
-    <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-[80] flex justify-center px-4" role="status">
+    <div
+      className={placement === "screen"
+        ? "safe-top pointer-events-none fixed inset-x-0 top-0 z-[80] flex justify-center px-4"
+        : "pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center px-4"}
+      role="status"
+    >
       <button
         type="button"
         onClick={moveForward}

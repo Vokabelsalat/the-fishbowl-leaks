@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { artifactById } from "@/data/artifacts";
 import { revealAssemblesConstellation, useRevealMachine } from "@/lib/animation/revealMachine";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -51,6 +51,7 @@ function ArtifactRevealSequence({
   );
 
   const contentVisible = phase === "content-reveal" || phase === "complete";
+  const [detailsEnlarged, setDetailsEnlarged] = useState(false);
   const creatureVisible = !isRevisit && visualizationDesign !== "constellation";
   const isGrowing = phase === "formation";
   // The first scan gives the visitor their specimen rather than changing an existing one.
@@ -77,6 +78,8 @@ function ArtifactRevealSequence({
         <div
           className="creature-reveal-stage absolute inset-x-0 top-[7vh] h-[58vh]"
           data-phase={phase}
+          // Once the artwork panel rises, the creature moves up into the space above it.
+          data-panel={contentVisible ? (detailsEnlarged ? "enlarged" : "open") : undefined}
         >
           <div className="creature-reveal-halo" aria-hidden="true" />
           <div className="creature-reveal-model pointer-events-auto">
@@ -116,6 +119,7 @@ function ArtifactRevealSequence({
           <ArtifactContent
             mini={isRevisit}
             artifact={artifact}
+            onEnlargedChange={setDetailsEnlarged}
             onContinue={() => {
               onContinue?.(artifact);
               dispatch(setActiveArtifact(null));

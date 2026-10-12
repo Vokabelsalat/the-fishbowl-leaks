@@ -927,6 +927,17 @@ a:focus-visible {
     transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* The creature makes room for the artwork panel: above it while open, smaller still while enlarged. */
+.creature-reveal-stage[data-panel="open"] {
+  height: 30vh;
+  transform: translateY(-2vh);
+}
+
+.creature-reveal-stage[data-panel="enlarged"] {
+  height: 17vh;
+  transform: translateY(-3vh);
+}
+
 .creature-reveal-model {
   position: absolute;
   inset: 0;

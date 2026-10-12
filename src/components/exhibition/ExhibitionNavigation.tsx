@@ -46,8 +46,8 @@ export function ExhibitionNavigation() {
           aria-valuenow={count}
           aria-valuetext={`${count} of ${artifacts.length} artworks discovered`}
         >
-          <span className="font-display text-3xl leading-none tabular-nums">{count}</span>
-          <span className="text-xl leading-none tabular-nums">/ {artifacts.length}</span>
+          <span className="font-display text-xl leading-none tabular-nums">{count}</span>
+          <span className="text-sm leading-none tabular-nums">/ {artifacts.length}</span>
         </div>
       </div>
       {/* Visitors start without a specimen; until the first scan, the corner asks for one. */}

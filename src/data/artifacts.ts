@@ -478,9 +478,9 @@ const exhibitionSources: ArtifactSource[] = [
       "Historically Yours is an interactive podcast broadcasting from the Underworld. This work in progress gives visitors a direct line to Cleo, Toinette and Henri, three fictional hosts loosely inspired by Cleopatra, Queen Marie Antoinette and astronomer Henrietta Swan Leavitt.\n\nIn the installation, visitors listen through headphones and send the hosts a question, a grievance or whatever is keeping them awake. Artificial intelligence transforms each contribution into a new conversation, performed through three synthetic voices. A live transcript accompanies the discussion, while illuminated sculptural heads reveal who has the microphone.\n\nThe hosts are not digital reconstructions of historical people. They are deliberately unreliable approximations assembled from historical fragments, popular myths and cultural stereotypes. Their appearances, both on screen and as 3D printed sculptures, reflect the familiar visual clichés through which historical women are recognised. Their voices are equally speculative. We do not know what these women sounded like, yet synthetic speech gives each host the persuasive impression of an individual personality.\n\nThe work draws on the Dialogues of the Dead, a satirical tradition in which historical figures meet in the afterlife to gossip, argue and judge the living. Here, it becomes a feminist podcast in which women who have been celebrated, blamed, romanticised or overlooked discuss the present from the Underworld.\n\nPart podcast, part séance and part critique of synthetic authority, Historically Yours asks who gets to represent the past and why a convincing face and voice can be so easy to believe.",
     workType: ["Interactive Installation", "Work in progress"],
     year: 2026,
-    platforms: [],
+    platforms: ["Claude dialogue", "ElevenLabs voices", "Suno music", "LED lighting", "3D prints"],
     links: ["https://www.lina.berlin"],
-    contacts: [],
+    contacts: ["lina.harder@uib.no"],
     bios: [
       "Lina Ruth Harder is a PhD Fellow at the Center for Digital Narrative at the University of Bergen. Her practice based research explores generative AI, historical simulation and interactive narrative. Drawing on her background in museums and digital communication, she creates AI driven works about history, memory and encounters between humans and machines. She coined the term histobots for conversational agents that simulate people from the past. Through critical and playful experiments with emerging technologies, her work examines how historical personalities are constructed, whose stories are remembered and how artificial intelligence reshapes our relationship with the past.",
     ],
@@ -506,7 +506,7 @@ const exhibitionSources: ArtifactSource[] = [
       "Technology is reshaping our relationships and communication with the dead, using digital traces of the data they leave behind. Decades before these technologies emerged, I was already doing something similar.\n\nFrom Ingrid to Bergen is an interactive documentary about grief, memory, theatre, and the technologies we use to maintain relationships with what is no longer there. Moving across nineteen years, the project brings together personal archives, photographs, paintings, videos, and texts from different phases of my experience of loss. An idea of a grandmother, a promise, ghosts, forests, neurodivergence, theatre, and Ingrid Bergman form a shifting map through memory and reconstruction, tracing not only the loss of a person, but also the loss of what I once imagined becoming.",
     workType: ["Interactive Documentary"],
     year: 2026,
-    platforms: [],
+    platforms: ["Claude", "Adobe Audition", "Adobe Premiere Pro", "Adobe Photoshop", "Procreate", "Ableton Live 12 Lite"],
     links: ["https://pedro-velho.com/"],
     contacts: ["Pedro.Pinto@uib.no"],
     bios: [
@@ -534,7 +534,7 @@ const exhibitionSources: ArtifactSource[] = [
       "YOUR UPDATE HAS FAILED is an interactive browser and WebXR experience tracing the digital evolution of SOGICE—sexual orientation and gender identity change efforts. These interventions seek to change or suppress LGBTQIA+ people’s sexual orientation, gender identity, or expression.\n\nA computer anchors the narrative as three composite lives unfold across 1997, 2003, 2016, and 2026—each in a room shaped by its era. SOGICE’s forms evolve: printed questionnaires become software, then wellness platforms, moderation tools, and, eventually, AI-driven systems that classify and collect data. Blending documented practices with imagined scenes, the work reveals SOGICE not as a single event, but as a digital ecosystem spanning “ex-gay” testimonies, promotional videos, exercises, prayers, and data systems. Language shifts toward care and progress, but the underlying pressure to conform remains.\n\nWith each update, the system appears new; with each restart, it enters another era; and with every glitch, its limits are exposed. Visitors navigate the story through a headset, desktop, or phone—clicking, reading, and turning to explore the changing rooms. A dossier accompanies the work, linking sources with the narrative. Through its many transformations, SOGICE’s apparatus adapts and renews its promise of correction, but its failure endures: queer life persists.",
     workType: ["WebXR", "Interactive Browser", "Work in progress"],
     year: 2026,
-    platforms: [],
+    platforms: ["Claude", "ChatGPT", "SUNO", "Treblo"],
     links: ["https://sergiogalvaoroxo.com/"],
     contacts: ["sergio.roxo@uib.no"],
     bios: [
@@ -621,7 +621,7 @@ const exhibitionSources: ArtifactSource[] = [
       "An unlikely marriage of print and digital, Between Page and Screen chronicles a love affair between two characters, P and S.\n\nThe book has no words, only inscrutable black and white geometric patterns that, when coupled with a webcam, conjure the written word. Reflected on screen, the reader sees him or herself with open book in hand, language springing alive and shape-shifting with each turn of the page.\n\nThe story unfolds through a playful and cryptic exchange of letters between P and S as they struggle to define their relationship. Rich with innuendo, anagrams, etymological and sonic affinities between words, Between Page and Screen revels in language and the act of reading.",
     workType: ["Augmented Reality", "Interactive Digital Literature"],
     year: 2009,
-    platforms: [],
+    platforms: ["Flash edition: FLARToolkit, Robot Legs, Papervision 3D, BetweenAS3 and Jiglib", "JavaScript edition: TypeScript, ARJSToolkit, ThreeJS, GSAP and Rapier"],
     links: ["https://www.betweenpageandscreen.com"],
     contacts: ["hello@betweenpageandscreen.com"],
     bios: [
@@ -651,7 +651,7 @@ const exhibitionSources: ArtifactSource[] = [
       "Bybanen Slop Surfer is a playable descent into AI slop: a version of Bergen flattened, exaggerated and reassembled through the visual language of algorithmically generated culture.\n\nThe work takes a recognizable city and subjects it to the same processes increasingly applied to images, writing, music and online culture: simplification, repetition, imitation and endless recombination.\n\nBergen becomes simultaneously familiar and synthetic — a cheerful approximation of itself.",
     workType: ["VR Game", "VR Installation"],
     year: 2026,
-    platforms: [],
+    platforms: ["Unity", "Blender"],
     links: [],
     contacts: [],
     bios: [
@@ -705,7 +705,7 @@ const exhibitionSources: ArtifactSource[] = [
     alternativeColor: "#40356D",
     theme: "worldmaking",
     description:
-      "The third work in the Visitations: The Grand Hotels (of Joseph Cornell) series, the headset VR experience The Grand Hotel Galactic Center is perhaps the grandest of the grand hotels–at a glance–but after several days in the bubble you realize why the rooms come so cheap. It is a hotel of both wonder and despair. The clouds are on an infinite loop. The stars are all flickering. Glitzy exteriors concealing broken-down infrastructure Like a boarding house that is maintained without care. The exotic floor show almost makes up for it. But you sense that it is the same every night, and the performers are just going through the motions. You wish you could see something beyond the banality, but it just isn’t there. You might have loved this when you were a child, but every ounce of your childhood is gone, sapped from you. This is the kind of palliative care you get with the basic insurance. Galactic Center explores text-to-VR environment generation and gaussian splats as components of a Unity development process. Trigger warning: includes a reference to suicide.",
+      "The third work in the Visitations: The Grand Hotels (of Joseph Cornell) series, the headset VR experience The Grand Hotel Galactic Center is perhaps the grandest of the grand hotels–at a glance–but after several days in the bubble you realize why the rooms come so cheap. It is a hotel of both wonder and despair. The clouds are on an infinite loop. The stars are all flickering. Glitzy exteriors concealing broken-down infrastructure Like a boarding house that is maintained without care. The exotic floor show almost makes up for it. But you sense that it is the same every night, and the performers are just going through the motions. You wish you could see something beyond the banality, but it just isn’t there. You might have loved this when you were a child, but every ounce of your childhood is gone, sapped from you. This is the kind of palliative care you get with the basic insurance. Galactic Center explores text-to-VR environment and gaussian splats as components of a Unity development process. Trigger warning: includes a reference to suicide.",
     workType: ["VR", "Work in progress"],
     year: 2026,
     platforms: ["Unity", "Marble", "ChatGPT Image", "Adobe Photoshop", "Claude (Code)"],
@@ -791,7 +791,7 @@ const exhibitionSources: ArtifactSource[] = [
       "The Land of Crystals creates a moving panorama from archival photographs and historical images of Edvard Munch’s demolished house and studios at Ekely in Oslo. Through the manipulation and sequencing of these still images, the film reconstructs a place that no longer exists, creating a virtual passage through Munch’s working environment and the landscape that surrounded it.\n\nThe film’s voice-over is drawn from Munch’s writings in The Tree of Knowledge of Good and Evil, a portfolio of texts and images compiled at Ekely in 1915–16. Several of the archival photographs show Munch in his Winter Studio, creating a direct connection between the written voice heard in the film and the physical spaces in which these texts were conceived.\n\nThe Norwegian texts are spoken by an AI-generated voice. This introduces an intentional tension between historical memory and contemporary technology. Munch recorded his voice onto wax cylinders during his lifetime, but none of these recordings have survived, and there is no known surviving recording that allows us to hear what his voice sounded like. The voice in The Land of Crystals is therefore neither an attempt to reproduce Munch’s actual voice nor a historical reconstruction. Instead, it occupies the space between absence and imagination: a technologically generated voice giving sound to words whose author’s own voice has been irretrievably lost.\n\nThe title is taken from Munch’s writings, in which he refers to a “Land of Crystals.” For O’Kane, the phrase becomes both a poetic image and a conceptual framework for thinking about memory, geological time, transformation, and the archive. The film considers how technology can reactivate fragments of the past while simultaneously reminding us of what can never be recovered.",
     workType: ["Video"],
     year: 2026,
-    platforms: [],
+    platforms: ["ChatGPT", "Adobe Photoshop", "Adobe Premiere Pro", "Nano Banana", "ElevenLabs"],
     links: ["https://www.eamonokane.com"],
     contacts: ["eamon.okane@uib.no"],
     bios: [
@@ -881,7 +881,7 @@ const exhibitionSources: ArtifactSource[] = [
       "The Fishbowl Leaks transform(s) the exhibition into a porous virtual aquarium…\nVisitors encounter fragments of the surrounding works as marine life and unstable species through a browser-based augmented reality layer. Each encounter alters a personal creature, shaped by the visitor’s movement through the exhibition, transforming it into a generative story.\n\nThe aquarium acts as both environment and metaphor. It displays containment but also resembles a collective, developing system. On a shared screen, the aquarium begins in a state of order: partitioned and classified. As visitors contribute their creatures, this order gradually breaks down. Texts detach, species break free, the tank falls apart, and memory is leaking, releasing the creatures into open waters…\n\nThe Fishbowl Leaks imagine(s) a living narrative ecosystem. The single artworks start in fixed \ncategories and grow together into a symbiotic, participatory collective, by the help of exhibition \nvisitors. The result sits between exhibition guide, generative story system, and shared \nhallucination in a container. What might evolve when that container starts to leak?",
     workType: ["Augmented Reality", "Work in Progress"],
     year: 2026,
-    platforms: [],
+    platforms: ["Next.js", "three.js", "MindAR", "Tailwind CSS", "SQLite", "Node.js", "Claude Code", "Codex", "Inkscape", "Visual Studio Code"],
     links: ["https://kusnick.com"],
     contacts: ["jakob@kusnick.com"],
     bios: [

@@ -90,7 +90,8 @@ export function ArtifactContent({ artifact, onContinue, mini = false, onEnlarged
               {artifact.platforms.length > 0 && (
                 <>
                   <dt className="text-white/50">Platforms</dt>
-                  <dd className="text-white/78">{artifact.platforms.join(", ")}</dd>
+                  {/* Groups that list several tools themselves, like one per edition, are set apart with semicolons. */}
+                  <dd className="text-white/78">{artifact.platforms.join(artifact.platforms.some((platform) => platform.includes(",")) ? "; " : ", ")}</dd>
                 </>
               )}
               {artifact.technicalDetails && (

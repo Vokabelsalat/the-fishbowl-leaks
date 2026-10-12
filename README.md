@@ -74,7 +74,7 @@ Suggested acceptance path:
 
 ## Poster and tutorial sheet
 
-Open `/poster` in development, click **New poster** until the cast fits (drag a creature to turn it, Shift-drag to move it; seed and poses stay in the address bar), then use the export buttons:
+Open `/poster` in development, click **New poster** until the cast fits (drag a creature to turn it, Shift-drag to move it, scroll over it or Alt-drag up and down to resize it; seed and poses stay in the address bar), then use the export buttons:
 
 - **Export image** downloads the poster as a PNG, 2400 × 3600 px (3600 × 2400 px with `format=landscape`).
 - **Export A4 tutorial** downloads an A4 PDF to hang in the exhibition: the poster in its landscape layout, three steps on how to take part, the QR code and the dark Fishbowl Leaks target as an example, which visitors can scan right there. The sheet itself is at `/poster/tutorial?seed=<seed>`.
@@ -93,6 +93,8 @@ Open `/collective` full-screen on the exhibition display. It polls the live cont
 The tank starts each day divided into five labelled compartments. Every creature released that day cracks the walls between them a little further: the walls open one after another, each with a growing hole that creatures can swim through, until with 60 creatures (`fullBreakdownCreatures` in `src/lib/collective/tankCompartments.ts`) all walls have burst and the creatures swim together. The count includes all of the day's creatures, not only the latest ones shown, and the time slider replays it.
 
 The stories break apart with the tank. Each new contribution stores how far the walls had broken when it was released (`tank_breakdown`), and its narrative is written with that much of its classifying vocabulary replaced by leaking words (`leakBanks` in `src/data/narrativeGrammar.ts`): walls and boundaries first, then qualities, places, traces and finally verbs, never an artwork's own subject. The wall shows a replaced word crossed out, followed by the new one. Stories released before anything broke, and every story saved before this existed, keep all their words.
+
+The wall plays a looping soundtrack of three original 192-second tracks, streamed from the AAC files in `public/audio/`. The tracks are synthesized from code in `src/lib/audio/`; after changing one, open `/soundtrack` in development and click **Record soundtrack**, which renders all three in the browser and saves them through macOS's `afconvert`. Streaming keeps only a few seconds of audio in memory, instead of the roughly 100 MB the rendered tracks would take.
 
 Use the **Time map** switch on the collective display to see cumulative dwell time for all 18 artwork stations. This view aggregates every stored contribution (not only the recent stories in the ambient field), ranks the stations by total attention, and shows visit count plus average dwell time. Missing timing data from older stories is excluded from the totals.
 
@@ -137,7 +139,7 @@ Run `npm run targets:verify` after compiling. Each compiled target keeps a downs
 
 ### 3. Check the configuration mapping
 
-`src/data/artifacts.ts` is the runtime source of truth and follows the CSV row order. `targetIndex` must match the image order used by the compiler. MindAR emits a number, the adapter forwards it, and `artifactByTargetIndex` resolves the exhibition content. The curatorial themes are **Memory**, **Interface**, **Worldmaking**, **Embodiment**, and **Agency**. Until final artwork images are available, the 18 configured works reuse three poster-image families while each keeps the artwork-specific `color`, white-background `alternative_color`, and simplified `particleForm` defined in `public/exhibition.csv`.
+`src/data/artifacts.ts` is the runtime source of truth and follows the CSV row order. `targetIndex` must match the image order used by the compiler. MindAR emits a number, the adapter forwards it, and `artifactByTargetIndex` resolves the exhibition content. The curatorial themes are **Memory**, **Interface**, **Worldmaking**, **Embodiment**, and **Agency**. Each of the 18 configured works keeps the artwork-specific `color`, white-background `alternative_color`, and simplified `particleForm` defined in `public/exhibition.csv`.
 
 ### 4. Serve over HTTPS on a phone
 
@@ -191,7 +193,7 @@ MindAR transforms, cameras, and render loops are not shared with the R3F rendere
 
 ## Add another poster or artifact
 
-1. Add a typed entry to `src/data/artifacts.ts`, including a unique `id`, the next `targetIndex`, its matching `posterImageSrc`, theme, color, content, and narrative words.
+1. Add a typed entry to `src/data/artifacts.ts`, including a unique `id`, the next `targetIndex`, theme, color, content, and narrative words.
 2. Add or adjust its theme definition in `src/data/themes.ts` if necessary.
 3. Recompile **all** reference images into `exhibition.mind` in the same order as the configured indices.
 4. Run `npm run targets:compile`, which replaces `public/targets/exhibition.mind`, its compressed copies and its version hash, then test both the simulator button and the physical target.

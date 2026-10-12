@@ -1,12 +1,14 @@
-/** “Pressure drift”: an original 96-second drone miniature in A Aeolian.
- * Am(add9) → Fmaj7(♯11) → C/G → Em(add11), each chord swelling for half a minute.
+import { trackSeconds } from "./aquariumTrackLength";
+
+/** “Pressure drift”: an original 192-second drone piece in A Aeolian.
+ * Am(add9) → Fmaj7(♯11) → C/G → Em(add11), then Dm9 → Cmaj7 → Fmaj7(♯11) → E7sus4,
+ * which turns back to A minor; each chord swells for half a minute.
  * Detuned saw pairs run through soft saturation and slowly breathing low-pass
  * filters; a tape-like warble and a lead that bends between its long notes
  * keep every tone slightly out of shape.
  */
-export async function renderAquariumDrift(): Promise<AudioBuffer> {
-  const rate = 22050;
-  const duration = 96;
+export async function renderAquariumDrift(rate = 22050): Promise<AudioBuffer> {
+  const duration = trackSeconds;
   const context = new OfflineAudioContext(2, rate * duration, rate);
   const room = context.createConvolver();
   const impulse = context.createBuffer(2, rate * 7, rate);
@@ -112,7 +114,10 @@ export async function renderAquariumDrift(): Promise<AudioBuffer> {
     panner.connect(room);
   }
 
-  const chords = [[45, 52, 59, 60, 64], [41, 53, 57, 59, 64], [43, 48, 55, 59, 64], [40, 47, 55, 57, 62]];
+  const chords = [
+    [45, 52, 59, 60, 64], [41, 53, 57, 59, 64], [43, 48, 55, 59, 64], [40, 47, 55, 57, 62],
+    [38, 45, 53, 60, 64], [36, 48, 55, 59, 64], [41, 48, 57, 59, 64], [40, 47, 52, 57, 62],
+  ];
   chords.forEach((chord, bar) => {
     // Chords overlap by several seconds, so each one swells out of the last.
     const start = bar * 24 - (bar === 0 ? 0 : 4);
@@ -135,6 +140,9 @@ export async function renderAquariumDrift(): Promise<AudioBuffer> {
     { midi: 76, start: 6, length: 30, glides: [{ midi: 74, at: 20, over: 4 }, { midi: 72, at: 30, over: 3 }] },
     { midi: 71, start: 40, length: 26, glides: [{ midi: 72, at: 52, over: 5 }] },
     { midi: 79, start: 62, length: 32, glides: [{ midi: 76, at: 74, over: 6 }, { midi: 74, at: 86, over: 4 }] },
+    { midi: 72, start: 102, length: 30, glides: [{ midi: 74, at: 116, over: 4 }, { midi: 76, at: 126, over: 3 }] },
+    { midi: 69, start: 136, length: 26, glides: [{ midi: 67, at: 148, over: 5 }] },
+    { midi: 76, start: 158, length: 32, glides: [{ midi: 74, at: 170, over: 6 }, { midi: 71, at: 182, over: 4 }] },
   ];
   leads.forEach((lead, index) => {
     drone({

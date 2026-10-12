@@ -76,7 +76,6 @@ export type ExhibitionArtifact = {
   /** The `ID` column of public/exhibition.csv. */
   exhibitionId: number;
   targetIndex: number;
-  posterImageSrc: `/images/${string}`;
   title: string;
   artist: string;
   theme: ThemeId;

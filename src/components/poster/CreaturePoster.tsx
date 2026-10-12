@@ -31,32 +31,41 @@ function randomPieces(random: () => number, [fewest, most]: [number, number]): C
 }
 
 /**
- * What was dragged onto a creature: `turn` around the vertical axis, `pitch` tipping it toward the
- * viewer, and `x` and `y` moving it across the poster from its place in the cast.
+ * What was done to a creature: `turn` around the vertical axis, `pitch` tipping it toward the
+ * viewer, `x` and `y` moving it across the poster from its place in the cast, and `scale` resizing it.
  */
-export type Pose = { turn: number; pitch: number; x: number; y: number };
+export type Pose = { turn: number; pitch: number; x: number; y: number; scale: number };
 
-const restingPose: Pose = { turn: 0, pitch: 0, x: 0, y: 0 };
+const restingPose: Pose = { turn: 0, pitch: 0, x: 0, y: 0, scale: 1 };
+
+/** How far a creature can be shrunk or enlarged from its size in the cast. */
+const smallestScale = 0.25;
+const largestScale = 4;
 
 /**
- * Poses travel in the URL as `key:turn:pitch:x:y` entries joined by `;`, for example
- * `fish-4:0.35:-0.1:0.2:0`. Older links without `x` and `y` leave the creature in its place.
+ * Poses travel in the URL as `key:turn:pitch:x:y:scale` entries joined by `;`, for example
+ * `fish-4:0.35:-0.1:0.2:0:1.5`. Older links without `x`, `y` or `scale` leave the creature in its
+ * place and at its size.
  */
 export function parsePoses(value: string | undefined) {
   const poses: Record<string, Pose> = {};
   for (const entry of value?.split(";") ?? []) {
     const [key, ...numbers] = entry.split(":");
-    const [turn, pitch, x = 0, y = 0] = numbers.map(Number);
-    if (key && [turn, pitch, x, y].every(Number.isFinite)) poses[key] = { turn, pitch, x, y };
+    const [turn, pitch, x = 0, y = 0, scale = 1] = numbers.map(Number);
+    if (key && [turn, pitch, x, y, scale].every(Number.isFinite)) {
+      poses[key] = { turn, pitch, x, y, scale: THREE.MathUtils.clamp(scale, smallestScale, largestScale) };
+    }
   }
   return poses;
 }
 
 function formatPoses(poses: Record<string, Pose>) {
   return Object.entries(poses)
-    .filter(([, pose]) => pose.turn !== 0 || pose.pitch !== 0 || pose.x !== 0 || pose.y !== 0)
+    .filter(([, pose]) => pose.turn !== 0 || pose.pitch !== 0 || pose.x !== 0 || pose.y !== 0 || pose.scale !== 1)
     .map(([key, pose]) => {
-      const values = [pose.turn, pose.pitch, ...(pose.x !== 0 || pose.y !== 0 ? [pose.x, pose.y] : [])];
+      const resized = Math.abs(pose.scale - 1) >= 0.005;
+      const moved = pose.x !== 0 || pose.y !== 0;
+      const values = [pose.turn, pose.pitch, ...(moved || resized ? [pose.x, pose.y] : []), ...(resized ? [pose.scale] : [])];
       return [key, ...values.map((value) => value.toFixed(2))].join(":");
     })
     .join(";");
@@ -87,25 +96,47 @@ const cameraFov = 42;
  */
 const landscapeSpread = 2;
 
-type Drag = { key: string; group: THREE.Group; base: [number, number, number]; place: [number, number, number]; moving: boolean; x: number; y: number; start: Pose };
+/** What a drag does: turn the creature, move it (Shift) or resize it (Alt). */
+type DragMode = "turning" | "moving" | "scaling";
+
+type Drag = { key: string; group: THREE.Group; base: [number, number, number]; place: [number, number, number]; mode: DragMode; x: number; y: number; start: Pose };
+
+/** How much a creature grows per pixel dragged up with Alt held, and per unit scrolled. */
+const dragScaleRate = 0.006;
+const wheelScaleRate = 0.0015;
 
 function Ensemble({ seed, initialPoses, animated, landscape }: { seed: string; initialPoses: Record<string, Pose>; animated: boolean; landscape: boolean }) {
   const posesRef = useRef<Record<string, Pose>>(initialPoses);
   const dragRef = useRef<Drag | null>(null);
   const viewHeight = useThree((state) => state.size.height);
 
+  const linkTimer = useRef<number | undefined>(undefined);
+
   useEffect(() => {
     logPosterLink(seed, posesRef.current);
+    return () => window.clearTimeout(linkTimer.current);
   }, [seed]);
 
-  // Dragging turns a creature; dragging with Shift held moves it across the poster instead.
+  // Dragging turns a creature; with Shift held it moves across the poster, with Alt it grows (up) or shrinks (down).
   const startDrag = (event: ThreeEvent<PointerEvent>, key: string, base: [number, number, number], place: [number, number, number]) => {
     event.stopPropagation();
     (event.target as Element).setPointerCapture(event.pointerId);
     const group = event.eventObject as THREE.Group;
-    const moving = event.shiftKey;
-    dragRef.current = { key, group, base, place, moving, x: event.clientX, y: event.clientY, start: posesRef.current[key] ?? restingPose };
-    setCursor(moving ? "move" : "grabbing");
+    const mode: DragMode = event.altKey ? "scaling" : event.shiftKey ? "moving" : "turning";
+    dragRef.current = { key, group, base, place, mode, x: event.clientX, y: event.clientY, start: { ...restingPose, ...posesRef.current[key] } };
+    setCursor(mode === "moving" ? "move" : mode === "scaling" ? "ns-resize" : "grabbing");
+  };
+
+  // Scrolling over a creature resizes it as well; the link is written once scrolling pauses.
+  const scale = (event: ThreeEvent<WheelEvent>, key: string) => {
+    event.stopPropagation();
+    const group = event.eventObject as THREE.Group;
+    const current = { ...restingPose, ...posesRef.current[key] };
+    const pose = { ...current, scale: THREE.MathUtils.clamp(current.scale * Math.exp(-event.deltaY * wheelScaleRate), smallestScale, largestScale) };
+    group.scale.setScalar(pose.scale);
+    posesRef.current = { ...posesRef.current, [key]: pose };
+    window.clearTimeout(linkTimer.current);
+    linkTimer.current = window.setTimeout(() => logPosterLink(seed, posesRef.current), 400);
   };
 
   const drag = (event: ThreeEvent<PointerEvent>) => {
@@ -114,7 +145,10 @@ function Ensemble({ seed, initialPoses, animated, landscape }: { seed: string; i
     const dx = event.clientX - current.x;
     const dy = event.clientY - current.y;
     let pose: Pose;
-    if (current.moving) {
+    if (current.mode === "scaling") {
+      pose = { ...current.start, scale: THREE.MathUtils.clamp(current.start.scale * Math.exp(-dy * dragScaleRate), smallestScale, largestScale) };
+      current.group.scale.setScalar(pose.scale);
+    } else if (current.mode === "moving") {
       // The creature follows the pointer at its own depth, so near and far ones keep up alike.
       const distance = cameraPosition[2] - current.place[2];
       const unitsPerPixel = (2 * distance * Math.tan(THREE.MathUtils.degToRad(cameraFov / 2))) / viewHeight;
@@ -154,7 +188,9 @@ function Ensemble({ seed, initialPoses, animated, landscape }: { seed: string; i
           key={member.key}
           position={[place[0] + pose.x, place[1] + pose.y, place[2]]}
           rotation={[base[0] + pose.pitch, base[1] + pose.turn, base[2]]}
+          scale={pose.scale}
           onPointerDown={(event) => startDrag(event, member.key, base, place)}
+          onWheel={(event) => scale(event, member.key)}
           onPointerMove={drag}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}

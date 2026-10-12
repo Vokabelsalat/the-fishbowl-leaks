@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { aquariumTracks, renderAquariumPlaylist, trackSeconds } from "@/lib/audio/aquariumPlaylist";
+import { aquariumTracks } from "@/lib/audio/aquariumTracks";
 
 const BACKGROUND_VOLUME = 0.25;
 
-/** Unattended exhibition playback; the display has no visitor audio controls. */
+/**
+ * Unattended exhibition playback; the display has no visitor audio controls. The recorded tracks
+ * stream one after another and loop, so only a few seconds of audio are ever held in memory.
+ */
 export function AquariumAudio() {
   const [currentTrack, setCurrentTrack] = useState<string | null>(null);
 
@@ -15,63 +18,69 @@ export function AquariumAudio() {
     const gain = context.createGain();
     gain.gain.value = 0;
     gain.connect(context.destination);
+    const audio = new Audio();
+    audio.preload = "auto";
+    context.createMediaElementSource(audio).connect(gain);
     let disposed = false;
-    let rendering = false;
-    let source: AudioBufferSourceNode | undefined;
-    let startedAt = 0;
+    let trackIndex = 0;
+    let fadedIn = false;
 
-    function updateCurrentTrack() {
+    function showTrack() {
       if (disposed) return;
-      if (!source || context.state !== "running") {
-        setCurrentTrack(null);
-        return;
-      }
-      const index = Math.floor((context.currentTime - startedAt) / trackSeconds) % aquariumTracks.length;
-      setCurrentTrack(aquariumTracks[index]);
+      setCurrentTrack(!audio.paused && context.state === "running" ? aquariumTracks[trackIndex].title : null);
     }
 
-    async function startPlaylist() {
-      if (disposed || rendering || source || context.state !== "running") return;
-      rendering = true;
+    function load(index: number) {
+      trackIndex = index;
+      audio.src = aquariumTracks[index].src;
+    }
+
+    async function play() {
+      if (disposed) return;
       try {
-        const buffer = await renderAquariumPlaylist();
-        if (disposed) return;
-        source = context.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-        source.connect(gain);
-        startedAt = context.currentTime;
-        source.start(startedAt);
-        gain.gain.setTargetAtTime(BACKGROUND_VOLUME, context.currentTime, 1.5);
-        updateCurrentTrack();
-      } catch (error) {
-        if (!disposed) console.error("Aquarium soundtrack could not start", error);
-      } finally {
-        rendering = false;
+        await context.resume();
+        await audio.play();
+        if (!fadedIn) {
+          fadedIn = true;
+          gain.gain.setTargetAtTime(BACKGROUND_VOLUME, context.currentTime, 1.5);
+        }
+      } catch {
+        // Autoplay is blocked until the first gesture; play() runs again then.
       }
+      showTrack();
     }
 
-    function resume() {
-      if (disposed) return;
-      // Retry within gestures even if an earlier autoplay resume is pending.
-      void context.resume().then(startPlaylist).catch(() => undefined);
+    function next() {
+      load((trackIndex + 1) % aquariumTracks.length);
+      void play();
     }
 
-    context.addEventListener("statechange", startPlaylist);
-    context.addEventListener("statechange", updateCurrentTrack);
-    const trackTimer = window.setInterval(updateCurrentTrack, 1000);
-    window.addEventListener("pointerdown", resume);
-    window.addEventListener("keydown", resume);
-    resume();
+    function failed() {
+      if (!disposed) console.error(`Aquarium soundtrack could not play ${aquariumTracks[trackIndex].src}`);
+    }
+
+    load(0);
+    audio.addEventListener("ended", next);
+    audio.addEventListener("error", failed);
+    audio.addEventListener("playing", showTrack);
+    audio.addEventListener("pause", showTrack);
+    context.addEventListener("statechange", showTrack);
+    // Retry within gestures even if an earlier autoplay attempt is pending.
+    window.addEventListener("pointerdown", play);
+    window.addEventListener("keydown", play);
+    void play();
 
     return () => {
       disposed = true;
-      window.removeEventListener("pointerdown", resume);
-      window.removeEventListener("keydown", resume);
-      context.removeEventListener("statechange", startPlaylist);
-      context.removeEventListener("statechange", updateCurrentTrack);
-      window.clearInterval(trackTimer);
-      source?.stop();
+      window.removeEventListener("pointerdown", play);
+      window.removeEventListener("keydown", play);
+      audio.removeEventListener("ended", next);
+      audio.removeEventListener("error", failed);
+      audio.removeEventListener("playing", showTrack);
+      audio.removeEventListener("pause", showTrack);
+      context.removeEventListener("statechange", showTrack);
+      audio.pause();
+      audio.removeAttribute("src");
       gain.disconnect();
       void context.close().catch(() => undefined);
     };

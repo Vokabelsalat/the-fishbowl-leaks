@@ -23,14 +23,7 @@ describe("artifact target image configuration", () => {
     expect(artifacts[17].title).toBe("Earth Fortunes");
   });
 
-  it("keeps the three poster families while assigning artwork-specific particles", () => {
-    expect(new Set(artifacts.map(({ posterImageSrc }) => posterImageSrc))).toEqual(
-      new Set([
-        "/images/melting-eye.jpeg",
-        "/images/eye.jpeg",
-        "/images/hands.jpeg",
-      ]),
-    );
+  it("assigns every artwork its themes and particles", () => {
     expect(new Set(artifacts.map(({ theme }) => theme))).toEqual(
       new Set(["memory", "interface", "worldmaking", "embodiment", "agency"]),
     );

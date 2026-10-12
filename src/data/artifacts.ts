@@ -1,32 +1,15 @@
 import type { ConstellationSurface } from "@/components/particles/constellationPainter";
 import type { ExhibitionArtifact } from "@/types/exhibition";
 
-type VisualFamily = Pick<ExhibitionArtifact, "posterImageSrc">;
-
-const visualFamilies: Record<"memory" | "machine" | "body", VisualFamily> = {
-  memory: {
-    posterImageSrc: "/images/melting-eye.jpeg",
-  },
-  machine: {
-    posterImageSrc: "/images/eye.jpeg",
-  },
-  body: {
-    posterImageSrc: "/images/hands.jpeg",
-  },
-};
-
 type ArtifactSource = Omit<
   ExhibitionArtifact,
-  | "posterImageSrc"
   | "marineType"
   | "classification"
   | "visualTraits"
   | "stateEffects"
   | "storylet"
   | "choice"
-> & {
-  visualFamily: keyof typeof visualFamilies;
-};
+>;
 
 type AquariumLayer = Pick<
   ExhibitionArtifact,
@@ -456,7 +439,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 0,
     title: "Finding Frida",
     artist: "Hilde K. Kjøs (Director & Story Design), Cecilie Levy (Scriptwriter & Original Idea), Bjørn-Morten Nerland (Producer)",
-    visualFamily: "memory",
     particleForm: "torus",
     color: "#356B4B",
     alternativeColor: "#245137",
@@ -481,7 +463,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 1,
     title: "Historically Yours",
     artist: "Lina Ruth Harder",
-    visualFamily: "memory",
     particleForm: "triad",
     color: "#6C3F61",
     alternativeColor: "#5A2F4F",
@@ -505,7 +486,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 2,
     title: "From Ingrid to Bergen",
     artist: "Pedro Velho",
-    visualFamily: "memory",
     particleForm: "tree",
     color: "#597D8C",
     alternativeColor: "#365E6D",
@@ -529,7 +509,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 3,
     title: "Your Update Has Failed",
     artist: "Sérgio Galvão Roxo",
-    visualFamily: "machine",
     particleForm: "cuboid",
     color: "#79A83B",
     alternativeColor: "#4D751C",
@@ -553,7 +532,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 4,
     title: "The Grand Hotel Bald Cockatoo",
     artist: "Roderick Coover, Caitlin Fisher, Scott Rettberg",
-    visualFamily: "machine",
     particleForm: "crest",
     color: "#D5A62E",
     alternativeColor: "#8A6500",
@@ -578,7 +556,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 5,
     title: "Glasslike Fabric",
     artist: "Jason Nelson",
-    visualFamily: "machine",
     particleForm: "prism",
     color: "#C4473D",
     alternativeColor: "#A52E27",
@@ -602,7 +579,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 6,
     title: "Between Page and Screen",
     artist: "Amaranth Borsuk, Brad Bouse",
-    visualFamily: "machine",
     particleForm: "book",
     color: "#ffffff",
     alternativeColor: "#000000",
@@ -627,7 +603,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 7,
     title: "Bybanen Slop Surfer",
     artist: "Colin Robinson",
-    visualFamily: "body",
     particleForm: "skateboard",
     color: "#8B5E3C",
     alternativeColor: "#6B4027",
@@ -651,7 +626,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 8,
     title: "Emperor",
     artist: "Marion Burger, Ilan Cohen",
-    visualFamily: "body",
     particleForm: "brain",
     color: "#555555",
     alternativeColor: "#333333",
@@ -675,7 +649,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 9,
     title: "The Grand Hotel Galactic Center",
     artist: "Scott Rettberg, Caitlin Fisher, Roderick Coover, Colin Robinson (VR development)",
-    visualFamily: "machine",
     particleForm: "galaxy",
     color: "#51477F",
     alternativeColor: "#40356D",
@@ -699,7 +672,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 10,
     title: "Her Name Was Gisberta",
     artist: "Sérgio Galvão Roxo",
-    visualFamily: "body",
     particleForm: "pillar",
     color: "#B44772",
     alternativeColor: "#8E2F57",
@@ -724,7 +696,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 11,
     title: "Goliath",
     artist: "ANAGRAM",
-    visualFamily: "machine",
     particleForm: "dodecahedron",
     color: "#2D7F88",
     alternativeColor: "#185F68",
@@ -748,7 +719,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 12,
     title: "The Land of Crystals",
     artist: "Eamon O'Kane",
-    visualFamily: "memory",
     particleForm: "crystal",
     color: "#8CB6C7",
     alternativeColor: "#3D7288",
@@ -773,7 +743,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 13,
     title: "The Grand Hotel Sand Fountain",
     artist: "Scott Rettberg, Caitlin Fisher, Roderick Coover, Julian Pillis (Additional development), Colin Robinson (Additional development)",
-    visualFamily: "memory",
     particleForm: "hourglass",
     color: "#C19D65",
     alternativeColor: "#77572F",
@@ -799,7 +768,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 14,
     title: "Fiery Sparks of Light",
     artist: "Caitlin Fisher",
-    visualFamily: "machine",
     particleForm: "spiral",
     color: "#E45D3E",
     alternativeColor: "#B43822",
@@ -824,7 +792,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 15,
     title: "The Fishbowl Leaks",
     artist: "Jakob Kusnick",
-    visualFamily: "machine",
     particleForm: "fish",
     color: "#2F6FB5",
     alternativeColor: "#1D4F8A",
@@ -848,7 +815,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 16,
     title: "Realidad Mitigada",
     artist: "Tina Escaja",
-    visualFamily: "body",
     particleForm: "crescent",
     color: "#9A6BDB",
     alternativeColor: "#5E2E9A",
@@ -873,7 +839,6 @@ const exhibitionSources: ArtifactSource[] = [
     targetIndex: 17,
     title: "Earth Fortunes",
     artist: "Caitlin Fisher",
-    visualFamily: "machine",
     particleForm: "butterfly",
     color: "#C77B30",
     alternativeColor: "#94531A",
@@ -895,9 +860,8 @@ const exhibitionSources: ArtifactSource[] = [
 ];
 
 export const artifacts: ExhibitionArtifact[] = exhibitionSources.map(
-  ({ visualFamily, ...artifact }) => ({
+  (artifact) => ({
     ...artifact,
-    ...visualFamilies[visualFamily],
     ...aquariumLayers[artifact.id],
   }),
 );

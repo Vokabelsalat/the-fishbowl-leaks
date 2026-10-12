@@ -1,11 +1,13 @@
-/** “Below the glass”: an original 96-second ambient miniature at 40 BPM.
- * D minor 9 → B-flat major 7 → F major 9 → C suspended 2.
- * Long overlapping low pads carry a sparse, returning five-note motif.
+import { trackSeconds } from "./aquariumTrackLength";
+
+/** “Below the glass”: an original 192-second ambient piece at 40 BPM.
+ * D minor 9 → B-flat major 7 → F major 9 → C suspended 2, then a second round
+ * G minor 9 → B-flat major 9 → D minor 9 → A suspended 4 that leads back home.
+ * Long overlapping low pads carry a sparse, returning three-note motif.
  * Render once off the main thread; playback needs no scheduling timers.
  */
-export async function renderAquariumScore(): Promise<AudioBuffer> {
-  const rate = 22050;
-  const cycle = 96;
+export async function renderAquariumScore(rate = 22050): Promise<AudioBuffer> {
+  const cycle = trackSeconds;
   const context = new OfflineAudioContext(2, rate * cycle * 2, rate);
   const filter = context.createBiquadFilter();
   filter.type = "lowpass";
@@ -30,8 +32,14 @@ export async function renderAquariumScore(): Promise<AudioBuffer> {
     oscillator.stop(start + duration + 0.2);
   }
 
-  const chords = [[38, 45, 53, 60, 64], [34, 41, 53, 57, 62], [41, 48, 55, 57, 64], [36, 43, 50, 55, 62]];
-  const melody = [[69, 72, 76], [69, 65, 62], [67, 69, 72], [67, 62, 64]];
+  const chords = [
+    [38, 45, 53, 60, 64], [34, 41, 53, 57, 62], [41, 48, 55, 57, 64], [36, 43, 50, 55, 62],
+    [43, 50, 53, 57, 62], [34, 41, 50, 57, 60], [38, 45, 53, 57, 64], [33, 45, 52, 57, 62],
+  ];
+  const melody = [
+    [69, 72, 76], [69, 65, 62], [67, 69, 72], [67, 62, 64],
+    [74, 72, 69], [72, 69, 65], [69, 72, 76], [69, 64, 62],
+  ];
   for (let repeat = 0; repeat < 2; repeat += 1) {
     chords.forEach((chord, bar) => {
       const start = repeat * cycle + bar * 24;

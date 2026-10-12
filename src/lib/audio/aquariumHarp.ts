@@ -1,11 +1,13 @@
-/** “Threads of the tide”: an original 96-second harp miniature at 40 BPM.
- * Eight phrases in D Dorian: Dm9, G6, Cmaj7, Am7, then a returning variation.
+import { trackSeconds } from "./aquariumTrackLength";
+
+/** “Threads of the tide”: an original 192-second harp piece at 40 BPM.
+ * Sixteen phrases in D Dorian over Dm9, G6, Cmaj7, Am7: a theme, its variation,
+ * a higher second theme, and a closing variation that settles back on D.
  * A plucked harmonic spectrum and quickly fading upper partials evoke harp
  * strings; quiet broken chords support a separate, slowly unfolding melody.
  */
-export async function renderAquariumHarp(): Promise<AudioBuffer> {
-  const rate = 22050;
-  const context = new OfflineAudioContext(2, rate * 96, rate);
+export async function renderAquariumHarp(rate = 22050): Promise<AudioBuffer> {
+  const context = new OfflineAudioContext(2, rate * trackSeconds, rate);
   const room = context.createConvolver();
   const impulse = context.createBuffer(2, rate * 4, rate);
   let seed = 4219;
@@ -51,7 +53,11 @@ export async function renderAquariumHarp(): Promise<AudioBuffer> {
     [69, 72, 74, 76], [74, 71, 69, 67],
     [67, 71, 74, 76], [72, 71, 69, 64],
     [69, 72, 76, 74], [71, 74, 76, 79],
-    [76, 74, 71, 67], [69, 64, 62],
+    [76, 74, 71, 67], [69, 64, 62, 64],
+    [76, 74, 72, 69], [74, 76, 79, 76],
+    [72, 76, 74, 71], [72, 69, 67, 64],
+    [69, 74, 72, 76], [79, 76, 74, 71],
+    [76, 72, 71, 67], [69, 64, 62],
   ];
   melodies.forEach((melody, phrase) => {
     const at = phrase * 12;
@@ -60,7 +66,8 @@ export async function renderAquariumHarp(): Promise<AudioBuffer> {
     // A gently rising accompaniment leaves space between the melody notes.
     chord.slice(1).forEach((pitch, index) => pluck(pitch, at + 1.45 + index * 1.5, 0.062));
     melody.forEach((pitch, index) => {
-      const spacing = phrase === 7 ? 2.25 : 3;
+      // The last phrase hurries a little into the loop's return.
+      const spacing = phrase === melodies.length - 1 ? 2.25 : 3;
       pluck(pitch, at + 0.8 + index * spacing, 0.12 - index * 0.008);
     });
   });

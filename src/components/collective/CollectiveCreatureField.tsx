@@ -23,7 +23,12 @@ function seededUnit(seed: number) {
 }
 
 const pairingDistance = 0.65;
-const whaleDepth = -5.4;
+/** The nearest whale's front reaches up to here, just behind the veil that dims them. */
+const whaleFrontDepth = -3.6;
+/** Gap between neighbouring whale lanes, so their fins never touch. */
+const whaleLaneGap = 0.15;
+/** How quickly a whale glides into a new lane when whales come or go. */
+const whaleLaneEasing = 0.4;
 const whaleScale = 9.5;
 const whaleOffscreenMargin = 9.5;
 const collectiveFormScale: Record<AquaticForm, number> = {
@@ -117,6 +122,12 @@ type CreatureMotion = {
   vz: number;
   /** How far the creature's body reaches from its centre at unit depth scale; 0 until measured, and for whales. */
   radius: number;
+  /** Smoothed drift from bumping into neighbours, per second. */
+  pushX: number;
+  pushY: number;
+  pushZ: number;
+  /** 0 while collisions count fully; rises towards 1 while the creature is hemmed in, so it glides through. */
+  passThrough: number;
 };
 
 /** Share of a creature's measured size that counts as its body when creatures keep their distance. */
@@ -125,6 +136,13 @@ const collisionBodyShare = 0.8;
 const collisionPushRate = 2.6;
 /** How strongly a push also turns a creature away, so it swims off instead of being shoved along. */
 const collisionSteer = 1.4;
+/** How quickly the collision drift follows the current overlap, so pushes swell and fade instead of jolting. */
+const collisionDriftSmoothing = 5;
+/** Share of the pushes that has to cancel out before a creature counts as hemmed in. */
+const collisionJamThreshold = 0.45;
+/** How quickly a hemmed-in creature stops colliding, and how slowly it starts again once free. */
+const collisionReleaseRate = 1.6;
+const collisionRecoverRate = 0.35;
 
 /** A follower's place in its school, relative to the leader and its direction of travel. */
 type SchoolPlace = { leaderId: number; along: number; across: number; depth: number };
@@ -184,6 +202,8 @@ type FloatingCreatureProps = {
   contribution: ExhibitionContribution;
   progress: number;
   actorRegistry?: MutableRefObject<Map<number, MutableRefObject<CreatureMotion>>>;
+  /** Each whale's half thickness at unit depth scale, so every whale gets a depth lane of its own. */
+  whaleLanes?: MutableRefObject<Map<number, number>>;
   pairingRef?: MutableRefObject<PairingEvent | null>;
   schoolingRef?: MutableRefObject<Schooling>;
   juvenile?: boolean;
@@ -200,6 +220,7 @@ const FloatingCreature = memo(function FloatingCreature({
   contribution,
   progress,
   actorRegistry,
+  whaleLanes,
   pairingRef,
   schoolingRef,
   juvenile = false,
@@ -227,7 +248,7 @@ const FloatingCreature = memo(function FloatingCreature({
   const placement = useMemo(() => ({
     xUnit: -0.84 + seededUnit(contribution.id * 3) * 1.68,
     yUnit: -0.84 + seededUnit(contribution.id * 5) * 1.68,
-    z: isWhale ? whaleDepth - seededUnit(contribution.id * 7) * 0.4 : -1 + seededUnit(contribution.id * 7) * 2,
+    z: isWhale ? whaleFrontDepth - 2 : -1 + seededUnit(contribution.id * 7) * 2,
     depthSpeed: isWhale ? 0 : (0.07 + seededUnit(contribution.id * 11) * 0.17) * formSpeed,
     depthDirection: seededUnit(contribution.id * 23) > 0.5 ? 1 : -1,
     scale: 0.4,
@@ -250,6 +271,10 @@ const FloatingCreature = memo(function FloatingCreature({
   const motion = useRef<CreatureMotion>({
     initialized: false,
     radius: 0,
+    pushX: 0,
+    pushY: 0,
+    pushZ: 0,
+    passThrough: 0,
     x: 0,
     y: 0,
     z: placement.z,
@@ -280,6 +305,14 @@ const FloatingCreature = memo(function FloatingCreature({
       registry.delete(contribution.id);
     };
   }, [actorRegistry, contribution.id, juvenile]);
+
+  useEffect(() => {
+    if (!isWhale || !whaleLanes) return;
+    const lanes = whaleLanes.current;
+    return () => {
+      lanes.delete(contribution.id);
+    };
+  }, [contribution.id, isWhale, whaleLanes]);
 
   useFrame(({ clock, viewport }, delta) => {
     if (!swimRef.current || !directionRef.current) return;
@@ -440,6 +473,34 @@ const FloatingCreature = memo(function FloatingCreature({
       }
     }
 
+    // Whales are far too big to dodge one another, so each swims in a depth lane of its own and
+    // passes in front of or behind the others. Lanes stack back to front in id order.
+    if (isWhale && whaleLanes) {
+      const lanes = whaleLanes.current;
+      const firstMeasure = !lanes.has(contribution.id);
+      if (firstMeasure) {
+        const bounds = new THREE.Box3().setFromObject(directionRef.current);
+        const worldScale = swimRef.current.getWorldScale(new THREE.Vector3()).z || 1;
+        if (!bounds.isEmpty()) lanes.set(contribution.id, (bounds.max.z - bounds.min.z) / 2 / worldScale);
+      }
+      if (lanes.has(contribution.id)) {
+        const laneScale = depthScaleAt(state.z);
+        let laneFront = whaleFrontDepth;
+        let laneZ = state.z;
+        for (const id of [...lanes.keys()].sort((a, b) => a - b)) {
+          const halfDepth = (lanes.get(id) ?? 0) * laneScale;
+          if (id === contribution.id) {
+            laneZ = laneFront - halfDepth;
+            break;
+          }
+          laneFront -= halfDepth * 2 + whaleLaneGap;
+        }
+        state.z = firstMeasure && !arrivalMotion.current
+          ? laneZ
+          : THREE.MathUtils.damp(state.z, laneZ, whaleLaneEasing, delta);
+      }
+    }
+
     // A school follower takes its place behind the leader and matches its course.
     const schoolPlace = schoolingRef?.current.places.get(contribution.id);
     const leader = schoolPlace && schoolPlace.leaderId !== contribution.id
@@ -473,9 +534,16 @@ const FloatingCreature = memo(function FloatingCreature({
 
     // Creatures that bump into each other drift apart. The heavier one barely gives way, so big
     // animals shoulder small ones aside. Schools and pairing couples swim close on purpose.
+    // All pushes are summed first: when they mostly cancel out, because neighbours or the tank walls
+    // press from several sides, the creature lets collisions go and glides through rather than jitter.
     if (!isPairing && state.radius > 0 && actorRegistry) {
       const ownScale = depthScaleAt(state.z);
       const ownMass = (state.radius * ownScale) ** 3;
+      let netX = 0;
+      let netY = 0;
+      let netZ = 0;
+      let pushTotal = 0;
+      let contacts = 0;
       for (const [otherId, otherMotion] of actorRegistry.current) {
         const other = otherMotion.current;
         if (otherId === contribution.id || !other.initialized || other.radius === 0) continue;
@@ -489,20 +557,41 @@ const FloatingCreature = memo(function FloatingCreature({
         const distanceSq = dx * dx + dy * dy + dz * dz;
         if (distanceSq >= reach * reach) continue;
         const distance = Math.sqrt(distanceSq);
-        // Creatures in exactly the same spot part along a direction their ids settle on.
-        const away = distance > 0.0001
-          ? movementDirection.current.set(dx / distance, dy / distance, dz / distance)
-          : movementDirection.current.set(contribution.id < otherId ? 1 : -1, 0, 0);
         const otherMass = otherRadius ** 3;
-        const giveWay = otherMass / (ownMass + otherMass);
-        const push = (reach - distance) * giveWay;
-        const ease = 1 - Math.exp(-collisionPushRate * delta);
-        state.x += away.x * push * ease;
-        if (!isBottomDweller) state.y += away.y * push * ease;
-        state.z += away.z * push * ease;
-        state.vx += away.x * push * collisionSteer * delta * swimSpeed;
-        if (!isBottomDweller) state.vy += away.y * push * collisionSteer * delta * swimSpeed;
-        if (state.vz !== 0 && Math.sign(state.vz) !== Math.sign(away.z) && Math.abs(away.z) > 0.5) state.vz = -state.vz;
+        const push = (reach - distance) * (otherMass / (ownMass + otherMass));
+        // Creatures in exactly the same spot part along a direction their ids settle on.
+        if (distance > 0.0001) {
+          netX += (dx / distance) * push;
+          netY += isBottomDweller ? 0 : (dy / distance) * push;
+          netZ += (dz / distance) * push;
+        } else {
+          netX += (contribution.id < otherId ? 1 : -1) * push;
+        }
+        pushTotal += push;
+        contacts += 1;
+      }
+      // A wall in the way of the push holds just as firmly as a neighbour on the far side.
+      const wallMargin = 0.02;
+      if ((netX > 0 && state.x >= maxX - wallMargin) || (netX < 0 && state.x <= -maxX + wallMargin)) netX = 0;
+      if (!isBottomDweller && ((netY > 0 && state.y >= maxY - wallMargin) || (netY < 0 && state.y <= -maxY + wallMargin))) netY = 0;
+      if ((netZ > 0 && state.z >= frontDepth - wallMargin) || (netZ < 0 && state.z <= backDepth + wallMargin)) netZ = 0;
+      const netPush = Math.hypot(netX, netY, netZ);
+      const jammed = pushTotal > 0 && 1 - netPush / pushTotal > collisionJamThreshold;
+      state.passThrough = jammed
+        ? THREE.MathUtils.damp(state.passThrough, 1, collisionReleaseRate, delta)
+        : THREE.MathUtils.damp(state.passThrough, 0, contacts === 0 ? collisionRecoverRate * 3 : collisionRecoverRate, delta);
+      const strength = 1 - state.passThrough;
+
+      state.pushX = THREE.MathUtils.damp(state.pushX, netX * collisionPushRate * strength, collisionDriftSmoothing, delta);
+      state.pushY = THREE.MathUtils.damp(state.pushY, netY * collisionPushRate * strength, collisionDriftSmoothing, delta);
+      state.pushZ = THREE.MathUtils.damp(state.pushZ, netZ * collisionPushRate * strength, collisionDriftSmoothing, delta);
+      state.x += state.pushX * delta;
+      if (!isBottomDweller) state.y += state.pushY * delta;
+      state.z += state.pushZ * delta;
+      state.vx += netX * strength * collisionSteer * delta * swimSpeed;
+      if (!isBottomDweller) state.vy += netY * strength * collisionSteer * delta * swimSpeed;
+      if (netPush > 0 && strength > 0.5 && state.vz !== 0 && Math.sign(state.vz) !== Math.sign(netZ) && Math.abs(netZ) / netPush > 0.5) {
+        state.vz = -state.vz;
       }
       state.x = THREE.MathUtils.clamp(state.x, -maxX, maxX);
       if (!isBottomDweller) state.y = THREE.MathUtils.clamp(state.y, -maxY, maxY);
@@ -952,6 +1041,7 @@ export function CollectiveCreatureField({
   const adjustPixelRatio = useCallback(({ factor }: PerformanceMonitorApi) => setPixelRatio(pixelRatioFor(factor)), []);
   const settleOnLowestPixelRatio = useCallback(() => setPixelRatio(pixelRatioFor(0)), []);
   const actorRegistry = useRef(new Map<number, MutableRefObject<CreatureMotion>>());
+  const whaleLanes = useRef(new Map<number, number>());
   const pairingRef = useRef<PairingEvent | null>(null);
   const schoolingRef = useRef<Schooling>({ places: new Map(), schools: [], cooldownUntil: new Map() });
   const adults = useMemo(() => contributions.slice(-collectiveCapacity), [contributions]);
@@ -970,7 +1060,7 @@ export function CollectiveCreatureField({
   return (
     <Canvas
       orthographic
-      camera={{ position: [0, 0, cameraDepth], zoom: 82, near: 0.1, far: 30 }}
+      camera={{ position: [0, 0, cameraDepth], zoom: 82, near: 0.1, far: 90 }}
       dpr={pixelRatio}
       gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
     >
@@ -986,6 +1076,7 @@ export function CollectiveCreatureField({
             key={contribution.id}
             contribution={contribution}
             progress={progress}
+            whaleLanes={whaleLanes}
             mergeStaticMeshes={mergeStaticMeshes}
             reduceGeometryDetail={reduceGeometryDetail}
             meshQuality={meshQuality}

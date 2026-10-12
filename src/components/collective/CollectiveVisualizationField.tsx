@@ -9,6 +9,7 @@ import { AbstractCreatureModel } from "@/components/visualization/AbstractCreatu
 import { NetworkGlyph } from "@/components/visualization/NetworkGlyph";
 import { RenderStats, type RenderStatsReport } from "@/components/development/RenderStats";
 import { collectiveCapacity, visualizationDesign } from "@/config/visualization";
+import { compartmentBounds, compartmentLabels } from "@/lib/collective/tankCompartments";
 import type { ExhibitionContribution } from "@/types/contribution";
 
 function seededUnit(seed: number) {
@@ -16,7 +17,18 @@ function seededUnit(seed: number) {
   return value - Math.floor(value);
 }
 
-function FloatingAbstractCreature({ contribution, progress }: { contribution: ExhibitionContribution; progress: number }) {
+/** Each creature's home compartment while the walls still hold, as its centre from -1 (left) to 1 (right). */
+function compartmentCenter(contribution: ExhibitionContribution) {
+  const [left, right] = compartmentBounds(Math.abs(contribution.id) % compartmentLabels.length, 1);
+  return (left + right) / 2;
+}
+
+/** How strongly creatures keep to their compartments: fully while the walls hold, not at all once they are mostly gone. */
+function containmentFor(breakdown: number) {
+  return Math.max(0, 1 - breakdown * 1.35);
+}
+
+function FloatingAbstractCreature({ contribution, progress, breakdown }: { contribution: ExhibitionContribution; progress: number; breakdown: number }) {
   const ref = useRef<THREE.Group>(null);
   const placement = useMemo(() => ({
     x: -6.5 + seededUnit(contribution.id * 3) * 13,
@@ -26,11 +38,13 @@ function FloatingAbstractCreature({ contribution, progress }: { contribution: Ex
     speed: 0.16 + seededUnit(contribution.id * 13) * 0.2,
     phase: seededUnit(contribution.id * 17) * Math.PI * 2,
   }), [contribution.id]);
+  const homeX = compartmentCenter(contribution) * 5.8;
+  const containment = containmentFor(breakdown);
   useFrame(({ clock }) => {
     if (!ref.current) return;
     const time = clock.elapsedTime * placement.speed + placement.phase;
-    ref.current.position.x = placement.x + Math.sin(time * 0.72) * (0.24 + progress * 0.3);
-    ref.current.position.y = placement.y + Math.cos(time) * (0.18 + progress * 0.25);
+    ref.current.position.x = placement.x * (1 - containment) + homeX * containment + Math.sin(time * 0.72) * (0.24 + progress * 0.3);
+    ref.current.position.y = placement.y * (1 - containment) + Math.cos(time) * (0.18 + progress * 0.25);
     ref.current.rotation.z = Math.sin(time * 0.58) * 0.11;
   });
 
@@ -44,10 +58,12 @@ function FloatingAbstractCreature({ contribution, progress }: { contribution: Ex
 function CollectiveAbstractField({
   contributions,
   progress,
+  breakdown,
   onRenderStats,
 }: {
   contributions: ExhibitionContribution[];
   progress: number;
+  breakdown: number;
   onRenderStats?: (report: RenderStatsReport) => void;
 }) {
   return (
@@ -58,21 +74,25 @@ function CollectiveAbstractField({
       <pointLight position={[-5, 1, 5]} intensity={2.2} color="#58D6FF" />
       <pointLight position={[5, -2, 5]} intensity={1.8} color="#FF7557" />
       {contributions.slice(-collectiveCapacity).map((contribution) => (
-        <FloatingAbstractCreature key={contribution.id} contribution={contribution} progress={progress} />
+        <FloatingAbstractCreature key={contribution.id} contribution={contribution} progress={progress} breakdown={breakdown} />
       ))}
       <AdaptiveDpr pixelated />
     </Canvas>
   );
 }
 
-function CollectiveNetworkField({ contributions }: { contributions: ExhibitionContribution[] }) {
+function CollectiveNetworkField({ contributions, breakdown }: { contributions: ExhibitionContribution[]; breakdown: number }) {
+  const containment = containmentFor(breakdown);
   return (
     <div className="relative size-full">
       {contributions.slice(-collectiveCapacity).map((contribution) => {
         const size = 110 + seededUnit(contribution.id * 7) * 150;
+        const openLeft = 7 + seededUnit(contribution.id * 3) * 86;
+        const openTop = 12 + seededUnit(contribution.id * 5) * 76;
+        const containedLeft = 50 + compartmentCenter(contribution) * 43;
         const style = {
-          left: `${7 + seededUnit(contribution.id * 3) * 86}%`,
-          top: `${12 + seededUnit(contribution.id * 5) * 76}%`,
+          left: `${openLeft * (1 - containment) + containedLeft * containment}%`,
+          top: `${openTop * (1 - containment) + 50 * containment}%`,
           width: `${size}px`,
           height: `${size}px`,
           "--float-delay": `${seededUnit(contribution.id * 11) * -18}s`,
@@ -96,6 +116,7 @@ function CollectiveNetworkField({ contributions }: { contributions: ExhibitionCo
 function VisualizationField({
   contributions,
   progress = 1,
+  breakdown = 1,
   arrival,
   onSelectContribution,
   onRenderStats,
@@ -106,6 +127,8 @@ function VisualizationField({
 }: {
   contributions: ExhibitionContribution[];
   progress?: number;
+  /** How far the tank's compartment walls have broken down, from 0 (sealed) to 1 (gone). */
+  breakdown?: number;
   arrival?: CreatureArrival | null;
   onSelectContribution?: (contribution: ExhibitionContribution) => void;
   /** Merges each creature's still parts into a few meshes in the 3D aquarium. */
@@ -119,15 +142,16 @@ function VisualizationField({
   onRenderStats?: (report: RenderStatsReport) => void;
 }) {
   if (visualizationDesign === "constellation") {
-    return <CollectiveNetworkField contributions={contributions} />;
+    return <CollectiveNetworkField contributions={contributions} breakdown={breakdown} />;
   }
   if (visualizationDesign === "creature") {
-    return <CollectiveAbstractField contributions={contributions} progress={progress} onRenderStats={onRenderStats} />;
+    return <CollectiveAbstractField contributions={contributions} progress={progress} breakdown={breakdown} onRenderStats={onRenderStats} />;
   }
   return (
     <CollectiveCreatureField
       contributions={contributions}
       progress={progress}
+      breakdown={breakdown}
       arrival={arrival}
       onSelectContribution={onSelectContribution}
       onRenderStats={onRenderStats}

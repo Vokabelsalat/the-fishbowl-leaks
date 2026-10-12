@@ -15,6 +15,7 @@ import {
 import { setExperiencePhase } from "@/store/journeySlice";
 import { PathVisualization } from "@/components/visualization/PathVisualization";
 import { activeVisualizationCopy } from "@/config/visualization";
+import { artifacts } from "@/data/artifacts";
 
 export function ExhibitionNavigation() {
   const dispatch = useAppDispatch();
@@ -36,9 +37,18 @@ export function ExhibitionNavigation() {
     <header className="safe-top pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between px-4">
       <div>
         <p className="text-lg leading-none tracking-[-0.04em]">The Fishbowl Leaks</p>
-        <p className="mt-1 text-sm text-white/65" aria-live="polite">
-          {count} {count === 1 ? "encounter" : "encounters"} recorded
-        </p>
+        <div
+          className="mt-2 flex items-baseline gap-2 text-white"
+          role="progressbar"
+          aria-label="Exhibition artworks discovered"
+          aria-valuemin={0}
+          aria-valuemax={artifacts.length}
+          aria-valuenow={count}
+          aria-valuetext={`${count} of ${artifacts.length} artworks discovered`}
+        >
+          <span className="font-display text-3xl leading-none tabular-nums">{count}</span>
+          <span className="text-xl leading-none tabular-nums">/ {artifacts.length}</span>
+        </div>
       </div>
       {/* Visitors start without a specimen; until the first scan, the corner asks for one. */}
       {count === 0 && (

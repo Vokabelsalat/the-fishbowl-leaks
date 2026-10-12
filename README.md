@@ -89,6 +89,8 @@ Dwell time runs from an artifact's first scan until the next new artifact is sca
 
 Open `/collective` full-screen on the exhibition display. It polls the live contribution feed every 2.5 seconds. Each new story expands into focus, displays its narrative, then contracts into an abstract constellation and joins up to 60 other drifting contributions. Initial history appears directly as the ambient field, so restarting the display does not replay every old story.
 
+The tank starts each day divided into five labelled compartments. Every creature released that day cracks the walls between them a little further: the walls open one after another, each with a growing hole that creatures can swim through, until with 60 creatures (`fullBreakdownCreatures` in `src/lib/collective/tankCompartments.ts`) all walls have burst and the creatures swim together. The count includes all of the day's creatures, not only the latest ones shown, and the time slider replays it.
+
 Use the **Time map** switch on the collective display to see cumulative dwell time for all 18 artwork stations. This view aggregates every stored contribution (not only the recent stories in the ambient field), ranks the stations by total attention, and shows visit count plus average dwell time. Missing timing data from older stories is excluded from the totals.
 
 The default database file is `data/exhibition.sqlite` and is ignored by Git. Set `EXHIBITION_DATABASE_PATH` to an absolute persistent volume path in production. Run one server instance against that volume; for horizontal scaling, replace the small database helper with a managed shared SQL store while preserving the API contract.

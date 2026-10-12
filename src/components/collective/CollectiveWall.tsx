@@ -14,6 +14,7 @@ import { creatureFitMargin } from "@/components/creature/CreatureCanvas";
 import { formatRenderStats, type RenderStatsReport } from "@/components/development/RenderStats";
 import { meshQualityPresets, minimumMeshQuality, useBatchMeshes, useMeshQuality, useMergeStaticMeshes, useReduceGeometryDetail } from "@/lib/development/renderSettings";
 import { activeVisualizationCopy, collectiveCapacity } from "@/config/visualization";
+import { compartmentLabels, compartmentWalls, holeHalfHeight, tankBreakdown, wallOpening } from "@/lib/collective/tankCompartments";
 import { artifacts } from "@/data/artifacts";
 import { aggregateContributionDwellTimes } from "@/lib/contributions/heatmap";
 import type { CollectiveHeatDatum, ExhibitionContribution } from "@/types/contribution";
@@ -120,6 +121,7 @@ export function CollectiveWall() {
   const [ready, setReady] = useState(false);
   const [clockMinutes, setClockMinutes] = useState(() => minuteOfDay(new Date()));
   const [liveTime, setLiveTime] = useState(true);
+  const [dayCreatureCount, setDayCreatureCount] = useState(0);
   const latestId = useRef(0);
   const initialized = useRef(false);
   const activeRef = useRef<ExhibitionContribution | null>(null);
@@ -154,6 +156,7 @@ export function CollectiveWall() {
         heatmap: CollectiveHeatDatum[];
         cycleDate: string;
         syntheticCount: number;
+        contributionCount: number;
       };
     }
 
@@ -176,6 +179,7 @@ export function CollectiveWall() {
           setContributions([]);
         }
         cycleDateRef.current = data.cycleDate;
+        setDayCreatureCount(data.contributionCount);
 
         const syntheticDatasetWasRemoved =
           syntheticCountRef.current !== null &&
@@ -283,16 +287,49 @@ export function CollectiveWall() {
   const latestContribution = recentContributions[0];
   const previousContributions = recentContributions.slice(1);
   const dayProgress = clockMinutes / MINUTES_IN_DAY;
-  const wallStyle = { "--tank-progress": dayProgress } as CSSProperties;
+  // The walls break with every creature of the day. Only the latest are loaded, and the ones left out
+  // are older than all of them, so at a test time they count as already released.
+  const breakdown = tankBreakdown(visibleContributions.length + Math.max(0, dayCreatureCount - contributions.length));
+  const wallStyle = { "--tank-progress": dayProgress, "--tank-breakdown": breakdown } as CSSProperties;
 
   return (
     <main className="collective-wall biome-field film-grain relative h-screen overflow-hidden bg-[var(--abyss)] text-[var(--foam)]" style={wallStyle} aria-label={`Collective exhibition ${activeVisualizationCopy.collectivePlace}`}>
       <BiomeBackdrop progress={dayProgress} surfaceRays />
+      <div className="tank-compartments pointer-events-none absolute inset-0" aria-hidden="true">
+        {compartmentLabels.map((label, index) => (
+          <div key={label} className={`tank-compartment tank-compartment-${index + 1}`}><span>{label}</span></div>
+        ))}
+        {compartmentWalls.map((wall, index) => {
+          const opening = wallOpening(breakdown, index);
+          const gap = holeHalfHeight(opening) * 100;
+          return (
+            <div
+              key={wall.position}
+              className="compartment-wall"
+              style={{
+                "--wall-left": `${wall.position * 100}%`,
+                "--wall-open": opening,
+                "--wall-hole": wall.hole * 100,
+                "--wall-top-height": `${Math.max(0, wall.hole * 100 - gap)}%`,
+                "--wall-bottom-height": `${Math.max(0, 100 - wall.hole * 100 - gap)}%`,
+              } as CSSProperties}
+            >
+              <i className="compartment-wall-top" />
+              <i className="compartment-wall-bottom" />
+              <b className="compartment-breach" />
+            </div>
+          );
+        })}
+      </div>
+      <div className="compartment-flows pointer-events-none absolute inset-0" aria-hidden="true">
+        <span /><span /><span /><span />
+      </div>
       {view === "collective" ? (
         <div className={`collective-swim-field absolute ${visibleActive ? "collective-swim-field-arriving" : ""}`} aria-live="polite">
           <CollectiveVisualizationField
             contributions={habitatCreatures}
             progress={dayProgress}
+            breakdown={breakdown}
             arrival={releasedArrival}
             onSelectContribution={setSelectedContribution}
             onRenderStats={showRenderStats ? showRenderStatsReport : undefined}

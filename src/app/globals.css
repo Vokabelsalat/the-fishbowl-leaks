@@ -671,6 +671,138 @@ a:focus-visible {
   .collective-recents-latest > .aspect-square { display: none; }
 }
 
+/* The tank's compartments; they break open as the day's creatures arrive (--tank-breakdown, 0 to 1). */
+.tank-compartments {
+  inset: 0 0 var(--collective-recents-height);
+  border-top: 1px solid rgba(232, 245, 239, 0.28);
+  border-bottom: 1px solid rgba(232, 245, 239, 0.28);
+  opacity: clamp(0.08, calc(1.12 - var(--tank-breakdown, 0) * 1.15), 1);
+  transition: opacity 2.4s ease;
+}
+
+.tank-compartment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at 30% 36%, var(--compartment-glow), transparent 42%);
+}
+
+/* Labelled at the bottom, clear of the title and view switch along the top. */
+.tank-compartment span {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(232, 245, 239, 0.62);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  opacity: clamp(0, calc(1 - var(--tank-breakdown, 0) * 1.35), 1);
+  transition: opacity 2.4s ease;
+}
+
+.tank-compartment-1 {
+  --compartment-glow: rgba(255, 138, 98, 0.18);
+  left: 0;
+  width: 18%;
+}
+
+.tank-compartment-2 {
+  --compartment-glow: rgba(198, 156, 255, 0.16);
+  left: 18%;
+  width: 28%;
+}
+
+.tank-compartment-3 {
+  --compartment-glow: rgba(88, 214, 255, 0.17);
+  left: 46%;
+  width: 14%;
+}
+
+.tank-compartment-3 span {
+  writing-mode: vertical-rl;
+}
+
+.tank-compartment-4 {
+  --compartment-glow: rgba(185, 255, 220, 0.16);
+  left: 60%;
+  width: 24%;
+}
+
+.tank-compartment-5 {
+  --compartment-glow: rgba(255, 207, 92, 0.15);
+  left: 84%;
+  width: 16%;
+}
+
+.compartment-wall {
+  position: absolute;
+  inset-block: 0;
+  left: var(--wall-left);
+  width: 2px;
+  transform: translateX(-1px);
+}
+
+.compartment-wall i {
+  position: absolute;
+  left: 0;
+  width: 2px;
+  background: rgba(232, 245, 239, 0.62);
+  box-shadow: 0 0 0.8rem rgba(185, 255, 220, 0.28);
+  transition: height 2.4s ease;
+}
+
+.compartment-wall-top {
+  top: 0;
+  height: var(--wall-top-height);
+}
+
+.compartment-wall-bottom {
+  bottom: 0;
+  height: var(--wall-bottom-height);
+}
+
+.compartment-breach {
+  position: absolute;
+  top: calc(var(--wall-hole) * 1%);
+  left: 50%;
+  width: calc(0.35rem + var(--wall-open) * 5rem);
+  height: calc(0.35rem + var(--wall-open) * 5rem);
+  border-radius: 50%;
+  opacity: var(--wall-open);
+  background: rgba(185, 255, 220, 0.19);
+  box-shadow: 0 0 calc(0.5rem + var(--wall-open) * 2rem) rgba(185, 255, 220, 0.35);
+  filter: blur(calc(var(--wall-open) * 0.4rem));
+  transform: translate(-50%, -50%) scale(calc(0.25 + var(--wall-open) * 0.75));
+  transition: opacity 2.4s ease, width 2.4s ease, height 2.4s ease, transform 2.4s ease;
+}
+
+.compartment-flows {
+  inset: 0 0 var(--collective-recents-height);
+  opacity: clamp(0, calc(var(--tank-breakdown, 0) * 0.78), 0.72);
+  transition: opacity 2.4s ease;
+}
+
+.compartment-flows span {
+  position: absolute;
+  width: calc(8rem + var(--tank-breakdown, 0) * 28vw);
+  height: calc(2rem + var(--tank-breakdown, 0) * 7vh);
+  border-radius: 50%;
+  filter: blur(calc(1.4rem + var(--tank-breakdown, 0) * 2rem));
+  background: rgba(185, 255, 220, 0.16);
+  animation: compartment-flow 11s ease-in-out infinite alternate;
+}
+
+.compartment-flows span:nth-child(1) { left: 22%; top: 31%; transform: rotate(-20deg); }
+.compartment-flows span:nth-child(2) { right: 18%; top: 38%; animation-delay: -3s; transform: rotate(18deg); background: rgba(88, 214, 255, 0.14); }
+.compartment-flows span:nth-child(3) { left: 31%; bottom: 22%; animation-delay: -6s; transform: rotate(27deg); background: rgba(255, 138, 98, 0.12); }
+.compartment-flows span:nth-child(4) { right: 29%; bottom: 18%; animation-delay: -8s; transform: rotate(-12deg); }
+
+@keyframes compartment-flow {
+  from { translate: -2vw -1vh; scale: 0.72 0.8; }
+  to { translate: 4vw 2vh; scale: 1.18 1.05; }
+}
+
 .tank-time-slider {
   height: 1.5rem;
   cursor: ew-resize;

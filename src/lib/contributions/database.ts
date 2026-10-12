@@ -274,6 +274,18 @@ export function createContribution(input: {
   return deserialize(row);
 }
 
+/** How many creatures were released into today's tank. */
+export function getContributionCount() {
+  const row = openDatabase()
+    .prepare(
+      `SELECT COUNT(*) AS count
+       FROM contributions
+       WHERE created_at >= ?`,
+    )
+    .get(cycleStartIso()) as unknown as { count: number };
+  return row.count;
+}
+
 export function getSyntheticContributionCount() {
   const row = openDatabase()
     .prepare(

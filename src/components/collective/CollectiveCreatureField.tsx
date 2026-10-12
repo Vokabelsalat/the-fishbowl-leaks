@@ -15,6 +15,7 @@ import { creaturePattern, patternForTraitCount } from "@/lib/creature/patterns";
 import { creatureProportions } from "@/lib/creature/proportions";
 import type { ExhibitionContribution } from "@/types/contribution";
 import { collectiveCapacity } from "@/config/visualization";
+import { canPassWall, compartmentAt, compartmentBounds, compartmentLabels, compartmentWalls, separatedByWall, wallX } from "@/lib/collective/tankCompartments";
 import { RenderStats, type RenderStatsReport } from "@/components/development/RenderStats";
 
 function seededUnit(seed: number) {
@@ -112,6 +113,23 @@ function WhaleDepthVeil() {
   );
 }
 
+/** Half the width and height of the tank creatures swim in, inside the viewport's margins. */
+function tankHalfWidth(viewport: { width: number }) {
+  return Math.max(1.6, viewport.width / 2 - 0.9);
+}
+
+function tankHalfHeight(viewport: { height: number }) {
+  return Math.max(1.25, viewport.height / 2 - 0.72);
+}
+
+/** Eases the walls' breakdown towards its new value, as slowly as the walls on the wall display crack. */
+function BreakdownEaser({ breakdown, breakdownRef }: { breakdown: number; breakdownRef: MutableRefObject<number> }) {
+  useFrame((_, delta) => {
+    breakdownRef.current = THREE.MathUtils.damp(breakdownRef.current, breakdown, 1.2, delta);
+  });
+  return null;
+}
+
 type CreatureMotion = {
   initialized: boolean;
   x: number;
@@ -204,6 +222,8 @@ type FloatingCreatureProps = {
   actorRegistry?: MutableRefObject<Map<number, MutableRefObject<CreatureMotion>>>;
   /** Each whale's half thickness at unit depth scale, so every whale gets a depth lane of its own. */
   whaleLanes?: MutableRefObject<Map<number, number>>;
+  /** How far the compartment walls have broken down, from 0 (sealed) to 1 (gone); none means no walls. */
+  breakdownRef?: MutableRefObject<number>;
   pairingRef?: MutableRefObject<PairingEvent | null>;
   schoolingRef?: MutableRefObject<Schooling>;
   juvenile?: boolean;
@@ -221,6 +241,7 @@ const FloatingCreature = memo(function FloatingCreature({
   progress,
   actorRegistry,
   whaleLanes,
+  breakdownRef,
   pairingRef,
   schoolingRef,
   juvenile = false,
@@ -318,8 +339,15 @@ const FloatingCreature = memo(function FloatingCreature({
     if (!swimRef.current || !directionRef.current) return;
     const elapsed = clock.elapsedTime;
     const state = motion.current;
-    const maxX = Math.max(1.6, viewport.width / 2 - 0.9);
-    const maxY = Math.max(1.25, viewport.height / 2 - 0.72);
+    const maxX = tankHalfWidth(viewport);
+    const maxY = tankHalfHeight(viewport);
+    const breakdown = breakdownRef?.current ?? 1;
+    // While walls still stand, a creature starts in its home compartment.
+    const spawnX = () => {
+      if (breakdown >= 1) return placement.xUnit * maxX;
+      const [left, right] = compartmentBounds(Math.abs(contribution.id) % compartmentLabels.length, maxX);
+      return (left + right) / 2 + placement.xUnit * (right - left) * 0.34;
+    };
     const whaleTravelEdge = viewport.width / 2 + whaleOffscreenMargin;
     const aquariumFloorY = -viewport.height / 2;
     const backDepth = -1.45;
@@ -345,7 +373,7 @@ const FloatingCreature = memo(function FloatingCreature({
     if (!state.initialized || progress < previousProgress.current - 0.025) {
       state.x = isWhale
         ? placement.xUnit * whaleTravelEdge
-        : spawnPosition?.[0] ?? placement.xUnit * maxX;
+        : spawnPosition?.[0] ?? spawnX();
       state.y = isBottomDweller
         ? floorY
         : spawnPosition?.[1] ?? placement.yUnit * maxY * (isWhale ? 0.72 : 1);
@@ -430,6 +458,7 @@ const FloatingCreature = memo(function FloatingCreature({
     const isPairing = Boolean(pairingRef?.current?.parents.some((parent) => parent.id === contribution.id));
     if (!isPairing && state.vz !== 0) state.vz = Math.sign(state.vz) * placement.depthSpeed * paceFactor;
 
+    const frameStartX = state.x;
     const turn = isBottomDweller || isWhale ? 0 : Math.sin(elapsed * 0.34 + placement.phase) * 0.12 * delta;
     const previousVx = state.vx;
     state.vx = previousVx * Math.cos(turn) - state.vy * Math.sin(turn);
@@ -598,6 +627,24 @@ const FloatingCreature = memo(function FloatingCreature({
       state.z = THREE.MathUtils.clamp(state.z, backDepth, frontDepth);
     }
 
+    // Walls that still hold turn a creature back before it reaches them, like the tank's sides, unless
+    // it swims at the height of their hole. Anything pushed or pulled against a wall stops there.
+    if (!isWhale && !isPairing && breakdown < 1) {
+      const compartment = compartmentAt(frameStartX, maxX);
+      const rightWall = compartment < compartmentWalls.length ? compartment : -1;
+      const leftWall = compartment - 1;
+      if (rightWall >= 0 && !canPassWall(rightWall, state.y, breakdown, maxY)) {
+        const wall = wallX(rightWall, maxX);
+        if (state.vx > 0 && state.x > wall - turnZone) state.vx = -Math.abs(state.vx);
+        state.x = Math.min(state.x, wall - 0.04);
+      }
+      if (leftWall >= 0 && !canPassWall(leftWall, state.y, breakdown, maxY)) {
+        const wall = wallX(leftWall, maxX);
+        if (state.vx < 0 && state.x < wall + turnZone) state.vx = Math.abs(state.vx);
+        state.x = Math.max(state.x, wall + 0.04);
+      }
+    }
+
     const pairing = pairingRef?.current;
     const participantIndex = pairing?.parents.findIndex((parent) => parent.id === contribution.id) ?? -1;
     if (pairing && participantIndex >= 0) {
@@ -720,12 +767,14 @@ const FloatingCreature = memo(function FloatingCreature({
 function PairingDirector({
   contributions,
   actorRegistry,
+  breakdownRef,
   pairingRef,
   schoolingRef,
   onBaby,
 }: {
   contributions: ExhibitionContribution[];
   actorRegistry: MutableRefObject<Map<number, MutableRefObject<CreatureMotion>>>;
+  breakdownRef: MutableRefObject<number>;
   pairingRef: MutableRefObject<PairingEvent | null>;
   schoolingRef: MutableRefObject<Schooling>;
   onBaby: (event: PairingEvent) => void;
@@ -743,7 +792,7 @@ function PairingDirector({
     return [...byForm.values()].filter((group) => group.length >= 2);
   }, [contributions]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, viewport }) => {
     const elapsed = clock.elapsedTime;
     const activePairing = pairingRef.current;
 
@@ -784,7 +833,8 @@ function PairingDirector({
             firstMotion.y - secondMotion.y,
             firstMotion.z - secondMotion.z,
           );
-          if (distance <= pairingDistance) {
+          // Creatures on either side of a wall that still holds cannot meet.
+          if (distance <= pairingDistance && !separatedByWall(firstMotion.x, secondMotion.x, breakdownRef.current, tankHalfWidth(viewport))) {
             chanceEncounter = { first, second, firstMotion, secondMotion };
             break;
           }
@@ -822,11 +872,13 @@ function PairingDirector({
 function SchoolingDirector({
   contributions,
   actorRegistry,
+  breakdownRef,
   pairingRef,
   schoolingRef,
 }: {
   contributions: ExhibitionContribution[];
   actorRegistry: MutableRefObject<Map<number, MutableRefObject<CreatureMotion>>>;
+  breakdownRef: MutableRefObject<number>;
   pairingRef: MutableRefObject<PairingEvent | null>;
   schoolingRef: MutableRefObject<Schooling>;
 }) {
@@ -836,7 +888,7 @@ function SchoolingDirector({
     [contributions],
   );
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, viewport }) => {
     const elapsed = clock.elapsedTime;
     if (elapsed < nextCheckAt.current) return;
     nextCheckAt.current = elapsed + schoolingCheckSeconds;
@@ -875,7 +927,7 @@ function SchoolingDirector({
           ...other,
           distance: Math.hypot(other.motion.x - leader.motion.x, other.motion.y - leader.motion.y, other.motion.z - leader.motion.z),
         }))
-        .filter((other) => other.distance <= schoolRecruitRadius)
+        .filter((other) => other.distance <= schoolRecruitRadius && !separatedByWall(other.motion.x, leader.motion.x, breakdownRef.current, tankHalfWidth(viewport)))
         .sort((a, b) => a.distance - b.distance);
       return kin.length > 0 && kin[0].distance <= schoolingRadius ? [{ leader, kin }] : [];
     });
@@ -1012,6 +1064,7 @@ function pixelRatioFor(factor: number) {
 export function CollectiveCreatureField({
   contributions,
   progress = 1,
+  breakdown = 1,
   arrival,
   onSelectContribution,
   onRenderStats,
@@ -1022,6 +1075,8 @@ export function CollectiveCreatureField({
 }: {
   contributions: ExhibitionContribution[];
   progress?: number;
+  /** How far the tank's compartment walls have broken down, from 0 (sealed) to 1 (gone). */
+  breakdown?: number;
   arrival?: CreatureArrival | null;
   onSelectContribution?: (contribution: ExhibitionContribution) => void;
   /** When set, receives the frame rate and mesh counts twice a second. */
@@ -1042,6 +1097,7 @@ export function CollectiveCreatureField({
   const settleOnLowestPixelRatio = useCallback(() => setPixelRatio(pixelRatioFor(0)), []);
   const actorRegistry = useRef(new Map<number, MutableRefObject<CreatureMotion>>());
   const whaleLanes = useRef(new Map<number, number>());
+  const breakdownRef = useRef(breakdown);
   const pairingRef = useRef<PairingEvent | null>(null);
   const schoolingRef = useRef<Schooling>({ places: new Map(), schools: [], cooldownUntil: new Map() });
   const adults = useMemo(() => contributions.slice(-collectiveCapacity), [contributions]);
@@ -1067,6 +1123,7 @@ export function CollectiveCreatureField({
       <PerformanceMonitor factor={1} onChange={adjustPixelRatio} onFallback={settleOnLowestPixelRatio} />
       {onRenderStats && <RenderStats onReport={onRenderStats} />}
       <DepthHaze />
+      <BreakdownEaser breakdown={breakdown} breakdownRef={breakdownRef} />
       {/* Ambient and one sun only: coloured point lights this far from the tank fade to almost nothing yet cost every pixel. */}
       <ambientLight intensity={1.5} />
       <directionalLight position={[2, 5, 8]} intensity={2.4} color="#FFF4DF" />
@@ -1089,6 +1146,7 @@ export function CollectiveCreatureField({
         <PairingDirector
           contributions={tankAdults}
           actorRegistry={actorRegistry}
+          breakdownRef={breakdownRef}
           pairingRef={pairingRef}
           schoolingRef={schoolingRef}
           onBaby={handleBaby}
@@ -1096,6 +1154,7 @@ export function CollectiveCreatureField({
         <SchoolingDirector
           contributions={tankAdults}
           actorRegistry={actorRegistry}
+          breakdownRef={breakdownRef}
           pairingRef={pairingRef}
           schoolingRef={schoolingRef}
         />
@@ -1105,6 +1164,7 @@ export function CollectiveCreatureField({
             key={contribution.id}
             contribution={contribution}
             progress={progress}
+            breakdownRef={breakdownRef}
             mergeStaticMeshes={mergeStaticMeshes}
             reduceGeometryDetail={reduceGeometryDetail}
             meshQuality={meshQuality}
@@ -1120,6 +1180,7 @@ export function CollectiveCreatureField({
             key={baby.contribution.id}
             contribution={baby.contribution}
             progress={progress}
+            breakdownRef={breakdownRef}
             mergeStaticMeshes={mergeStaticMeshes}
             reduceGeometryDetail={reduceGeometryDetail}
             meshQuality={meshQuality}

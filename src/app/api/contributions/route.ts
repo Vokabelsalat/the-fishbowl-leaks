@@ -3,6 +3,7 @@ import { artifacts, artifactById } from "@/data/artifacts";
 import {
   createContribution,
   getCollectiveHeatmap,
+  getContributionCount,
   getCycleDate,
   getSyntheticContributionCount,
   listContributions,
@@ -119,6 +120,7 @@ export async function GET(request: Request) {
       heatmap: getCollectiveHeatmap(),
       cycleDate: getCycleDate(),
       syntheticCount: getSyntheticContributionCount(),
+      contributionCount: getContributionCount(),
     },
     { headers: responseHeaders },
   );

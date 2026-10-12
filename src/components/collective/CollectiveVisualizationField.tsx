@@ -124,12 +124,15 @@ function VisualizationField({
   batchMeshes = false,
   reduceGeometryDetail = false,
   meshQuality = 1,
+  orbitRequest,
 }: {
   contributions: ExhibitionContribution[];
   progress?: number;
   /** How far the tank's compartment walls have broken down, from 0 (sealed) to 1 (gone). */
   breakdown?: number;
   arrival?: CreatureArrival | null;
+  /** Each change circles the view once around the 3D aquarium. */
+  orbitRequest?: number;
   onSelectContribution?: (contribution: ExhibitionContribution) => void;
   /** Merges each creature's still parts into a few meshes in the 3D aquarium. */
   mergeStaticMeshes?: boolean;
@@ -159,6 +162,7 @@ function VisualizationField({
       batchMeshes={batchMeshes}
       reduceGeometryDetail={reduceGeometryDetail}
       meshQuality={meshQuality}
+      orbitRequest={orbitRequest}
     />
   );
 }

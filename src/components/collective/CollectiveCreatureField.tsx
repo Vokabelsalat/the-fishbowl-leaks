@@ -2,7 +2,7 @@
 
 import { PerformanceMonitor, type PerformanceMonitorApi } from "@react-three/drei";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import * as THREE from "three";
 import { AquaticCreatureModel } from "@/components/creature/AquaticCreatureModel";
 import { GeometryDetailReducer } from "@/components/creature/GeometryDetailReducer";
@@ -94,6 +94,54 @@ function DepthHaze() {
   }, []);
 
   return <fog attach="fog" args={[hazeColor, cameraDepth - hazeStartDepth, cameraDepth - hazeFullDepth]} />;
+}
+
+/** How long the development tour pulls back from the tank, and how long it then takes to circle it once. */
+const orbitPullBackSeconds = 2.5;
+const orbitTurnSeconds = 12;
+/** The whole tour, from pulling back to arriving at the original view again. */
+export const tankOrbitMilliseconds = (orbitPullBackSeconds * 2 + orbitTurnSeconds) * 1_000;
+/** How small the tank looks from furthest away, and how far the view rises above it meanwhile. */
+const orbitDistanceScale = 0.55;
+const orbitTilt = 0.32;
+
+/**
+ * Circles the view once around the tank whenever `request` changes: it pulls back and rises a little,
+ * goes round, and comes back to the original view. The tank turns instead of the camera, since the
+ * creatures keep to the visible area, and that would grow if the camera zoomed out. The lights turn
+ * with it, so the tank stays lit as before.
+ */
+function TankOrbit({ request, children }: { request: number; children: ReactNode }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const handledRequest = useRef(request);
+  const startedAt = useRef<number | null>(null);
+
+  useFrame(({ clock }) => {
+    const group = groupRef.current;
+    if (!group) return;
+    if (request !== handledRequest.current) {
+      handledRequest.current = request;
+      startedAt.current = clock.elapsedTime;
+    }
+    if (startedAt.current === null) return;
+    const age = clock.elapsedTime - startedAt.current;
+    const total = orbitPullBackSeconds * 2 + orbitTurnSeconds;
+    if (age >= total) {
+      startedAt.current = null;
+      group.rotation.set(0, 0, 0);
+      group.scale.setScalar(1);
+      return;
+    }
+    const pullBack = age < orbitPullBackSeconds
+      ? THREE.MathUtils.smoothstep(age, 0, orbitPullBackSeconds)
+      : THREE.MathUtils.smoothstep(total - age, 0, orbitPullBackSeconds);
+    const turn = THREE.MathUtils.smoothstep(age, orbitPullBackSeconds, orbitPullBackSeconds + orbitTurnSeconds) * Math.PI * 2;
+    group.scale.setScalar(THREE.MathUtils.lerp(1, orbitDistanceScale, pullBack));
+    // Turning the tank the other way round makes the view circle it.
+    group.rotation.set(orbitTilt * pullBack, -turn, 0);
+  });
+
+  return <group ref={groupRef}>{children}</group>;
 }
 
 function WhaleDepthVeil() {
@@ -1136,6 +1184,7 @@ export function CollectiveCreatureField({
   batchMeshes = false,
   reduceGeometryDetail = false,
   meshQuality = 1,
+  orbitRequest = 0,
 }: {
   contributions: ExhibitionContribution[];
   progress?: number;
@@ -1153,6 +1202,8 @@ export function CollectiveCreatureField({
   reduceGeometryDetail?: boolean;
   /** The share of their full segments the creatures' rounded shapes keep, from 0.1 to 1. */
   meshQuality?: number;
+  /** Each change circles the view once around the tank. */
+  orbitRequest?: number;
 }) {
   const [babies, setBabies] = useState<BabyCreature[]>([]);
   // Starts sharp; the monitor lowers the resolution while the frame rate stays low, and raises it again once it recovers.
@@ -1212,76 +1263,78 @@ export function CollectiveCreatureField({
       {onRenderStats && <RenderStats onReport={onRenderStats} />}
       <DepthHaze />
       <BreakdownEaser breakdown={breakdown} breakdownRef={breakdownRef} />
-      {/* Ambient and one sun only: coloured point lights this far from the tank fade to almost nothing yet cost every pixel. */}
-      <ambientLight intensity={1.5} />
-      <directionalLight position={[2, 5, 8]} intensity={2.4} color="#FFF4DF" />
-      <TankMeshBatches enabled={batchMeshes && mergeStaticMeshes}>
-        {whales.map((contribution) => (
-          <FloatingCreature
-            key={contribution.id}
-            contribution={contribution}
-            progress={progress}
-            whaleLanes={whaleLanes}
-            departing={departingIds.has(contribution.id)}
-            onDeparted={handleDeparted}
-            mergeStaticMeshes={mergeStaticMeshes}
-            reduceGeometryDetail={reduceGeometryDetail}
-            meshQuality={meshQuality}
-            arrival={arrival?.id === contribution.id ? arrival : undefined}
-            onSelect={onSelectContribution}
-          />
-        ))}
-        <WhaleDepthVeil />
-        <AquariumDioramaPlants layer="back" />
-        <PairingDirector
-          contributions={tankAdults}
-          actorRegistry={actorRegistry}
-          breakdownRef={breakdownRef}
-          pairingRef={pairingRef}
-          schoolingRef={schoolingRef}
-          onBaby={handleBaby}
-        />
-        <SchoolingDirector
-          contributions={tankAdults}
-          actorRegistry={actorRegistry}
-          breakdownRef={breakdownRef}
-          pairingRef={pairingRef}
-          schoolingRef={schoolingRef}
-        />
-        <PairingHeart pairingRef={pairingRef} />
-        {tankSwimmers.map((contribution) => (
-          <FloatingCreature
-            key={contribution.id}
-            contribution={contribution}
-            progress={progress}
-            breakdownRef={breakdownRef}
-            departing={departingIds.has(contribution.id)}
-            onDeparted={handleDeparted}
-            mergeStaticMeshes={mergeStaticMeshes}
-            reduceGeometryDetail={reduceGeometryDetail}
-            meshQuality={meshQuality}
+      <TankOrbit request={orbitRequest}>
+        {/* Ambient and one sun only: coloured point lights this far from the tank fade to almost nothing yet cost every pixel. */}
+        <ambientLight intensity={1.5} />
+        <directionalLight position={[2, 5, 8]} intensity={2.4} color="#FFF4DF" />
+        <TankMeshBatches enabled={batchMeshes && mergeStaticMeshes}>
+          {whales.map((contribution) => (
+            <FloatingCreature
+              key={contribution.id}
+              contribution={contribution}
+              progress={progress}
+              whaleLanes={whaleLanes}
+              departing={departingIds.has(contribution.id)}
+              onDeparted={handleDeparted}
+              mergeStaticMeshes={mergeStaticMeshes}
+              reduceGeometryDetail={reduceGeometryDetail}
+              meshQuality={meshQuality}
+              arrival={arrival?.id === contribution.id ? arrival : undefined}
+              onSelect={onSelectContribution}
+            />
+          ))}
+          <WhaleDepthVeil />
+          <AquariumDioramaPlants layer="back" />
+          <PairingDirector
+            contributions={tankAdults}
             actorRegistry={actorRegistry}
+            breakdownRef={breakdownRef}
             pairingRef={pairingRef}
             schoolingRef={schoolingRef}
-            arrival={arrival?.id === contribution.id ? arrival : undefined}
-            onSelect={onSelectContribution}
+            onBaby={handleBaby}
           />
-        ))}
-        {babies.map((baby) => (
-          <FloatingCreature
-            key={baby.contribution.id}
-            contribution={baby.contribution}
-            progress={progress}
+          <SchoolingDirector
+            contributions={tankAdults}
+            actorRegistry={actorRegistry}
             breakdownRef={breakdownRef}
-            mergeStaticMeshes={mergeStaticMeshes}
-            reduceGeometryDetail={reduceGeometryDetail}
-            meshQuality={meshQuality}
-            juvenile
-            spawnPosition={baby.spawnPosition}
+            pairingRef={pairingRef}
+            schoolingRef={schoolingRef}
           />
-        ))}
-        <AquariumDioramaPlants layer="front" />
-      </TankMeshBatches>
+          <PairingHeart pairingRef={pairingRef} />
+          {tankSwimmers.map((contribution) => (
+            <FloatingCreature
+              key={contribution.id}
+              contribution={contribution}
+              progress={progress}
+              breakdownRef={breakdownRef}
+              departing={departingIds.has(contribution.id)}
+              onDeparted={handleDeparted}
+              mergeStaticMeshes={mergeStaticMeshes}
+              reduceGeometryDetail={reduceGeometryDetail}
+              meshQuality={meshQuality}
+              actorRegistry={actorRegistry}
+              pairingRef={pairingRef}
+              schoolingRef={schoolingRef}
+              arrival={arrival?.id === contribution.id ? arrival : undefined}
+              onSelect={onSelectContribution}
+            />
+          ))}
+          {babies.map((baby) => (
+            <FloatingCreature
+              key={baby.contribution.id}
+              contribution={baby.contribution}
+              progress={progress}
+              breakdownRef={breakdownRef}
+              mergeStaticMeshes={mergeStaticMeshes}
+              reduceGeometryDetail={reduceGeometryDetail}
+              meshQuality={meshQuality}
+              juvenile
+              spawnPosition={baby.spawnPosition}
+            />
+          ))}
+          <AquariumDioramaPlants layer="front" />
+        </TankMeshBatches>
+      </TankOrbit>
     </Canvas>
   );
 }

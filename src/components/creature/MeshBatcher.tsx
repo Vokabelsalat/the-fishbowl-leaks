@@ -280,6 +280,10 @@ export class TankBatcher {
 
   constructor(maxMaskLayers: number) {
     this.masks = new PatternMasks(maxMaskLayers);
+    // The batched copies take their meshes' world matrices, so the root stays at the world's origin
+    // wherever it is placed; a moving parent would otherwise move them twice.
+    this.root.matrixAutoUpdate = false;
+    this.root.matrixWorldAutoUpdate = false;
   }
 
   /** Takes over drawing `mesh`; false when it cannot be batched and should draw itself. */

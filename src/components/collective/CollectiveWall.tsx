@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { CollectiveVisualizationField } from "@/components/collective/CollectiveVisualizationField";
-import type { CreatureArrival } from "@/components/collective/CollectiveCreatureField";
+import { tankOrbitMilliseconds, type CreatureArrival } from "@/components/collective/CollectiveCreatureField";
 import { CollectiveHeatmap } from "@/components/collective/CollectiveHeatmap";
 import { AquariumAudio } from "@/components/collective/AquariumAudio";
 import { SpecimenDialog } from "@/components/collective/SpecimenDialog";
@@ -105,6 +105,9 @@ export function CollectiveWall({ initialView = "collective" }: {
   const [ready, setReady] = useState(false);
   const [clockMinutes, setClockMinutes] = useState(() => minuteOfDay(new Date()));
   const [liveTime, setLiveTime] = useState(true);
+  // Development only: each request circles the view once around the tank.
+  const [orbitRequest, setOrbitRequest] = useState(0);
+  const [orbiting, setOrbiting] = useState(false);
   const [dayCreatureCount, setDayCreatureCount] = useState(0);
   const latestId = useRef(0);
   const initialized = useRef(false);
@@ -221,6 +224,12 @@ export function CollectiveWall({ initialView = "collective" }: {
   }, []);
 
   useEffect(() => {
+    if (!orbiting) return;
+    const timeout = window.setTimeout(() => setOrbiting(false), tankOrbitMilliseconds);
+    return () => window.clearTimeout(timeout);
+  }, [orbiting]);
+
+  useEffect(() => {
     if (!liveTime) return;
     const updateClock = () => setClockMinutes(minuteOfDay(new Date()));
     updateClock();
@@ -287,7 +296,8 @@ export function CollectiveWall({ initialView = "collective" }: {
   return (
     <main className="collective-wall biome-field film-grain relative h-screen overflow-hidden bg-[var(--abyss)] text-[var(--foam)]" style={wallStyle} aria-label={`Collective exhibition ${activeVisualizationCopy.collectivePlace}`}>
       <BiomeBackdrop progress={dayProgress} surfaceRays />
-      <div className="tank-compartments pointer-events-none absolute inset-0" aria-hidden="true">
+      {/* The separators are drawn flat over the tank, so they fade out while the view circles it. */}
+      <div className={`tank-compartments pointer-events-none absolute inset-0 transition-opacity duration-700 ${orbiting ? "opacity-0" : ""}`} aria-hidden="true">
         {compartmentLabels.map((label, index) => (
           <div key={label} className={`tank-compartment tank-compartment-${index + 1}`}><span>{label}</span></div>
         ))}
@@ -313,7 +323,7 @@ export function CollectiveWall({ initialView = "collective" }: {
           );
         })}
       </div>
-      <div className="compartment-flows pointer-events-none absolute inset-0" aria-hidden="true">
+      <div className={`compartment-flows pointer-events-none absolute inset-0 transition-opacity duration-700 ${orbiting ? "opacity-0" : ""}`} aria-hidden="true">
         <span /><span /><span /><span />
       </div>
       {view === "collective" ? (
@@ -329,6 +339,7 @@ export function CollectiveWall({ initialView = "collective" }: {
             batchMeshes
             reduceGeometryDetail
             meshQuality={meshQuality}
+            orbitRequest={orbitRequest}
           />
         </div>
       ) : (
@@ -364,6 +375,19 @@ export function CollectiveWall({ initialView = "collective" }: {
           {/* Debug controls sit on their own row, so they never run into the view switch. */}
           {showRenderStats && view === "collective" && (
             <div className="absolute right-8 top-20 flex items-center gap-6">
+              {isDevelopment && (
+                <button
+                  type="button"
+                  className="transition-colors hover:text-white/70 disabled:cursor-wait disabled:text-white/25"
+                  disabled={orbiting}
+                  onClick={() => {
+                    setOrbitRequest((request) => request + 1);
+                    setOrbiting(true);
+                  }}
+                >
+                  Circle the tank
+                </button>
+              )}
               <MeshQualityControl quality={meshQuality} onChange={setMeshQuality} />
               <span ref={renderStatsRef} aria-hidden="true" />
             </div>

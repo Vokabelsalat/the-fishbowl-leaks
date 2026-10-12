@@ -492,7 +492,7 @@ export function CollectiveWall({ initialView = "collective" }: {
                       label={`Recent ${activeVisualizationCopy.singular} ${index + 2} with ${contribution.parts.length} parts`}
                     />
                   </div>
-                  <p className="line-clamp-2 font-display text-sm leading-[1.15] tracking-[-0.015em] text-white/60">
+                  <p className="line-clamp-4 font-display text-sm leading-[1.15] tracking-[-0.015em] text-white/60">
                     <NarrativeLines lines={contribution.narrative} />
                   </p>
                 </article>

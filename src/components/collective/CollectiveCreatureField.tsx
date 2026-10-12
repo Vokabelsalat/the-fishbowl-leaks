@@ -175,6 +175,25 @@ function tankHalfHeight(viewport: { height: number }) {
   return Math.max(1.25, viewport.height / 2 - 0.72);
 }
 
+/**
+ * Half the width and height the separators are laid out across. They are drawn over the whole
+ * canvas, wider than the area creatures swim in, so their positions are measured against the canvas.
+ */
+function wallHalfWidth(viewport: { width: number }) {
+  return viewport.width / 2;
+}
+
+function wallHalfHeight(viewport: { height: number }) {
+  return viewport.height / 2;
+}
+
+/** Half the drawn separators' thickness, which a creature's body keeps clear of. */
+const wallHalfThickness = 0.03;
+/** The share of a creature's measured collision size it keeps clear of a wall; below 1, fins and tails may brush it. */
+const wallBodyReach = 0.75;
+/** The reach assumed until a creature's body has been measured. */
+const unmeasuredWallReach = 0.3;
+
 /** Eases the walls' breakdown towards its new value, as slowly as the walls on the wall display crack. */
 function BreakdownEaser({ breakdown, breakdownRef }: { breakdown: number; breakdownRef: MutableRefObject<number> }) {
   useFrame((_, delta) => {
@@ -419,7 +438,7 @@ const FloatingCreature = memo(function FloatingCreature({
     // While walls still stand, a creature starts in its home compartment.
     const spawnX = () => {
       if (breakdown >= 1) return placement.xUnit * maxX;
-      const [left, right] = compartmentBounds(Math.abs(contribution.id) % compartmentLabels.length, maxX);
+      const [left, right] = compartmentBounds(Math.abs(contribution.id) % compartmentLabels.length, wallHalfWidth(viewport));
       return (left + right) / 2 + placement.xUnit * (right - left) * 0.34;
     };
     const whaleTravelEdge = viewport.width / 2 + whaleOffscreenMargin;
@@ -739,21 +758,29 @@ const FloatingCreature = memo(function FloatingCreature({
       state.z = THREE.MathUtils.clamp(state.z, backDepth, frontDepth);
     }
 
-    // Walls that still hold turn a creature back before it reaches them, like the tank's sides, unless
-    // it swims at the height of their hole. Anything pushed or pulled against a wall stops there.
+    // Walls that still hold turn a creature back before its body reaches them, like the tank's sides,
+    // unless its whole body fits through their hole. Anything pushed or pulled towards a wall stops
+    // short of it; one that already overlaps it is only kept from going deeper, so it never jumps back.
     if (!isWhale && !isPairing && breakdown < 1) {
-      const compartment = compartmentAt(frameStartX, maxX);
+      const halfWidth = wallHalfWidth(viewport);
+      const halfHeight = wallHalfHeight(viewport);
+      const bodyReach = state.radius > 0 ? state.radius * depthScaleAt(state.z) * wallBodyReach : unmeasuredWallReach;
+      const clearance = bodyReach + wallHalfThickness;
+      const compartment = compartmentAt(frameStartX, halfWidth);
       const rightWall = compartment < compartmentWalls.length ? compartment : -1;
       const leftWall = compartment - 1;
-      if (rightWall >= 0 && !canPassWall(rightWall, state.y, breakdown, maxY)) {
-        const wall = wallX(rightWall, maxX);
-        if (state.vx > 0 && state.x > wall - turnZone) state.vx = -Math.abs(state.vx);
-        state.x = Math.min(state.x, wall - 0.04);
+      const rightStop = rightWall >= 0 ? wallX(rightWall, halfWidth) - clearance : maxX;
+      const leftStop = leftWall >= 0 ? wallX(leftWall, halfWidth) + clearance : -maxX;
+      // In a narrow compartment the turning zones shrink to fit, so they never overlap and keep a
+      // creature turning back and forth on the spot.
+      const wallTurnZone = Math.min(turnZone, Math.max(0, rightStop - leftStop) / 3);
+      if (rightWall >= 0 && !canPassWall(rightWall, state.y, breakdown, halfHeight, bodyReach)) {
+        if (state.vx > 0 && state.x > rightStop - wallTurnZone) state.vx = -Math.abs(state.vx);
+        state.x = Math.min(state.x, Math.max(rightStop, frameStartX));
       }
-      if (leftWall >= 0 && !canPassWall(leftWall, state.y, breakdown, maxY)) {
-        const wall = wallX(leftWall, maxX);
-        if (state.vx < 0 && state.x < wall + turnZone) state.vx = Math.abs(state.vx);
-        state.x = Math.max(state.x, wall + 0.04);
+      if (leftWall >= 0 && !canPassWall(leftWall, state.y, breakdown, halfHeight, bodyReach)) {
+        if (state.vx < 0 && state.x < leftStop + wallTurnZone) state.vx = Math.abs(state.vx);
+        state.x = Math.max(state.x, Math.min(leftStop, frameStartX));
       }
     }
 
@@ -946,7 +973,7 @@ function PairingDirector({
             firstMotion.z - secondMotion.z,
           );
           // Creatures on either side of a wall that still holds cannot meet.
-          if (distance <= pairingDistance && !separatedByWall(firstMotion.x, secondMotion.x, breakdownRef.current, tankHalfWidth(viewport))) {
+          if (distance <= pairingDistance && !separatedByWall(firstMotion.x, secondMotion.x, breakdownRef.current, wallHalfWidth(viewport))) {
             chanceEncounter = { first, second, firstMotion, secondMotion };
             break;
           }
@@ -1039,7 +1066,7 @@ function SchoolingDirector({
           ...other,
           distance: Math.hypot(other.motion.x - leader.motion.x, other.motion.y - leader.motion.y, other.motion.z - leader.motion.z),
         }))
-        .filter((other) => other.distance <= schoolRecruitRadius && !separatedByWall(other.motion.x, leader.motion.x, breakdownRef.current, tankHalfWidth(viewport)))
+        .filter((other) => other.distance <= schoolRecruitRadius && !separatedByWall(other.motion.x, leader.motion.x, breakdownRef.current, wallHalfWidth(viewport)))
         .sort((a, b) => a.distance - b.distance);
       return kin.length > 0 && kin[0].distance <= schoolingRadius ? [{ leader, kin }] : [];
     });

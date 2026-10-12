@@ -739,16 +739,16 @@ a:focus-visible {
   position: absolute;
   inset-block: 0;
   left: var(--wall-left);
-  width: 2px;
-  transform: translateX(-1px);
+  width: 4px;
+  transform: translateX(-2px);
 }
 
 .compartment-wall i {
   position: absolute;
   left: 0;
-  width: 2px;
-  background: rgba(232, 245, 239, 0.62);
-  box-shadow: 0 0 0.8rem rgba(185, 255, 220, 0.28);
+  width: 4px;
+  background: rgba(232, 245, 239, 0.78);
+  box-shadow: 0 0 1rem rgba(185, 255, 220, 0.36);
   transition: height 2.4s ease;
 }
 

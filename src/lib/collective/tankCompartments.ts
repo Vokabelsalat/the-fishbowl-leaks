@@ -73,11 +73,14 @@ export function compartmentBounds(compartment: number, halfWidth: number): [numb
   ];
 }
 
-/** Whether a creature at height y can pass the wall: it has to be inside the wall's hole. */
-export function canPassWall(wallIndex: number, y: number, breakdown: number, halfHeight: number) {
+/**
+ * Whether a creature at height y can pass the wall: it has to be inside the wall's hole, with
+ * `bodyReach` to spare above and below for its body.
+ */
+export function canPassWall(wallIndex: number, y: number, breakdown: number, halfHeight: number, bodyReach = 0) {
   const opening = wallOpening(breakdown, wallIndex);
   if (opening <= 0) return false;
-  return Math.abs(y - holeCenterY(wallIndex, halfHeight)) <= holeHalfHeight(opening) * 2 * halfHeight;
+  return Math.abs(y - holeCenterY(wallIndex, halfHeight)) <= holeHalfHeight(opening) * 2 * halfHeight - bodyReach;
 }
 
 /** Whether any wall between two positions still holds, so creatures on either side cannot meet. */

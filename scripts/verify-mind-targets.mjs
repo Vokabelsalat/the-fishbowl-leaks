@@ -1,11 +1,12 @@
 // Checks that public/targets/exhibition.mind was compiled from the exported
-// constellation PNGs in the compile order: the -white targets in exhibitionId
-// order. Each compiled target keeps a downscaled
+// constellation PNGs in the compile order of `targetImages`: the -white
+// targets in exhibitionId order, then the poster's -black ones. Each compiled target keeps a downscaled
 // grayscale copy of its image, which is correlated against every PNG.
 import { readFileSync } from "node:fs";
 import { decode } from "@msgpack/msgpack";
 import { createCanvas, loadImage } from "canvas";
-import { artifacts } from "../src/data/artifacts.ts";
+import { targetImages } from "../src/data/artifacts.ts";
+import { targetFileName } from "./constellation-target.mjs";
 
 const bundle = decode(readFileSync("public/targets/exhibition.mind"));
 
@@ -27,10 +28,9 @@ async function grayscale(file, width, height) {
   );
 }
 
-const ordered = [...artifacts].sort((a, b) => a.targetIndex - b.targetIndex);
-const sources = ordered.map((artifact) => ({
-  artifact,
-  file: `public/targets/${artifact.exhibitionId}-${artifact.id}-white.png`,
+const sources = targetImages.map((target) => ({
+  target,
+  file: `public/targets/${targetFileName(target, "png")}`,
 }));
 
 let mismatches = bundle.dataList.length === sources.length ? 0 : 1;

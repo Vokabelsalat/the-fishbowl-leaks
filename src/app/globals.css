@@ -1020,3 +1020,11 @@ a:focus-visible {
 .creature-poster-fade {
   background: linear-gradient(to bottom, transparent, rgb(3 16 21 / 0.82) 55%, var(--abyss));
 }
+
+/* The exhibition's A4 tutorial sheet, the same size on screen as in its exported PDF. */
+.poster-tutorial-sheet {
+  width: 210mm;
+  height: 297mm;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}

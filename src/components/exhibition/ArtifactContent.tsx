@@ -30,7 +30,7 @@ export function ArtifactContent({ artifact, onContinue, mini = false }: Artifact
         onClick={() => setExpanded((value) => !value)}
         className="mx-auto mb-4 flex min-h-11 items-center gap-3 border border-white/30 bg-[var(--abyss)] px-4 text-sm text-white transition-colors hover:border-white/65"
       >
-        <span>{expanded ? "Show less" : "Read the full artwork details"}</span>
+        <span>{expanded ? "Show less" : "Enlarge the artwork details"}</span>
         <span aria-hidden="true">{expanded ? "↓" : "↑"}</span>
       </button>
 
@@ -39,55 +39,52 @@ export function ArtifactContent({ artifact, onContinue, mini = false }: Artifact
           {artifact.title}
         </h2>
         <p className="mt-2 text-sm text-white/58">{artifact.artist}</p>
+        <p className="mt-1 text-sm text-white/58">{[...artifact.workType, artifact.year].join(" · ")}</p>
 
         <p className="mt-5 max-w-lg font-display text-xl italic leading-7 text-[var(--phosphor)]">
           {artifact.storylet}
           <span className="mt-2 block text-white/88">{artifact.choice.prompt}</span>
         </p>
 
-        {expanded && (
-          <div className="mt-6 border-t border-white/15 pt-5">
-            <p className="text-sm text-white/50">Tank classification: {artifact.classification}</p>
-            {artifact.description.split("\n\n").map((paragraph) => (
-              <p key={paragraph} className="mt-4 text-base leading-7 text-white/78">{paragraph}</p>
-            ))}
-            <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm leading-6">
-              <dt className="text-white/50">Work</dt>
-              <dd className="text-white/78">{[...artifact.workType, artifact.year].join(" · ")}</dd>
-              {artifact.platforms.length > 0 && (
-                <>
-                  <dt className="text-white/50">Platforms</dt>
-                  <dd className="text-white/78">{artifact.platforms.join(", ")}</dd>
-                </>
-              )}
-              {artifact.technicalDetails && (
-                <>
-                  <dt className="text-white/50">Technical details</dt>
-                  <dd className="text-white/78">{artifact.technicalDetails}</dd>
-                </>
-              )}
-              {artifact.links.length > 0 && (
-                <>
-                  <dt className="text-white/50">{artifact.links.length > 1 ? "Links" : "Link"}</dt>
-                  <dd className="min-w-0">
-                    {artifact.links.map((link) => (
-                      <a
-                        key={link}
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block wrap-break-word text-white/78 underline underline-offset-4 transition-colors hover:text-white"
-                      >
-                        {new URL(link).hostname.replace(/^www\./, "")}
-                      </a>
-                    ))}
-                  </dd>
-                </>
-              )}
-            </dl>
-            <p className="mt-5 text-sm text-white/50">Traits carried forward: {artifact.visualTraits.join(" · ")}</p>
-          </div>
-        )}
+        <div className="mt-6 border-t border-white/15 pt-5">
+          <p className="text-sm text-white/50">Tank classification: {artifact.classification}</p>
+          {artifact.description.split("\n\n").map((paragraph) => (
+            <p key={paragraph} className="mt-4 text-base leading-7 text-white/78">{paragraph}</p>
+          ))}
+          <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm leading-6">
+            {artifact.platforms.length > 0 && (
+              <>
+                <dt className="text-white/50">Platforms</dt>
+                <dd className="text-white/78">{artifact.platforms.join(", ")}</dd>
+              </>
+            )}
+            {artifact.technicalDetails && (
+              <>
+                <dt className="text-white/50">Technical details</dt>
+                <dd className="text-white/78">{artifact.technicalDetails}</dd>
+              </>
+            )}
+            {artifact.links.length > 0 && (
+              <>
+                <dt className="text-white/50">{artifact.links.length > 1 ? "Links" : "Link"}</dt>
+                <dd className="min-w-0">
+                  {artifact.links.map((link) => (
+                    <a
+                      key={link}
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block wrap-break-word text-white/78 underline underline-offset-4 transition-colors hover:text-white"
+                    >
+                      {new URL(link).hostname.replace(/^www\./, "")}
+                    </a>
+                  ))}
+                </dd>
+              </>
+            )}
+          </dl>
+          <p className="mt-5 text-sm text-white/50">Traits carried forward: {artifact.visualTraits.join(" · ")}</p>
+        </div>
 
         <ArtworkFeedback artifactId={artifact.id} />
       </div>

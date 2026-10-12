@@ -14,7 +14,7 @@ import type {
   MindARAdapter as MindARAdapterType,
   TargetDetectionResult,
 } from "@/components/ar/MindARAdapter";
-import { artifacts } from "@/data/artifacts";
+import { artifacts, targetImages } from "@/data/artifacts";
 import { targetBundleVersion } from "@/data/targetBundle";
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 
@@ -168,8 +168,10 @@ function ARScannerComponent(
             targetIndex,
             particleForm,
             color,
-            // exhibition.mind holds one white target per artifact.
-            anchorIndices: [targetIndex],
+            // exhibition.mind holds one white target per artifact, and dark ones from the poster for some.
+            anchorIndices: targetImages
+              .filter((target) => target.artifact.id === id)
+              .map((target) => target.anchorIndex),
           }),
         ),
         onTargetFound: (targetIndex) => onTargetFoundRef.current(targetIndex),

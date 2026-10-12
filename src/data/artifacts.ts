@@ -1,3 +1,4 @@
+import type { ConstellationSurface } from "@/components/particles/constellationPainter";
 import type { ExhibitionArtifact } from "@/types/exhibition";
 
 type VisualFamily = Pick<ExhibitionArtifact, "posterImageSrc">;
@@ -908,3 +909,25 @@ export const artifactById = new Map(
 export const artifactByTargetIndex = new Map(
   artifacts.map((artifact) => [artifact.targetIndex, artifact]),
 );
+
+/** One image compiled into public/targets/exhibition.mind, at MindAR anchor `anchorIndex`. */
+export type TargetImage = {
+  artifact: ExhibitionArtifact;
+  surface: ConstellationSurface;
+  anchorIndex: number;
+};
+
+/** The dark targets' background: the poster's abyss, so they sit seamlessly on it. */
+export const darkTargetBackground = "#031015";
+
+/** Artifacts that also have a target printed on the dark poster and tutorial sheet. */
+const posterTargetIds = ["fishbowl-leaks"];
+
+/**
+ * Every compiled target in compile order: each artifact's white target at its own `targetIndex`,
+ * then the poster's dark targets. A dark target opens the same artifact as its white one.
+ */
+export const targetImages: TargetImage[] = [
+  ...artifacts.map((artifact) => ({ artifact, surface: "light" as const })),
+  ...posterTargetIds.map((id) => ({ artifact: artifactById.get(id)!, surface: "dark" as const })),
+].map((target, anchorIndex) => ({ ...target, anchorIndex }));

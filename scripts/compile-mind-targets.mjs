@@ -1,6 +1,7 @@
 // Compiles the exported constellation PNGs into public/targets/exhibition.mind
-// with MindAR's offline compiler. Only the -white targets are compiled, in
-// exhibitionId order, so MindAR index N is the artifact with targetIndex N.
+// with MindAR's offline compiler, in the order of `targetImages`: the -white
+// target of every artifact first, so MindAR index N is the artifact with
+// targetIndex N, then the poster's -black targets.
 //
 // Next to the bundle it writes Brotli and gzip copies, which /api/targets
 // serves to browsers that accept them, and the bundle's content hash to
@@ -10,12 +11,12 @@ import { writeFileSync } from "node:fs";
 import { brotliCompressSync, constants, gzipSync } from "node:zlib";
 import { loadImage } from "canvas";
 import { OfflineCompiler } from "mind-ar/src/image-target/offline-compiler.js";
-import { artifacts } from "../src/data/artifacts.ts";
+import { targetImages } from "../src/data/artifacts.ts";
+import { targetFileName } from "./constellation-target.mjs";
 
-const ordered = [...artifacts].sort((a, b) => a.targetIndex - b.targetIndex);
-const sources = ordered.map((artifact) => ({
-  artifact,
-  file: `public/targets/${artifact.exhibitionId}-${artifact.id}-white.png`,
+const sources = targetImages.map((target) => ({
+  target,
+  file: `public/targets/${targetFileName(target, "png")}`,
 }));
 const images = await Promise.all(sources.map(({ file }) => loadImage(file)));
 

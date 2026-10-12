@@ -13,7 +13,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createCanvas } from "canvas";
-import { artifacts } from "../src/data/artifacts.ts";
+import { targetImages } from "../src/data/artifacts.ts";
 import { TARGET_ASPECT, drawConstellationTarget, targetFileName } from "./constellation-target.mjs";
 
 const options = Object.fromEntries(
@@ -26,7 +26,6 @@ const widthMm = options["width-mm"] ?? 400;
 const dpi = options.dpi ?? 300;
 const pointsPerMm = 72 / 25.4;
 const outputDirectory = "print";
-const ordered = [...artifacts].sort((a, b) => a.targetIndex - b.targetIndex);
 
 mkdirSync(outputDirectory, { recursive: true });
 
@@ -35,17 +34,17 @@ const pageHeight = pageWidth / TARGET_ASPECT;
 const pixelWidth = Math.round((widthMm / 25.4) * dpi);
 const pixelHeight = Math.round(pixelWidth / TARGET_ASPECT);
 
-for (const artifact of ordered) {
+for (const target of targetImages) {
   const pdf = createCanvas(pageWidth, pageHeight, "pdf");
-  drawConstellationTarget(pdf.getContext("2d"), artifact, pageWidth, pageHeight);
-  const pdfFile = join(outputDirectory, targetFileName(artifact, "pdf"));
+  drawConstellationTarget(pdf.getContext("2d"), target, pageWidth, pageHeight);
+  const pdfFile = join(outputDirectory, targetFileName(target, "pdf"));
   writeFileSync(pdfFile, pdf.toBuffer());
 
   let pngNote = "";
   if (dpi > 0) {
     const png = createCanvas(pixelWidth, pixelHeight);
-    drawConstellationTarget(png.getContext("2d"), artifact, pixelWidth, pixelHeight);
-    writeFileSync(join(outputDirectory, targetFileName(artifact, "png")), png.toBuffer("image/png"));
+    drawConstellationTarget(png.getContext("2d"), target, pixelWidth, pixelHeight);
+    writeFileSync(join(outputDirectory, targetFileName(target, "png")), png.toBuffer("image/png"));
     pngNote = `, png ${pixelWidth}×${pixelHeight} px`;
   }
   console.log(`${pdfFile} (${widthMm} × ${Math.round(widthMm / TARGET_ASPECT)} mm${pngNote})`);
@@ -64,19 +63,20 @@ const imageHeight = imageWidth / TARGET_ASPECT;
 const sheet = createCanvas(sheetWidth, sheetHeight, "pdf");
 const context = sheet.getContext("2d");
 
-for (const [index, artifact] of ordered.entries()) {
+for (const [index, target] of targetImages.entries()) {
+  const { artifact, surface, anchorIndex } = target;
   if (index > 0 && index % (columns * rows) === 0) context.addPage();
   const slot = index % (columns * rows);
   const x = margin + (slot % columns) * (imageWidth + gutter);
   const y = margin + Math.floor(slot / columns) * (imageHeight + labelHeight + gutter);
-  drawConstellationTarget(context, artifact, imageWidth, imageHeight, x, y);
+  drawConstellationTarget(context, target, imageWidth, imageHeight, x, y);
   context.strokeStyle = "#999999";
   context.lineWidth = 0.5;
   context.strokeRect(x, y, imageWidth, imageHeight);
   context.fillStyle = "#333333";
   context.font = "9px sans-serif";
   context.fillText(
-    `${artifact.exhibitionId}  ${artifact.title}  (target ${artifact.targetIndex})`,
+    `${artifact.exhibitionId}  ${artifact.title}${surface === "dark" ? " on dark" : ""}  (target ${anchorIndex})`,
     x,
     y + imageHeight + 12,
   );

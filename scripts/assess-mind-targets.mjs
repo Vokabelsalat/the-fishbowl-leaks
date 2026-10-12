@@ -17,7 +17,7 @@ import { createCanvas } from "canvas";
 import "mind-ar/src/image-target/detector/kernels/cpu/index.js";
 import { CropDetector } from "mind-ar/src/image-target/detector/crop-detector.js";
 import { Matcher } from "mind-ar/src/image-target/matching/matcher.js";
-import { artifacts } from "../src/data/artifacts.ts";
+import { targetImages } from "../src/data/artifacts.ts";
 import { TARGET_ASPECT, drawConstellationTarget } from "./constellation-target.mjs";
 
 const preset = process.argv[2] ?? "typical";
@@ -48,16 +48,15 @@ const between = (min, max) => min + random() * (max - min);
 
 const bundle = decode(readFileSync(process.env.MIND_FILE ?? "public/targets/exhibition.mind"));
 const matchingDataList = bundle.dataList.map(({ matchingData }) => matchingData);
-const ordered = [...artifacts].sort((a, b) => a.targetIndex - b.targetIndex);
 
 // The print as the camera sees it: rendered large, like the print files,
 // instead of the small images the bundle is compiled from.
-function printedTarget(artifact) {
+function printedTarget(target) {
   const width = 1200;
   const height = Math.round(width / TARGET_ASPECT);
   const canvas = createCanvas(width, height);
   const context = canvas.getContext("2d");
-  drawConstellationTarget(context, artifact, width, height);
+  drawConstellationTarget(context, target, width, height);
   const pixels = context.getImageData(0, 0, width, height).data;
   const data = new Float32Array(width * height);
   for (let index = 0; index < data.length; index += 1) {
@@ -213,8 +212,9 @@ function detect(frame) {
 
 const distances = ["near", "mid", "far"];
 const rows = [];
-for (const artifact of ordered) {
-  const target = printedTarget(artifact);
+for (const targetImage of targetImages) {
+  const { artifact, surface, anchorIndex } = targetImage;
+  const target = printedTarget(targetImage);
   const stats = { correct: 0, wrong: 0, missed: 0, inliers: [], cropHits: 0, crops: 0, features: [], confusedWith: new Map() };
   const byDistance = Object.fromEntries(distances.map((distance) => [distance, { correct: 0, total: 0 }]));
 
@@ -225,11 +225,11 @@ for (const artifact of ordered) {
     const first = crops.find(({ targetIndex }) => targetIndex !== -1);
     byDistance[distance].total += 1;
     stats.crops += crops.length;
-    stats.cropHits += crops.filter(({ targetIndex }) => targetIndex === artifact.targetIndex).length;
+    stats.cropHits += crops.filter(({ targetIndex }) => targetIndex === anchorIndex).length;
     crops.forEach(({ features }) => stats.features.push(features));
     if (!first) {
       stats.missed += 1;
-    } else if (first.targetIndex === artifact.targetIndex) {
+    } else if (first.targetIndex === anchorIndex) {
       stats.correct += 1;
       byDistance[distance].correct += 1;
       stats.inliers.push(first.inliers);
@@ -240,10 +240,10 @@ for (const artifact of ordered) {
   }
 
   const average = (values) => (values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0);
-  const keyframes = matchingDataList[artifact.targetIndex];
+  const keyframes = matchingDataList[anchorIndex];
   const row = {
-    index: artifact.targetIndex,
-    title: artifact.title,
+    index: anchorIndex,
+    title: surface === "dark" ? `${artifact.title} on dark` : artifact.title,
     detected: stats.correct / framesPerTarget,
     wrong: stats.wrong,
     missed: stats.missed,

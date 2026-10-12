@@ -203,69 +203,119 @@ function MarineSnow({ seed }: { seed: string }) {
 }
 
 /**
- * `width` fixes the poster's size in pixels for exports; without it the poster fits the window.
+ * The poster itself. `width` fixes its size in pixels for exports; without it the poster fits the window.
  * `landscape` lays it out 3:2 wide instead of 2:3 tall.
  */
-export function CreaturePoster({ seed, width, pose, landscape = false }: { seed: string; width?: number; pose?: string; landscape?: boolean }) {
+export function PosterArtwork({ seed, width, pose, landscape = false, paused = false }: { seed: string; width?: number; pose?: string; landscape?: boolean; paused?: boolean }) {
   const initialPoses = useMemo(() => parsePoses(pose), [pose]);
-  const router = useRouter();
-  const [paused, setPaused] = useState(false);
   const ratio = landscape ? 2 / 3 : 3 / 2;
   const fitToWindow = landscape ? "w-[min(100vw,150dvh)]" : "h-[min(100dvh,150vw)]";
+  // Fixed-size exports render at the capturing browser's full pixel density, so a 2× capture stays sharp.
+  const exportPixelRatio = typeof window === "undefined" ? 1 : window.devicePixelRatio;
+
+  return (
+    <article
+      className={`creature-poster film-grain relative ${landscape ? "aspect-[3/2]" : "aspect-[2/3]"} ${width ? "" : fitToWindow} overflow-hidden bg-[var(--abyss)] text-[var(--foam)]`}
+      style={width ? { width, height: width * ratio } : undefined}
+      aria-label="The Fishbowl Leaks poster"
+    >
+      <BiomeBackdrop progress={0.82} quiet />
+      <div className="creature-poster-light absolute inset-0" aria-hidden="true" />
+      <div className="absolute inset-0">
+        <Canvas
+          camera={{ position: cameraPosition, fov: cameraFov, near: 0.1, far: 60 }}
+          dpr={width ? exportPixelRatio : [1, 2]}
+          resize={{ debounce: 0 }}
+          gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
+        >
+          <fog attach="fog" args={["#031015", 14, 26]} />
+          <ambientLight intensity={0.9} />
+          <directionalLight position={[1, 4, 9]} intensity={1.8} color="#FFF4DF" />
+          {/* A hot rim from the left and a cold one from the right split the cast into two camps. */}
+          <directionalLight position={[-8, 2, -2]} intensity={3.4} color="#FF7557" />
+          <directionalLight position={[8, 1, -2]} intensity={3.2} color="#58D6FF" />
+          <pointLight position={[0, 1.4, 5]} intensity={6} distance={9} color="#B9FFDC" />
+          <MarineSnow seed={seed} />
+          {/* The cast swims as it does in the collective tank, but holds still for fixed-size exports. */}
+          <Ensemble seed={seed} initialPoses={initialPoses} animated={!width && !paused} landscape={landscape} />
+        </Canvas>
+      </div>
+      <div className="creature-poster-fade pointer-events-none absolute inset-x-0 bottom-0 h-[34%]" aria-hidden="true" />
+      <header className="creature-poster-title pointer-events-none absolute inset-x-0 bottom-[6.5%] text-center">
+        <p className="mb-[0.9em] text-[0.17em] tracking-[0.02em] text-white/80">It was built to classify. It could not contain them.</p>
+        <h1 className="font-display leading-[0.78] tracking-[-0.075em]">
+          The Fishbowl
+          <span className="block italic text-[var(--phosphor)]">Leaks</span>
+        </h1>
+      </header>
+    </article>
+  );
+}
+
+/** Exports go through a development route that captures the pages with a headless Chrome. */
+const canExport = process.env.NODE_ENV !== "production";
+
+/** The current poster's link parameters, kept in the address bar as creatures are posed. */
+function exportHref(kind: "image" | "tutorial") {
+  const params = new URLSearchParams(window.location.search);
+  params.set("kind", kind);
+  return `/api/development/poster-export?${params}`;
+}
+
+export function CreaturePoster({ seed, width, pose, landscape = false }: { seed: string; width?: number; pose?: string; landscape?: boolean }) {
+  const router = useRouter();
+  const [paused, setPaused] = useState(false);
+  const [exporting, setExporting] = useState<"image" | "tutorial" | null>(null);
+
+  const exportFile = async (kind: "image" | "tutorial") => {
+    setExporting(kind);
+    try {
+      const response = await fetch(exportHref(kind));
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? response.statusText);
+      const name = response.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1] ?? "poster";
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(await response.blob());
+      link.download = name;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch (error) {
+      window.alert(`The export failed: ${error instanceof Error ? error.message : error}`);
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const buttonClass = "flex min-h-12 items-center border border-white/40 bg-[var(--abyss)] px-5 text-base text-[var(--foam)] transition-colors hover:border-white disabled:opacity-60";
 
   return (
     <main className="grid min-h-dvh place-items-center bg-black">
       {/* Keeps the development badge out of poster captures. */}
       <style>{"nextjs-portal { display: none; }"}</style>
-      <article
-        className={`creature-poster film-grain relative ${landscape ? "aspect-[3/2]" : "aspect-[2/3]"} ${width ? "" : fitToWindow} overflow-hidden bg-[var(--abyss)] text-[var(--foam)]`}
-        style={width ? { width, height: width * ratio } : undefined}
-        aria-label="The Fishbowl Leaks poster"
-      >
-        <BiomeBackdrop progress={0.82} quiet />
-        <div className="creature-poster-light absolute inset-0" aria-hidden="true" />
-        <div className="absolute inset-0">
-          <Canvas
-            camera={{ position: cameraPosition, fov: cameraFov, near: 0.1, far: 60 }}
-            dpr={[1, 2]}
-            resize={{ debounce: 0 }}
-            gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
-          >
-            <fog attach="fog" args={["#031015", 14, 26]} />
-            <ambientLight intensity={0.9} />
-            <directionalLight position={[1, 4, 9]} intensity={1.8} color="#FFF4DF" />
-            {/* A hot rim from the left and a cold one from the right split the cast into two camps. */}
-            <directionalLight position={[-8, 2, -2]} intensity={3.4} color="#FF7557" />
-            <directionalLight position={[8, 1, -2]} intensity={3.2} color="#58D6FF" />
-            <pointLight position={[0, 1.4, 5]} intensity={6} distance={9} color="#B9FFDC" />
-            <MarineSnow seed={seed} />
-            {/* The cast swims as it does in the collective tank, but holds still for fixed-size exports. */}
-            <Ensemble seed={seed} initialPoses={initialPoses} animated={!width && !paused} landscape={landscape} />
-          </Canvas>
-        </div>
-        <div className="creature-poster-fade pointer-events-none absolute inset-x-0 bottom-0 h-[34%]" aria-hidden="true" />
-        <header className="creature-poster-title pointer-events-none absolute inset-x-0 bottom-[6.5%] text-center">
-          <p className="mb-[0.9em] text-[0.17em] tracking-[0.02em] text-white/80">It was built to classify. It could not contain them.</p>
-          <h1 className="font-display leading-[0.78] tracking-[-0.075em]">
-            The Fishbowl
-            <span className="block italic text-[var(--phosphor)]">Leaks</span>
-          </h1>
-        </header>
-      </article>
+      <PosterArtwork seed={seed} width={width} pose={pose} landscape={landscape} paused={paused} />
       {/* Exports set a fixed width; the buttons stay out of those captures. */}
       {!width && (
         <div className="fixed right-6 bottom-6 z-10 flex gap-3">
+          {canExport && (
+            <>
+              <button type="button" className={buttonClass} disabled={exporting !== null} onClick={() => exportFile("image")}>
+                {exporting === "image" ? "Exporting image, about a minute…" : "Export image"}
+              </button>
+              <button type="button" className={buttonClass} disabled={exporting !== null} onClick={() => exportFile("tutorial")}>
+                {exporting === "tutorial" ? "Exporting A4 tutorial, about a minute…" : "Export A4 tutorial"}
+              </button>
+            </>
+          )}
           <button
             type="button"
             aria-pressed={paused}
-            className="flex min-h-12 items-center border border-white/40 bg-[var(--abyss)] px-5 text-base text-[var(--foam)] transition-colors hover:border-white"
+            className={buttonClass}
             onClick={() => setPaused((current) => !current)}
           >
             {paused ? "Play animation" : "Stop animation"}
           </button>
           <button
             type="button"
-            className="flex min-h-12 items-center gap-4 border border-white/40 bg-[var(--abyss)] px-5 text-base text-[var(--foam)] transition-colors hover:border-white"
+            className={`${buttonClass} gap-4`}
             onClick={() => router.push(`/poster?seed=${crypto.randomUUID().slice(0, 8)}${landscape ? "&format=landscape" : ""}`)}
           >
             New poster

@@ -72,6 +72,15 @@ Suggested acceptance path:
 5. Finish the reading, then reload to confirm persistence.
 6. Tap **Share with the exhibition**, then open [http://localhost:3066/collective](http://localhost:3066/collective) on the wall display.
 
+## Poster and tutorial sheet
+
+Open `/poster` in development, click **New poster** until the cast fits (drag a creature to turn it, Shift-drag to move it; seed and poses stay in the address bar), then use the export buttons:
+
+- **Export image** downloads the poster as a PNG, 2400 × 3600 px (3600 × 2400 px with `format=landscape`).
+- **Export A4 tutorial** downloads an A4 PDF to hang in the exhibition: the poster in its landscape layout, three steps on how to take part, the QR code and the dark Fishbowl Leaks target as an example, which visitors can scan right there. The sheet itself is at `/poster/tutorial?seed=<seed>`.
+
+Both exports load the pages in the installed Google Chrome in headless mode, which takes about a minute. Set `CHROME_PATH` to use another Chrome or Chromium. The export route only works during development.
+
 ## Shared exhibition screen
 
 The finished-story screen can send a visitor's anonymous journey to the server. The submission contains the journey session ID, completion time, ordered artifact IDs with their scan timestamps, creature form, and the creature's explicit color palette. The server validates those values, regenerates the canonical narrative, attaches the configured glyph themes and colors, calculates each artifact's dwell time, and stores the result in SQLite. Keeping the palette with the contribution ensures the creature has the same colors during scanning, in the personal journey, and after release into the collective aquarium.
@@ -107,7 +116,7 @@ Save the downloaded file as:
 public/targets/exhibition.mind
 ```
 
-The exhibition prints the constellations on white. The checked-in `exhibition.mind` bundle contains 18 targets compiled from the 400 × 533 px `-white.png` particle constellation images in `public/targets/`, in exhibition ID order (`1-finding-frida-white.png` through `18-earth-fortunes-white.png`). `npm run targets:export` regenerates them from each artifact's `alternativeColor`. The constellation gallery still previews the dark version, but dark images are not exported or compiled. `npm run targets:compile` recompiles the bundle with MindAR's offline compiler, so the web compiler is optional. Recompile whenever the compiled images change.
+The exhibition prints the constellations on white. The checked-in `exhibition.mind` bundle contains 19 targets compiled from the 400 × 533 px particle constellation images in `public/targets/`: first the `-white.png` targets in exhibition ID order (`1-finding-frida-white.png` through `18-earth-fortunes-white.png`), then the dark poster target `16-fishbowl-leaks-black.png` at index 18, which opens The Fishbowl Leaks like its white target. `targetImages` in `src/data/artifacts.ts` lists them in this order; add an artifact id to `posterTargetIds` there to give another work a dark target. `npm run targets:export` regenerates them from each artifact's `alternativeColor`. The constellation gallery still previews the dark version, but dark images are not exported or compiled. `npm run targets:compile` recompiles the bundle with MindAR's offline compiler, so the web compiler is optional. Recompile whenever the compiled images change.
 
 To lay out the constellations for the targets, open `/particles` in development (`npm run dev`). Each preview shows its target image exactly as it will be exported. Drag a constellation to turn it and Shift-drag to roll it within the image; on release it is re-framed to fill the target. **Save layout** writes every orientation to `src/data/constellationOrientations.ts`, which the target export, the print files and the scanner's assembly animation all read. Then run `npm run targets:build` to regenerate the target images, `exhibition.mind` with its compressed copies and version hash, the verification and the print files in one go, and reprint the targets whose layout changed. Saving only works while developing; the route returns 404 in production.
 

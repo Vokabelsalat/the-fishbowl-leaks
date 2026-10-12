@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { gunzipSync, brotliDecompressSync } from "node:zlib";
 import { decode } from "@msgpack/msgpack";
 import { describe, expect, it } from "vitest";
-import { artifacts } from "@/data/artifacts";
+import { artifacts, targetImages } from "@/data/artifacts";
 import { targetBundleVersion } from "@/data/targetBundle";
 
 describe("artifact target image configuration", () => {
@@ -75,11 +75,17 @@ describe("artifact target image configuration", () => {
 });
 
 describe("compiled MindAR bundle", () => {
-  it("contains one white target per artifact", () => {
+  it("contains one white target per artifact, then the poster's dark ones", () => {
     const bundle = decode(readFileSync("public/targets/exhibition.mind")) as {
       dataList: unknown[];
     };
-    expect(bundle.dataList).toHaveLength(artifacts.length);
+    expect(bundle.dataList).toHaveLength(targetImages.length);
+    expect(targetImages.slice(0, artifacts.length).map(({ artifact, surface, anchorIndex }) => [artifact.targetIndex, surface, anchorIndex])).toEqual(
+      artifacts.map(({ targetIndex }) => [targetIndex, "light", targetIndex]),
+    );
+    expect(targetImages.slice(artifacts.length).map(({ artifact, surface, anchorIndex }) => [artifact.id, surface, anchorIndex])).toEqual([
+      ["fishbowl-leaks", "dark", 18],
+    ]);
   });
 
   it("is versioned and precompressed from the current bundle", () => {

@@ -6,6 +6,12 @@ import type { ExhibitionArtifact } from "@/types/exhibition";
 import { ScrollNotice } from "@/components/ui/ScrollNotice";
 import { ArtworkFeedback } from "@/components/exhibition/ArtworkFeedback";
 
+/** A link as readers would type it: host and path, without the scheme, "www." or a trailing slash. */
+function linkLabel(link: string) {
+  const url = new URL(link);
+  return `${url.hostname.replace(/^www\./, "")}${url.pathname.replace(/\/$/, "")}`;
+}
+
 type ArtifactContentProps = {
   artifact: ExhibitionArtifact;
   onContinue: () => void;
@@ -88,13 +94,43 @@ export function ArtifactContent({ artifact, onContinue, mini = false }: Artifact
                       rel="noopener noreferrer"
                       className="block wrap-break-word text-white/78 underline underline-offset-4 transition-colors hover:text-white"
                     >
-                      {new URL(link).hostname.replace(/^www\./, "")}
+                      {linkLabel(link)}
+                    </a>
+                  ))}
+                </dd>
+              </>
+            )}
+            {artifact.contacts.length > 0 && (
+              <>
+                <dt className="text-white/50">Contact</dt>
+                <dd className="min-w-0">
+                  {artifact.contacts.map((contact) => (
+                    <a
+                      key={contact}
+                      href={`mailto:${contact}`}
+                      className="block wrap-break-word text-white/78 underline underline-offset-4 transition-colors hover:text-white"
+                    >
+                      {contact}
                     </a>
                   ))}
                 </dd>
               </>
             )}
           </dl>
+          {artifact.bios.length > 0 && (
+            <section className="mt-6 border-t border-white/15 pt-5" aria-labelledby="artifact-bios">
+              <h3 id="artifact-bios" className="font-display text-xl text-white/85">
+                {artifact.bios.length > 1 ? "About the artists" : "About the artist"}
+              </h3>
+              {artifact.bios.map((bio) => (
+                <div key={bio} className="mt-4">
+                  {bio.split("\n\n").map((paragraph, index) => (
+                    <p key={paragraph} className={`${index > 0 ? "mt-3 " : ""}text-base leading-7 text-white/78`}>{paragraph}</p>
+                  ))}
+                </div>
+              ))}
+            </section>
+          )}
           <p className="mt-5 text-sm text-white/50">Traits carried forward: {artifact.visualTraits.join(" · ")}</p>
         </div>
 

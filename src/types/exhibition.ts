@@ -92,6 +92,10 @@ export type ExhibitionArtifact = {
   platforms: string[];
   technicalDetails?: string;
   links: string[];
+  /** Email addresses for reaching the artists. */
+  contacts: string[];
+  /** One biography per artist or studio; paragraphs are separated by a blank line. */
+  bios: string[];
   /** A picture of the work from public/images, listed in the `image` column of public/exhibition.csv. */
   image?: { src: `/images/${string}`; width: number; height: number };
   narrativeWords: string[];

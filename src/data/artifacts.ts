@@ -449,6 +449,12 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2026,
     platforms: ["Blender", "3ds Max", "Mistika", "DaVinci Resolve", "Photoshop", "RealityCapture", "Pro Tools"],
     links: [],
+    contacts: [],
+    bios: [
+      "Hilde K. Kjøs is an award-winning filmmaker and photographer working across documentary, photography and immersive media. Her artistic practice explores place, memory and human presence. With a cinematic approach grounded in observation and visual subtext, Kjøs creates intimate encounters that invite audiences into complex human narratives. Her acclaimed documentaries Harvesting the Wasteland (Lykkens grøde) and Solace (Sju kammers) have screened internationally and won multiple awards. In September 2026, her VR debut Finding Frida premiered at the 83rd Venice International Film Festival, Venice Immersive.",
+      "Cecilie Levy is an independent screenwriter and lecturer at the University of Amsterdam, Department of Media Studies. In 2023 she completed a PhD in Artistic Research at the Norwegian Film School with her project Light From Aside: A Screenwriter’s Perspective in Virtual Reality. Works include shorts, children’s series, films for television and feature films screened internationally, on television and at festivals. Levy has won several awards, incl. the Prix Jeunesse (Prix Europa), the Lucas Award and a nomination for an International Emmy® Kids Award. Part of the jury Digital Culture at the Dutch Film Festival in Utrecht, 2025.",
+      "Bjørn-Morten Nerland is an XR producer and cinematographer based in Oslo, Norway, with more than 15 years of experience creating immersive experiences. He is the founder of RippleX Studios, an immersive production company specialising in virtual reality, spatial storytelling and interactive experiences. His work spans exhibitions, documentaries, commercial productions, music videos and immersive installations, combining cinematic storytelling with emerging technologies. He holds a Bachelor's degree in Media Technology from Lillehammer University College and has received multiple Gullruten (Norwegian Emmy) nominations, including for Innovation of the Year. His work has also been recognised as an Official Honoree at the Webby Awards for Best Use of Interactive Video, and he received the Best VR Film award at the VRINN Awards 2024.\n\nHis current work focuses on immersive documentary storytelling at the intersection of culture, heritage and emerging technologies.",
+    ],
     image: { src: "/images/findingfrida Medium.jpeg", width: 640, height: 360 },
     narrativeWords: ["remember", "archive", "return", "resonate"],
     creaturePart: {
@@ -473,7 +479,11 @@ const exhibitionSources: ArtifactSource[] = [
     workType: ["Interactive Installation", "Work in progress"],
     year: 2026,
     platforms: [],
-    links: [],
+    links: ["https://www.lina.berlin"],
+    contacts: [],
+    bios: [
+      "Lina Ruth Harder is a PhD Fellow at the Center for Digital Narrative at the University of Bergen. Her practice based research explores generative AI, historical simulation and interactive narrative. Drawing on her background in museums and digital communication, she creates AI driven works about history, memory and encounters between humans and machines. She coined the term histobots for conversational agents that simulate people from the past. Through critical and playful experiments with emerging technologies, her work examines how historical personalities are constructed, whose stories are remembered and how artificial intelligence reshapes our relationship with the past.",
+    ],
     image: { src: "/images/Historically Yours_Podcast Cover Medium.jpeg", width: 640, height: 640 },
     narrativeWords: ["remember", "record", "revisit", "inherit"],
     creaturePart: {
@@ -497,7 +507,11 @@ const exhibitionSources: ArtifactSource[] = [
     workType: ["Interactive Documentary"],
     year: 2026,
     platforms: [],
-    links: [],
+    links: ["https://pedro-velho.com/"],
+    contacts: ["Pedro.Pinto@uib.no"],
+    bios: [
+      "Pedro Queirós Pinto, artistically known as Pedro Velho, is a researcher, mediator, educator, and creative based in Bergen, Norway. He is currently a Research Assistant in the Extending Digital Narrative (XDN) group at the Center for Digital Narrative (CDN), University of Bergen, where he focuses on digital narratives and creative practices.\n\nHis work spans mediation, narrative, non-fiction, and performance, drawing on intermedial and socially engaged approaches to explore how creative practice shapes the conditions for meaningful encounters among people, stories, and communities.",
+    ],
     image: { src: "/images/fromingridtobergen Medium.jpeg", width: 453, height: 640 },
     narrativeWords: ["trace", "route", "carry", "return"],
     creaturePart: {
@@ -521,7 +535,11 @@ const exhibitionSources: ArtifactSource[] = [
     workType: ["WebXR", "Interactive Browser", "Work in progress"],
     year: 2026,
     platforms: [],
-    links: [],
+    links: ["https://sergiogalvaoroxo.com/"],
+    contacts: ["sergio.roxo@uib.no"],
+    bios: [
+      "Sérgio Galvão Roxo (1990, Portugal) is an artist, researcher, and LGBTQIA+ social intervention specialist. He is currently a PhD Research Fellow at the University of Bergen, exploring audiovisual storytelling and immersive media as tools for awareness, belonging, activism, and education.\n\nHis work Her Name Was Gisberta (2023), an immersive documentary, has been showcased at international festivals, including SXSW, DOK Leipzig, and Ji.hlava IDFF. The project received the AIXR Inclusivity XR Grant (2024) and was nominated for the AIXR Social Impact Award (2024). It also won the National Grand Prix at FEST — New Directors | New Films Festival (2024).",
+    ],
     image: { src: "/images/yourupdatehasfailed Medium.jpeg", width: 640, height: 360 },
     narrativeWords: ["update", "error", "restart", "persist"],
     creaturePart: {
@@ -546,7 +564,13 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2026,
     platforms: ["Runway", "Seedance 2.0", "Lumina Dream Machine", "Adobe Premiere", "Adobe Audition", "ChatGPT Image", "Adobe Firefly", "Claude (coding)", "ElevenLabs", "Python", "Carpentry"],
     technicalDetails: "Installation with five channel video and two channel audio",
-    links: [],
+    links: ["https://retts.net/grandhotels/"],
+    contacts: ["Scott.Rettberg@uib.no"],
+    bios: [
+      "Roderick Coover is a filmmaker, digital artist, and professor of Film and Media Arts at Temple University in Philadelphia. A pioneer of interactive cinema and immersive storytelling, he combines documentary research, experimental film, and digital technologies to explore environmental change, cultural experience, and the possibilities of narrative. His works include Unknown Territories, Toxi•City: A Climate Change Narrative, and the collaborative virtual reality installation Hearts and Minds: The Interrogations Project. His projects have been exhibited internationally, including at the Venice Biennale, SIGGRAPH, and the Bibliothèque nationale de France. He edited The Digital Imaginary: Literature and Cinema of the Database and coedited Switching Codes. Coover holds a doctorate from the University of Chicago and received Fulbright, Mellon, and Whiting fellowships and awards. He is collaborating with Caitlin Fisher and Scott Rettberg on the Visitations: The Grand Hotels (of Joseph Cornell) series of immersive narratives.",
+      "Caitlin Fisher is an award-winning digital storyteller and poet, working mostly in XR. She directs the art+science Immersive Storytelling Lab and the Augmented Reality Lab at York University in Toronto. At York she is also Chair and a Full Professor in the Department of Film and Media Arts. A co-founder of York’s Future Cinema Lab and former Fulbright and Canada Research Chair, Caitlin has funded research projects in the areas of AI storytelling, co-creation between settler and indigenous artists in VR environments and is bringing the power of storytelling to the global health crisis of antimicrobial resistance through a new XR Museum project. She is immediate past President of the Electronic Literature Organization and is also a Prof. II at the University of Bergen, working with the Centre for Digital Narrative.",
+      "Scott Rettberg is director of the Center for Digital Narrative (CDN), a Norwegian Centre of Research Excellence, and professor of digital culture at the University of Bergen. A writer, artist, and scholar, he explores how computational technologies transform storytelling, authorship, and creative practice. He cofounded the Electronic Literature Organization and served as its first executive director. His book Electronic Literature received the 2019 N. Katherine Hayles Award for Criticism of Electronic Literature. His collaborative works include The Unknown, Implementation, and Hearts and Minds: The Interrogations Project, winner of the 2016 Robert Coover Award. Rettberg leads the Extending Digital Narrative project, investigating emerging narrative forms through artistic experimentation with artificial intelligence, games, and extended reality. He is collaborating with Roderick Coover and Caitlin Fisher on the Visitations: The Grand Hotels (of Joseph Cornell) series of immersive narratives.",
+    ],
     image: { src: "/images/grandhotel Medium.jpeg", width: 640, height: 358 },
     narrativeWords: ["enter", "corridor", "wander", "transform"],
     creaturePart: {
@@ -570,7 +594,11 @@ const exhibitionSources: ArtifactSource[] = [
     workType: ["Augmented Reality", "Interactive Digital Literature"],
     year: 2026,
     platforms: ["OpenCV.js"],
-    links: [],
+    links: ["https://dpoetry.com"],
+    contacts: ["Jason.nelson@uib.no"],
+    bios: [
+      "Jason Nelson is a digital poet and artist, combining poetry, narrative, images, sound, movement and interaction in digital writing and games. He grew up in Oklahoma City and became a digital writer in Australia. He Professes all sorts of magic things at the University of Bergen and is a principal investigator in the Center for Digital Narrative. His works have won 14 awards and prizes, including a Webby, Queensland Premier’s Literary prize, and the ELO Maverick Award among others.",
+    ],
     image: { src: "/images/Glasslike-catalog-image-300 Medium.jpeg", width: 640, height: 453 },
     narrativeWords: ["touch", "surface", "refract", "fold"],
     creaturePart: {
@@ -594,7 +622,12 @@ const exhibitionSources: ArtifactSource[] = [
     workType: ["Augmented Reality", "Interactive Digital Literature"],
     year: 2009,
     platforms: [],
-    links: [],
+    links: ["https://www.betweenpageandscreen.com"],
+    contacts: ["hello@betweenpageandscreen.com"],
+    bios: [
+      "Amaranth Borsuk is the author of Pomegranate Eater (Kore Press, 2016), a collection of poems; As We Know (Subito, 2014), a book-length erasure collaboration with Andy Fitch; Handiwork (Slope Editions, 2012), selected by Paul Hoover for the 2011 Slope Editions Book Prize; and Tonal Saw (The Song Cave, 2010), a chapbook. Abra (1913 Press, 2016), a book of mutating poems created with Kate Durbin, received an NEA-sponsored Expanded Artists’ Books grant from the Center for Book and Paper Arts at Columbia College Chicago and was recently released as a limited-edition book with a free iPad / iPhone app created by Ian Hatcher. Borsuk's other digital collaborations include The Deletionist, an erasure bookmarklet created with Nick Montfort and Jesper Juul; and Whispering Galleries, a site-specific LeapMotion interactive textwork for the New Haven Free Public Library. Borsuk received her Ph.D. in Literature and Creative Writing at the University of Southern California and served as a Mellon Postdoctoral Fellow in the Humanities at MIT before joining the faculty of the University of Washington, Bothell, where she is currently an Assistant Professor in the School of Interdisciplinary Arts and Sciences.",
+      "Brad Bouse is a developer whose work focuses on the intersection of art and technology. He is the co-founder of Lightboard. He frequently presents about art and code, including this presentation about the Usefulness of Uselessness at JSConf.EU in Berlin.",
+    ],
     image: { src: "/images/frompage Medium.jpeg", width: 640, height: 360 },
     narrativeWords: ["read", "letter", "decode", "respond"],
     creaturePart: {
@@ -620,6 +653,10 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2026,
     platforms: [],
     links: [],
+    contacts: [],
+    bios: [
+      "Colin Robinson is a technical artist and engineer interested in experimental forms of interaction and play. His works span 3D art, game design, electronics, fabrication, and software, with a particular interest in challenging established design conventions, finding questionable uses for new technologies, and making people smile.",
+    ],
     image: { src: "/images/bybannen Medium.jpeg", width: 640, height: 640 },
     narrativeWords: ["move", "balance", "glide", "arrive"],
     creaturePart: {
@@ -644,6 +681,11 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2023,
     platforms: [],
     links: [],
+    contacts: [],
+    bios: [
+      "Marion Burger is a French filmmaker and production designer whose work spans cinema and immersive storytelling. She has worked as a production designer on films including Divines (2016), Gagarine (2020), and Mother and Son (2022). Her directorial debut, EMPEROR (2023), co-created with Ilan J. Cohen, is an interactive virtual reality experience inspired by her father's experience of aphasia. Combining monochromatic, hand-drawn landscapes with poetic and surrealist storytelling, the work explores language, memory, communication, and the emotional bonds between family members.",
+      "Ilan J. Cohen is a French filmmaker, screenwriter, and director whose practice encompasses cinema, music videos, and immersive storytelling. Since 2008, he has worked as a first assistant director on film productions while developing his own writing and directing projects, including music videos for musicians such as Rone and Gaspar Claus. Together with Marion Burger, he co-wrote and co-directed EMPEROR (2023), an interactive virtual reality experience that explores aphasia through the inner world of a father who has lost the ability to speak. The project combines immersive narrative, animation, and poetic visual design to investigate language, memory, and human connection.",
+    ],
     image: { src: "/images/EMPEREUR_Still_001-Amandine-Gabard-scaled Medium.jpeg", width: 640, height: 457 },
     narrativeWords: ["speak", "silence", "reach", "remember"],
     creaturePart: {
@@ -667,7 +709,13 @@ const exhibitionSources: ArtifactSource[] = [
     workType: ["VR", "Work in progress"],
     year: 2026,
     platforms: ["Unity", "Marble", "ChatGPT Image", "Adobe Photoshop", "Claude (Code)"],
-    links: [],
+    links: ["https://retts.net/grandhotels/"],
+    contacts: ["Scott.Rettberg@uib.no"],
+    bios: [
+      "Roderick Coover is a filmmaker, digital artist, and professor of Film and Media Arts at Temple University in Philadelphia. A pioneer of interactive cinema and immersive storytelling, he combines documentary research, experimental film, and digital technologies to explore environmental change, cultural experience, and the possibilities of narrative. His works include Unknown Territories, Toxi•City: A Climate Change Narrative, and the collaborative virtual reality installation Hearts and Minds: The Interrogations Project. His projects have been exhibited internationally, including at the Venice Biennale, SIGGRAPH, and the Bibliothèque nationale de France. He edited The Digital Imaginary: Literature and Cinema of the Database and coedited Switching Codes. Coover holds a doctorate from the University of Chicago and received Fulbright, Mellon, and Whiting fellowships and awards. He is collaborating with Caitlin Fisher and Scott Rettberg on the Visitations: The Grand Hotels (of Joseph Cornell) series of immersive narratives.",
+      "Caitlin Fisher is an award-winning digital storyteller and poet, working mostly in XR. She directs the art+science Immersive Storytelling Lab and the Augmented Reality Lab at York University in Toronto. At York she is also Chair and a Full Professor in the Department of Film and Media Arts. A co-founder of York’s Future Cinema Lab and former Fulbright and Canada Research Chair, Caitlin has funded research projects in the areas of AI storytelling, co-creation between settler and indigenous artists in VR environments and is bringing the power of storytelling to the global health crisis of antimicrobial resistance through a new XR Museum project. She is immediate past President of the Electronic Literature Organization and is also a Prof. II at the University of Bergen, working with the Centre for Digital Narrative.",
+      "Scott Rettberg is director of the Center for Digital Narrative (CDN), a Norwegian Centre of Research Excellence, and professor of digital culture at the University of Bergen. A writer, artist, and scholar, he explores how computational technologies transform storytelling, authorship, and creative practice. He cofounded the Electronic Literature Organization and served as its first executive director. His book Electronic Literature received the 2019 N. Katherine Hayles Award for Criticism of Electronic Literature. His collaborative works include The Unknown, Implementation, and Hearts and Minds: The Interrogations Project, winner of the 2016 Robert Coover Award. Rettberg leads the Extending Digital Narrative project, investigating emerging narrative forms through artistic experimentation with artificial intelligence, games, and extended reality. He is collaborating with Roderick Coover and Caitlin Fisher on the Visitations: The Grand Hotels (of Joseph Cornell) series of immersive narratives.",
+    ],
     narrativeWords: ["orbit", "signal", "navigate", "connect"],
     creaturePart: {
       id: "orbit-ring",
@@ -691,6 +739,8 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2023,
     platforms: [],
     links: [],
+    contacts: [],
+    bios: [],
     narrativeWords: ["witness", "presence", "remember", "resist"],
     creaturePart: {
       id: "heart-plume",
@@ -715,6 +765,10 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2022,
     platforms: [],
     links: [],
+    contacts: [],
+    bios: [
+      "ANAGRAM is an award-winning creative studio specialising in interactive storytelling and immersive experiences. Working at the intersection of documentary, technology, and artistic experimentation, the studio creates thought-provoking works that explore human experiences and social issues through innovative forms of audience engagement. Its productions include Goliath: Playing with Reality (2021/2022), an animated virtual reality experience exploring schizophrenia, gaming, and human connection. Directed by Barry Gene Murphy and May Abdalla, narrated by Tilda Swinton, and co-produced with Floréal Films, the project won the Grand Jury Prize for Best VR Work at the 2021 Venice International Film Festival and received numerous international awards and nominations, including an Emmy nomination.",
+    ],
     image: { src: "/images/Goliath Medium.jpeg", width: 640, height: 360 },
     narrativeWords: ["play", "world", "connect", "return"],
     creaturePart: {
@@ -738,7 +792,11 @@ const exhibitionSources: ArtifactSource[] = [
     workType: ["Video"],
     year: 2026,
     platforms: [],
-    links: [],
+    links: ["https://www.eamonokane.com"],
+    contacts: ["eamon.okane@uib.no"],
+    bios: [
+      "Eamon O’Kane (b. 1974, Belfast) is an Irish artist and Professor of Visual Art at the University of Bergen, Norway. Working across painting, drawing, photography, sculpture, installation and AI-generated imagery, his practice explores the relationships between memory, architecture, ecology and changing technologies. His work frequently takes modernist architecture, domestic spaces, artist studios and landscapes as sites through which histories and temporalities can be examined.\n\nO’Kane’s long-term projects include Greenhouse Archive, a decade-long documentation and artistic investigation of a former plant nursery in Denmark, and The School of Generational Storytelling, developed through collaborations with care homes and communities in Ireland. His research also encompasses climate narratives, posthumanism, and the role of AI within contemporary artistic practice. He has exhibited internationally through solo and group exhibitions, publications, and research projects. O’Kane is a member of the leader group of the Centre for Digital Narrative at the University of Bergen.",
+    ],
     image: { src: "/images/munch-in-his-winter-studio-in-ekely-on-his-seventy-fifth-birthday-1938-photogrpahy-by-ragnvald-vaering- Medium.jpeg", width: 472, height: 640 },
     narrativeWords: ["archive", "crystal", "echo", "recover"],
     creaturePart: {
@@ -764,7 +822,13 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2025,
     platforms: ["Adobe Aero", "Unity", "DALL•E 3", "Adobe Photoshop", "ElevenLabs"],
     technicalDetails: "AR experience for Android tablets",
-    links: [],
+    links: ["https://retts.net/grandhotels/"],
+    contacts: ["Scott.Rettberg@uib.no"],
+    bios: [
+      "Roderick Coover is a filmmaker, digital artist, and professor of Film and Media Arts at Temple University in Philadelphia. A pioneer of interactive cinema and immersive storytelling, he combines documentary research, experimental film, and digital technologies to explore environmental change, cultural experience, and the possibilities of narrative. His works include Unknown Territories, Toxi•City: A Climate Change Narrative, and the collaborative virtual reality installation Hearts and Minds: The Interrogations Project. His projects have been exhibited internationally, including at the Venice Biennale, SIGGRAPH, and the Bibliothèque nationale de France. He edited The Digital Imaginary: Literature and Cinema of the Database and coedited Switching Codes. Coover holds a doctorate from the University of Chicago and received Fulbright, Mellon, and Whiting fellowships and awards. He is collaborating with Caitlin Fisher and Scott Rettberg on the Visitations: The Grand Hotels (of Joseph Cornell) series of immersive narratives.",
+      "Caitlin Fisher is an award-winning digital storyteller and poet, working mostly in XR. She directs the art+science Immersive Storytelling Lab and the Augmented Reality Lab at York University in Toronto. At York she is also Chair and a Full Professor in the Department of Film and Media Arts. A co-founder of York’s Future Cinema Lab and former Fulbright and Canada Research Chair, Caitlin has funded research projects in the areas of AI storytelling, co-creation between settler and indigenous artists in VR environments and is bringing the power of storytelling to the global health crisis of antimicrobial resistance through a new XR Museum project. She is immediate past President of the Electronic Literature Organization and is also a Prof. II at the University of Bergen, working with the Centre for Digital Narrative.",
+      "Scott Rettberg is director of the Center for Digital Narrative (CDN), a Norwegian Centre of Research Excellence, and professor of digital culture at the University of Bergen. A writer, artist, and scholar, he explores how computational technologies transform storytelling, authorship, and creative practice. He cofounded the Electronic Literature Organization and served as its first executive director. His book Electronic Literature received the 2019 N. Katherine Hayles Award for Criticism of Electronic Literature. His collaborative works include The Unknown, Implementation, and Hearts and Minds: The Interrogations Project, winner of the 2016 Robert Coover Award. Rettberg leads the Extending Digital Narrative project, investigating emerging narrative forms through artistic experimentation with artificial intelligence, games, and extended reality. He is collaborating with Roderick Coover and Caitlin Fisher on the Visitations: The Grand Hotels (of Joseph Cornell) series of immersive narratives.",
+    ],
     image: { src: "/images/Screenshot_2025-11-21_11-40-20 Medium.jpeg", width: 640, height: 425 },
     narrativeWords: ["sand", "revisit", "haunt", "recombine"],
     creaturePart: {
@@ -790,6 +854,10 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2021,
     platforms: [],
     links: [],
+    contacts: [],
+    bios: [
+      "Caitlin Fisher is an award-winning digital storyteller and poet, working mostly in XR. She directs the art+science Immersive Storytelling Lab and the Augmented Reality Lab at York University in Toronto. At York she is also Chair and a Full Professor in the Department of Film and Media Arts. A co-founder of York’s Future Cinema Lab and former Fulbright and Canada Research Chair, Caitlin has funded research projects in the areas of AI storytelling, co-creation between settler and indigenous artists in VR environments and is bringing the power of storytelling to the global health crisis of antimicrobial resistance through a new XR Museum project. She is immediate past President of the Electronic Literature Organization and is also a Prof. II at the University of Bergen, working with the Centre for Digital Narrative.",
+    ],
     image: { src: "/images/Fiery Medium.jpeg", width: 640, height: 357 },
     narrativeWords: ["ignite", "speak", "resist", "appear"],
     creaturePart: {
@@ -814,7 +882,11 @@ const exhibitionSources: ArtifactSource[] = [
     workType: ["Augmented Reality", "Work in Progress"],
     year: 2026,
     platforms: [],
-    links: [],
+    links: ["https://kusnick.com"],
+    contacts: ["jakob@kusnick.com"],
+    bios: [
+      "Jakob Kusnick is a LEAD AI postdoctoral fellow at the Center for Digital Narrative in the Department of Linguistic, Literary and Aesthetic Studies at the University of Bergen. He leads Narrative Nubs, a project in collaboration with Nick Montfort at MIT that explores AI story generators and develops miniature versions of them as a platform for research, teaching, and artistic practice. His research investigates how interactive visualizations can make these complex systems understandable and usable, for example, through glyph-based summaries for comparing AI story systems and interfaces for tracing generation processes and analyzing large collections of outputs. Jakob received his PhD in Computer Science in 2024 from the University of Southern Denmark in Odense, where his dissertation focused on visualization-based storytelling for digital humanities. He then continued there as a postdoctoral researcher, with work spanning tangible and intangible cultural heritage, musicology, history, sustainability, and the life sciences.",
+    ],
     image: { src: "/images/fishbowl-leaks-poster Medium.jpeg", width: 426, height: 640 },
     narrativeWords: ["contain", "leak", "gather", "evolve"],
     creaturePart: {
@@ -838,7 +910,11 @@ const exhibitionSources: ArtifactSource[] = [
     workType: ["Augmented Reality", "Interactive Digital Literature"],
     year: 2022,
     platforms: [],
-    links: [],
+    links: ["https://www.tinaescaja.com"],
+    contacts: ["tina.escaja@uvm.edu"],
+    bios: [
+      "Tina Escaja (also known as Alm@ Pérez) is a Spanish-American poet, writer, feminist scholar, and digital artist. She is a Distinguished Professor of Spanish and Gender Studies at the University of Vermont, where her research explores gender, technology, and contemporary Spanish and Latin American literature. Considered a pioneer of electronic literature in Spanish, her interdisciplinary practice combines poetry, digital media, robotics, augmented reality, and multimedia installations to challenge conventional literary forms and explore the intersections of technology, identity, and social justice. Her digital works have been exhibited internationally in museums and galleries. Her literary awards include the Dulce María Loynaz International Poetry Prize for Caída libre (2004) and the Campoy-Ada Prize for young adult poetry (2017).",
+    ],
     image: { src: "/images/realidadmitigada Medium.jpeg", width: 640, height: 452 },
     narrativeWords: ["scan", "mitigate", "testify", "spread"],
     creaturePart: {
@@ -864,6 +940,10 @@ const exhibitionSources: ArtifactSource[] = [
     year: 2020,
     platforms: [],
     links: ["https://www.fluxkitsef.ca/projects/earth-fortunes#h.bcaiytb3jbx9"],
+    contacts: [],
+    bios: [
+      "Caitlin Fisher is an award-winning digital storyteller and poet, working mostly in XR. She directs the art+science Immersive Storytelling Lab and the Augmented Reality Lab at York University in Toronto. At York she is also Chair and a Full Professor in the Department of Film and Media Arts. A co-founder of York’s Future Cinema Lab and former Fulbright and Canada Research Chair, Caitlin has funded research projects in the areas of AI storytelling, co-creation between settler and indigenous artists in VR environments and is bringing the power of storytelling to the global health crisis of antimicrobial resistance through a new XR Museum project. She is immediate past President of the Electronic Literature Organization and is also a Prof. II at the University of Bergen, working with the Centre for Digital Narrative.",
+    ],
     narrativeWords: ["foretell", "deal", "forecast", "diverge"],
     creaturePart: {
       id: "fortune-cards",

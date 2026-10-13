@@ -631,10 +631,6 @@ a:focus-visible {
   bottom: var(--collective-recents-height);
 }
 
-.collective-swim-field-arriving {
-  bottom: 0;
-}
-
 .collective-wall {
   --collective-recents-height: clamp(12rem, 23vh, 16rem);
   --collective-qr-size: clamp(6rem, 12vh, 9rem);
@@ -911,14 +907,16 @@ a:focus-visible {
 /* An arrival lasts --arrival-duration, which is shorter while other visitors wait for theirs. */
 .collective-arrival {
   animation: arrival-stage var(--arrival-duration, 17s) ease-in-out both;
-  pointer-events: none;
 }
 
+/* The left of the tank, above the recent stories, where the new creature appears before it sinks in. */
 .collective-arrival-habitat {
-  background: linear-gradient(90deg, transparent 55%, rgba(3, 16, 21, 0.28));
+  bottom: var(--collective-recents-height);
+  width: 50%;
 }
 
 .collective-story {
+  width: 50%;
   animation: arrival-story var(--arrival-duration, 17s) ease-in-out both;
   pointer-events: auto;
   border-left: 1px solid rgba(232, 245, 239, 0.32);
@@ -1123,8 +1121,12 @@ a:focus-visible {
     --collective-recents-height: 11rem;
   }
 
-  .collective-arrival {
-    grid-template-columns: 43% 57%;
+  .collective-arrival-habitat {
+    width: 43%;
+  }
+
+  .collective-story {
+    width: 57%;
   }
 
   .collective-arrival-origin {

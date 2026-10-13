@@ -157,6 +157,18 @@ export function CollectiveWall({ initialView = "collective" }: {
     beginArrival(null);
   }, [beginArrival]);
 
+  /** Development only: lets a creature already in the tank arrive again, queued like a new one. Nothing is saved. */
+  const replayArrival = useCallback(() => {
+    const queuedIds = new Set([activeRef.current?.id, ...queueRef.current.map((contribution) => contribution.id)]);
+    const candidates = contributions.filter((contribution) => !queuedIds.has(contribution.id));
+    const visitorCandidates = candidates.filter((contribution) => !contribution.dailySeed);
+    const pool = visitorCandidates.length > 0 ? visitorCandidates : candidates;
+    if (pool.length === 0) return;
+    queueRef.current.push(pool[Math.floor(Math.random() * pool.length)]);
+    if (!activeRef.current) beginArrival(queueRef.current.shift() ?? null);
+    else syncWaiting();
+  }, [beginArrival, contributions, syncWaiting]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -283,9 +295,10 @@ export function CollectiveWall({ initialView = "collective" }: {
     ),
     [releasedArrival?.id, visibleActive?.id, visibleContributions],
   );
+  // The arriving creature's story shows in its own panel, and joins the recent stories once it has arrived.
   const recentContributions = useMemo(
-    () => visibleContributions.slice(-5).reverse(),
-    [visibleContributions],
+    () => visibleContributions.filter((contribution) => contribution.id !== visibleActive?.id).slice(-5).reverse(),
+    [visibleActive?.id, visibleContributions],
   );
   const visibleHeatmap = useMemo(
     () => liveTime
@@ -351,7 +364,7 @@ export function CollectiveWall({ initialView = "collective" }: {
         <span /><span /><span /><span />
       </div>
       {view === "collective" ? (
-        <div className={`collective-swim-field absolute ${visibleActive ? "collective-swim-field-arriving" : ""}`} aria-live="polite">
+        <div className="collective-swim-field absolute" aria-live="polite">
           <CollectiveVisualizationField
             contributions={habitatCreatures}
             progress={dayProgress}
@@ -370,7 +383,8 @@ export function CollectiveWall({ initialView = "collective" }: {
         <CollectiveHeatmap data={visibleHeatmap} />
       )}
 
-      <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between">
+      {/* Above the arrival overlay, so the debug controls stay usable during an arrival. */}
+      <header className="absolute inset-x-0 top-0 z-50 flex items-center justify-between">
         <div className="p-8">
           <h1 className="font-display text-xl tracking-[-0.03em] lg:text-2xl">The Fishbowl Leaks</h1>
           {/* The heatmap page stays silent, so it never plays over the aquarium beside it. */}
@@ -410,6 +424,16 @@ export function CollectiveWall({ initialView = "collective" }: {
                   }}
                 >
                   Circle the tank
+                </button>
+              )}
+              {isDevelopment && (
+                <button
+                  type="button"
+                  className="transition-colors hover:text-white/70 disabled:text-white/25"
+                  disabled={contributions.length === 0}
+                  onClick={replayArrival}
+                >
+                  Test an arrival
                 </button>
               )}
               <MeshQualityControl quality={meshQuality} onChange={setMeshQuality} />
@@ -453,30 +477,35 @@ export function CollectiveWall({ initialView = "collective" }: {
       )}
 
       {view === "collective" && visibleActive && (
-        <section key={visibleActive.id} className="collective-arrival absolute inset-0 z-20 grid grid-cols-[58%_42%]" style={{ "--arrival-duration": `${arrivalDurationMs}ms` } as CSSProperties} aria-label={`A new visitor ${activeVisualizationCopy.singular} has arrived`}>
-          <div className="collective-arrival-habitat relative min-w-0" aria-label={`New ${activeVisualizationCopy.singular} entering the aquarium`}>
+        // An overlay over the tank and the recent stories, which both carry on as before underneath.
+        <section key={visibleActive.id} className="collective-arrival pointer-events-none absolute inset-0 z-40" style={{ "--arrival-duration": `${arrivalDurationMs}ms` } as CSSProperties} aria-label={`A new visitor ${activeVisualizationCopy.singular} has arrived`}>
+          <div className="collective-arrival-habitat absolute left-0 top-0" aria-label={`New ${activeVisualizationCopy.singular} entering the aquarium`}>
             <div ref={arrivalCreatureRef} className="collective-arrival-origin absolute left-[7%] top-[16%] h-[65%] w-[78%]" aria-hidden="true" />
           </div>
-          <div className="collective-story relative min-h-0 min-w-0 overflow-y-auto px-[clamp(1.25rem,3vw,3.5rem)] pb-[clamp(1.5rem,5vh,3.5rem)] pt-[clamp(7rem,17vh,11rem)]">
-            <div className="collective-story-heading border-b border-white/25 pb-5">
+          <div className="collective-story absolute inset-y-0 right-0 flex min-h-0 min-w-0 flex-col overflow-hidden px-[clamp(1.25rem,3vw,3.5rem)] pb-[clamp(1.5rem,5vh,3.5rem)] pt-[clamp(7rem,17vh,11rem)]">
+            <div className="collective-story-heading shrink-0 border-b border-white/25 pb-5">
               <h2 className="font-display text-[clamp(1.5rem,2.3vw,2.7rem)] leading-tight tracking-[-0.03em]">A new specimen has entered the tank</h2>
               <p className="mt-3 text-base text-white/75">
                 Made from {visibleActive.parts.length} exhibition {visibleActive.parts.length === 1 ? "encounter" : "encounters"}
               </p>
             </div>
-            <div className="collective-story-status border-b border-white/25 py-5 font-mono text-sm leading-relaxed text-white/75">
+            <div className="collective-story-status shrink-0 border-b border-white/25 py-5 font-mono text-sm leading-relaxed text-white/75">
               Specimen {String(visibleActive.id).padStart(3, "0")} has been successfully <s>classified</s> <s>contained</s> <s>understood</s>
             </div>
-            <div className="collective-story-narrative pt-6 font-display text-[clamp(1.3rem,1.8vw,2rem)] leading-[1.22] tracking-[-0.025em]">
-              {visibleActive.narrative.map((line, index) => (
-                <p key={`${index}-${line}`} className="mb-4"><NarrativeLine line={line} /></p>
-              ))}
+            {/* A long story shrinks its text to fit the panel's remaining height, like the latest story below. */}
+            <div className="collective-story-narrative flex min-h-0 flex-1 flex-col pt-6">
+              <FitText className="font-display text-[clamp(1.3rem,1.8vw,2rem)] leading-[1.22] tracking-[-0.025em]">
+                {visibleActive.narrative.map((line, index) => (
+                  // The gap between lines shrinks with the text.
+                  <p key={`${index}-${line}`} className="mb-[0.6em] last:mb-0"><NarrativeLine line={line} /></p>
+                ))}
+              </FitText>
             </div>
           </div>
         </section>
       )}
 
-      {view === "collective" && !visibleActive && latestContribution && (
+      {view === "collective" && latestContribution && (
         <aside
           className="collective-recents absolute inset-x-0 bottom-0 z-30 pb-6 lg:pb-7"
           aria-label={`Most recently shared stories and ${activeVisualizationCopy.plural}`}
@@ -526,7 +555,7 @@ export function CollectiveWall({ initialView = "collective" }: {
         </aside>
       )}
 
-      {view === "collective" && !visibleActive && (
+      {view === "collective" && (
         <a
           className="collective-qr absolute z-30 flex flex-col items-center gap-2 text-base text-[var(--foam)]"
           href="https://aar.kusnick.com"

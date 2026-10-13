@@ -34,3 +34,4 @@ have the mating scale up when less contributions occurr
 fix up the fish and narwhal fins (delete the model part and make sure it stays deleted)
 collapse the short bios of the creators
 come up with a menu of artifacts which collapses or groups under different themes
+the release animation is still messed up.

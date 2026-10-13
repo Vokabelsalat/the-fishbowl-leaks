@@ -227,15 +227,48 @@ function deserialize(row: ContributionRow): ExhibitionContribution {
 }
 
 let seededCycleStart: string | null = null;
+let syntheticNarrativesRefreshed = false;
 
 /** Puts the day's seed creatures into the tank once a day, before any visitor's creature. */
 function ensureDailySeeds() {
+  if (!syntheticNarrativesRefreshed) {
+    refreshSyntheticNarratives();
+    syntheticNarrativesRefreshed = true;
+  }
   const cycleStart = cycleStartIso();
   if (seededCycleStart === cycleStart) return;
   for (const seed of createDailySeeds(cycleStart, getCycleDate())) {
     createContribution({ ...seed, synthetic: "daily-seed" });
   }
   seededCycleStart = cycleStart;
+}
+
+/**
+ * Stories are generated again whenever a contribution is read, so the stored copy is only a record.
+ * A visitor's keeps the story they were shown; a synthetic creature's follows the current story
+ * generator, so once per server start the stored stories of all synthetic creatures are brought up to date.
+ */
+function refreshSyntheticNarratives() {
+  const database = openDatabase();
+  const rows = database
+    .prepare(
+      `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, synthetic_kind, created_at
+       FROM contributions
+       WHERE is_synthetic = 1`,
+    )
+    .all() as unknown as ContributionRow[];
+  const update = database.prepare("UPDATE contributions SET narrative_json = ? WHERE id = ?");
+  database.exec("BEGIN");
+  try {
+    for (const row of rows) {
+      const narrative = JSON.stringify(deserialize(row).narrative);
+      if (narrative !== row.narrative_json) update.run(narrative, row.id);
+    }
+    database.exec("COMMIT");
+  } catch (error) {
+    database.exec("ROLLBACK");
+    throw error;
+  }
 }
 
 export function listContributions(afterId = 0, limit = 80) {

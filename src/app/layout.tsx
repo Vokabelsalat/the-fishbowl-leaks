@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import "@/app/globals.css";
 import { StoreProvider } from "@/store/StoreProvider";
+import "@/app/globals.css";
 
 export const metadata: Metadata = {
   title: "The Fishbowl Leaks — After Augmented Reality",

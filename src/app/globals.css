@@ -127,8 +127,12 @@ a:focus-visible {
   box-shadow: inset 0 0 0 1px rgba(185, 255, 220, 0.14);
 }
 
-.porthole::before { left: 0.28rem; }
-.porthole::after { right: 0.28rem; }
+.porthole::before {
+  left: 0.28rem;
+}
+.porthole::after {
+  right: 0.28rem;
+}
 
 .porthole-glass {
   position: relative;
@@ -137,8 +141,17 @@ a:focus-visible {
   border: 1px solid rgba(185, 255, 220, 0.5);
   border-radius: 999px;
   background:
-    radial-gradient(circle at center, rgba(185, 255, 220, 0.08) 0 1px, transparent 2px),
-    linear-gradient(145deg, transparent 34%, rgba(232, 245, 239, 0.06) 35%, transparent 38%),
+    radial-gradient(
+      circle at center,
+      rgba(185, 255, 220, 0.08) 0 1px,
+      transparent 2px
+    ),
+    linear-gradient(
+      145deg,
+      transparent 34%,
+      rgba(232, 245, 239, 0.06) 35%,
+      transparent 38%
+    ),
     rgba(3, 16, 21, 0.72);
   box-shadow:
     inset 0 0 2.4rem rgba(185, 255, 220, 0.1),
@@ -179,9 +192,15 @@ a:focus-visible {
   transform: translate(-50%, -50%);
 }
 
-.radar-range-outer { width: 72%; }
-.radar-range-middle { width: 48%; }
-.radar-range-inner { width: 24%; }
+.radar-range-outer {
+  width: 72%;
+}
+.radar-range-middle {
+  width: 48%;
+}
+.radar-range-inner {
+  width: 24%;
+}
 
 .radar-axis {
   top: 50%;
@@ -237,10 +256,25 @@ a:focus-visible {
   animation: radar-contact-pulse 3.4s ease-in-out infinite;
 }
 
-.radar-contact-one { top: 25%; left: 31%; }
-.radar-contact-two { top: 38%; right: 18%; animation-delay: -1.3s; }
-.radar-contact-three { right: 29%; bottom: 23%; animation-delay: -2.1s; }
-.radar-contact-four { bottom: 35%; left: 20%; animation-delay: -2.8s; }
+.radar-contact-one {
+  top: 25%;
+  left: 31%;
+}
+.radar-contact-two {
+  top: 38%;
+  right: 18%;
+  animation-delay: -1.3s;
+}
+.radar-contact-three {
+  right: 29%;
+  bottom: 23%;
+  animation-delay: -2.1s;
+}
+.radar-contact-four {
+  bottom: 35%;
+  left: 20%;
+  animation-delay: -2.8s;
+}
 
 .theme-echo {
   z-index: 3;
@@ -254,25 +288,65 @@ a:focus-visible {
   animation: theme-echo-drift 9s ease-in-out infinite;
 }
 
-.theme-echo-memory { top: 27%; left: 14%; max-width: 7.6rem; }
-.theme-echo-systems { top: 37%; right: 8%; max-width: 8.2rem; animation-delay: -3.8s; }
-.theme-echo-language { bottom: 22%; left: 12%; animation-delay: -6.1s; }
-.theme-echo-dreams { top: 12%; right: 13%; max-width: 8rem; animation-delay: -2.2s; }
-.theme-echo-embodiment { right: 13%; bottom: 13%; max-width: 8.8rem; animation-delay: -7.4s; }
+.theme-echo-memory {
+  top: 27%;
+  left: 14%;
+  max-width: 7.6rem;
+}
+.theme-echo-systems {
+  top: 37%;
+  right: 8%;
+  max-width: 8.2rem;
+  animation-delay: -3.8s;
+}
+.theme-echo-language {
+  bottom: 22%;
+  left: 12%;
+  animation-delay: -6.1s;
+}
+.theme-echo-dreams {
+  top: 12%;
+  right: 13%;
+  max-width: 8rem;
+  animation-delay: -2.2s;
+}
+.theme-echo-embodiment {
+  right: 13%;
+  bottom: 13%;
+  max-width: 8.8rem;
+  animation-delay: -7.4s;
+}
 
 @keyframes radar-scan {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes radar-contact-pulse {
-  0%, 100% { opacity: 0.3; transform: scale(0.7); }
-  45%, 62% { opacity: 1; transform: scale(1.2); }
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+  45%,
+  62% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 @keyframes theme-echo-drift {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(-2deg); }
-  45% { transform: translate3d(0.7rem, -0.45rem, 0) rotate(1deg); }
-  70% { transform: translate3d(-0.25rem, 0.4rem, 0) rotate(0deg); }
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-2deg);
+  }
+  45% {
+    transform: translate3d(0.7rem, -0.45rem, 0) rotate(1deg);
+  }
+  70% {
+    transform: translate3d(-0.25rem, 0.4rem, 0) rotate(0deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -326,16 +400,40 @@ a:focus-visible {
 
 .collective-aurora {
   background:
-    radial-gradient(circle at 18% 70%, rgba(198, 156, 255, 0.08), transparent 28%),
-    radial-gradient(circle at 80% 24%, rgba(88, 214, 255, 0.07), transparent 31%),
-    radial-gradient(circle at 56% 84%, rgba(255, 117, 87, 0.06), transparent 26%);
+    radial-gradient(
+      circle at 18% 70%,
+      rgba(198, 156, 255, 0.08),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 80% 24%,
+      rgba(88, 214, 255, 0.07),
+      transparent 31%
+    ),
+    radial-gradient(
+      circle at 56% 84%,
+      rgba(255, 117, 87, 0.06),
+      transparent 26%
+    );
 }
 
 .biome-field {
   background:
-    radial-gradient(ellipse at 50% -10%, rgba(185, 255, 220, 0.16), transparent 42%),
-    radial-gradient(ellipse at 12% 72%, rgba(62, 146, 153, 0.14), transparent 36%),
-    radial-gradient(ellipse at 88% 66%, rgba(255, 138, 98, 0.1), transparent 34%),
+    radial-gradient(
+      ellipse at 50% -10%,
+      rgba(185, 255, 220, 0.16),
+      transparent 42%
+    ),
+    radial-gradient(
+      ellipse at 12% 72%,
+      rgba(62, 146, 153, 0.14),
+      transparent 36%
+    ),
+    radial-gradient(
+      ellipse at 88% 66%,
+      rgba(255, 138, 98, 0.1),
+      transparent 34%
+    ),
     var(--abyss);
 }
 
@@ -367,8 +465,16 @@ a:focus-visible {
   height: 7rem;
   opacity: 0.72;
   background:
-    radial-gradient(ellipse at 48% 58%, rgba(232, 245, 239, 0.34), transparent 15%),
-    radial-gradient(ellipse at 51% 52%, rgba(185, 255, 220, 0.22), transparent 25%);
+    radial-gradient(
+      ellipse at 48% 58%,
+      rgba(232, 245, 239, 0.34),
+      transparent 15%
+    ),
+    radial-gradient(
+      ellipse at 51% 52%,
+      rgba(185, 255, 220, 0.22),
+      transparent 25%
+    );
   filter: blur(1rem);
   animation: biome-waterline-shimmer 8s ease-in-out infinite alternate;
 }
@@ -379,7 +485,12 @@ a:focus-visible {
   width: 2.8%;
   height: 62%;
   opacity: 0.12;
-  background: linear-gradient(to bottom, rgba(232, 245, 239, 0.64), rgba(185, 255, 220, 0.12) 58%, transparent);
+  background: linear-gradient(
+    to bottom,
+    rgba(232, 245, 239, 0.64),
+    rgba(185, 255, 220, 0.12) 58%,
+    transparent
+  );
   clip-path: polygon(42% 0, 58% 0, 68% 100%, 32% 100%);
   filter: blur(0.35rem);
   transform-origin: 50% 0;
@@ -460,7 +571,12 @@ a:focus-visible {
   inset: 0 -12% auto;
   height: 5.5rem;
   opacity: 0.34;
-  background: repeating-radial-gradient(ellipse at 50% -45%, transparent 0 1.9rem, rgba(232, 245, 239, 0.2) 2rem 2.08rem, transparent 2.2rem 3.7rem);
+  background: repeating-radial-gradient(
+    ellipse at 50% -45%,
+    transparent 0 1.9rem,
+    rgba(232, 245, 239, 0.2) 2rem 2.08rem,
+    transparent 2.2rem 3.7rem
+  );
   filter: blur(1px);
   animation: biome-surface-glimmer 7s linear infinite;
 }
@@ -520,9 +636,21 @@ a:focus-visible {
   border-radius: 50% 50% 0 0;
   opacity: 0.58;
   background:
-    radial-gradient(ellipse at 23% 25%, rgba(185, 255, 220, 0.18), transparent 16%),
-    radial-gradient(ellipse at 71% 18%, rgba(255, 138, 98, 0.16), transparent 13%),
-    radial-gradient(ellipse at 48% 44%, rgba(62, 146, 153, 0.3), transparent 37%);
+    radial-gradient(
+      ellipse at 23% 25%,
+      rgba(185, 255, 220, 0.18),
+      transparent 16%
+    ),
+    radial-gradient(
+      ellipse at 71% 18%,
+      rgba(255, 138, 98, 0.16),
+      transparent 13%
+    ),
+    radial-gradient(
+      ellipse at 48% 44%,
+      rgba(62, 146, 153, 0.3),
+      transparent 37%
+    );
   filter: blur(1.2rem);
   transform: translateY(calc(var(--tank-progress, 0) * 3vh));
 }
@@ -539,9 +667,20 @@ a:focus-visible {
   animation: biome-caustic-sway 14s ease-in-out infinite alternate;
 }
 
-.biome-caustic-one { left: 22%; transform: rotate(13deg); }
-.biome-caustic-two { left: 51%; animation-delay: -5s; transform: rotate(-9deg); }
-.biome-caustic-three { right: 19%; animation-delay: -9s; transform: rotate(16deg); }
+.biome-caustic-one {
+  left: 22%;
+  transform: rotate(13deg);
+}
+.biome-caustic-two {
+  left: 51%;
+  animation-delay: -5s;
+  transform: rotate(-9deg);
+}
+.biome-caustic-three {
+  right: 19%;
+  animation-delay: -9s;
+  transform: rotate(16deg);
+}
 
 .biome-bloom {
   position: absolute;
@@ -577,51 +716,109 @@ a:focus-visible {
   border-radius: 50%;
   opacity: 0.36;
   background: var(--foam);
-  animation: biome-snow-fall var(--snow-duration) linear var(--snow-delay) infinite;
+  animation: biome-snow-fall var(--snow-duration) linear var(--snow-delay)
+    infinite;
 }
 
 @keyframes biome-current-drift {
-  from { translate: -3vw -1vh; scale: 0.94 1; }
-  to { translate: 7vw 2vh; scale: 1.1 0.82; }
+  from {
+    translate: -3vw -1vh;
+    scale: 0.94 1;
+  }
+  to {
+    translate: 7vw 2vh;
+    scale: 1.1 0.82;
+  }
 }
 
 @keyframes biome-waterline-shimmer {
-  from { transform: translateX(-2%) scaleX(0.96); opacity: 0.48; }
-  to { transform: translateX(3%) scaleX(1.05); opacity: 0.78; }
+  from {
+    transform: translateX(-2%) scaleX(0.96);
+    opacity: 0.48;
+  }
+  to {
+    transform: translateX(3%) scaleX(1.05);
+    opacity: 0.78;
+  }
 }
 
 @keyframes biome-sunlight-appear {
-  0%, 18% { opacity: 0; }
-  34%, 54% { opacity: 1; }
-  72%, 100% { opacity: 0; }
+  0%,
+  18% {
+    opacity: 0;
+  }
+  34%,
+  54% {
+    opacity: 1;
+  }
+  72%,
+  100% {
+    opacity: 0;
+  }
 }
 
 @keyframes biome-sunray-shimmer {
-  from { translate: -0.35vw 0; scale: 0.92 0.98; opacity: 0.05; }
-  48% { opacity: 0.14; }
-  to { translate: 0.45vw 0; scale: 1.06 1.02; opacity: 0.08; }
+  from {
+    translate: -0.35vw 0;
+    scale: 0.92 0.98;
+    opacity: 0.05;
+  }
+  48% {
+    opacity: 0.14;
+  }
+  to {
+    translate: 0.45vw 0;
+    scale: 1.06 1.02;
+    opacity: 0.08;
+  }
 }
 
 @keyframes biome-surface-glimmer {
-  from { transform: translateX(-3%) scaleX(0.98); }
-  to { transform: translateX(3%) scaleX(1.03); }
+  from {
+    transform: translateX(-3%) scaleX(0.98);
+  }
+  to {
+    transform: translateX(3%) scaleX(1.03);
+  }
 }
 
 @keyframes biome-caustic-sway {
-  from { rotate: -4deg; scale: 1 0.9; opacity: 0.06; }
-  to { rotate: 7deg; scale: 1 1.12; opacity: 0.18; }
+  from {
+    rotate: -4deg;
+    scale: 1 0.9;
+    opacity: 0.06;
+  }
+  to {
+    rotate: 7deg;
+    scale: 1 1.12;
+    opacity: 0.18;
+  }
 }
 
 @keyframes biome-breathe {
-  from { transform: scale(0.82) translateY(0); }
-  to { transform: scale(1.18) translateY(-1.2rem); }
+  from {
+    transform: scale(0.82) translateY(0);
+  }
+  to {
+    transform: scale(1.18) translateY(-1.2rem);
+  }
 }
 
 @keyframes biome-snow-fall {
-  from { transform: translate3d(0, -4vh, 0); opacity: 0; }
-  12% { opacity: 0.38; }
-  86% { opacity: 0.24; }
-  to { transform: translate3d(3vw, 104vh, 0); opacity: 0; }
+  from {
+    transform: translate3d(0, -4vh, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.38;
+  }
+  86% {
+    opacity: 0.24;
+  }
+  to {
+    transform: translate3d(3vw, 104vh, 0);
+    opacity: 0;
+  }
 }
 
 .collective-swim-field {
@@ -643,10 +840,28 @@ a:focus-visible {
  */
 .collective-wall.biome-field {
   background:
-    radial-gradient(ellipse at 50% -12%, rgba(220, 255, 226, 0.4), transparent 46%),
-    radial-gradient(ellipse at 14% 70%, rgba(120, 210, 120, 0.2), transparent 38%),
-    radial-gradient(ellipse at 86% 62%, rgba(255, 170, 110, 0.14), transparent 34%),
-    linear-gradient(to bottom, #2c8a6c 0%, #1d6f58 34%, #145645 68%, #0d3f35 100%);
+    radial-gradient(
+      ellipse at 50% -12%,
+      rgba(220, 255, 226, 0.4),
+      transparent 46%
+    ),
+    radial-gradient(
+      ellipse at 14% 70%,
+      rgba(120, 210, 120, 0.2),
+      transparent 38%
+    ),
+    radial-gradient(
+      ellipse at 86% 62%,
+      rgba(255, 170, 110, 0.14),
+      transparent 34%
+    ),
+    linear-gradient(
+      to bottom,
+      #2c8a6c 0%,
+      #1d6f58 34%,
+      #145645 68%,
+      #0d3f35 100%
+    );
 }
 
 /* The blue aquarium's water, over the green. */
@@ -657,10 +872,28 @@ a:focus-visible {
   content: "";
   opacity: var(--tank-blue, 1);
   background:
-    radial-gradient(ellipse at 50% -12%, rgba(196, 246, 255, 0.42), transparent 46%),
-    radial-gradient(ellipse at 14% 70%, rgba(40, 190, 200, 0.22), transparent 38%),
-    radial-gradient(ellipse at 86% 62%, rgba(255, 140, 110, 0.16), transparent 34%),
-    linear-gradient(to bottom, #0f6f93 0%, #0a5677 34%, #07405e 68%, #052f47 100%);
+    radial-gradient(
+      ellipse at 50% -12%,
+      rgba(196, 246, 255, 0.42),
+      transparent 46%
+    ),
+    radial-gradient(
+      ellipse at 14% 70%,
+      rgba(40, 190, 200, 0.22),
+      transparent 38%
+    ),
+    radial-gradient(
+      ellipse at 86% 62%,
+      rgba(255, 140, 110, 0.16),
+      transparent 34%
+    ),
+    linear-gradient(
+      to bottom,
+      #0f6f93 0%,
+      #0a5677 34%,
+      #07405e 68%,
+      #052f47 100%
+    );
   transition: opacity 2.4s ease;
 }
 
@@ -668,17 +901,28 @@ a:focus-visible {
 .tank-open-sea {
   opacity: var(--tank-sea, 1);
   background:
-    radial-gradient(ellipse at 50% -10%, rgba(185, 255, 220, 0.16), transparent 42%),
-    radial-gradient(ellipse at 12% 72%, rgba(62, 146, 153, 0.14), transparent 36%),
-    radial-gradient(ellipse at 88% 66%, rgba(255, 138, 98, 0.1), transparent 34%),
+    radial-gradient(
+      ellipse at 50% -10%,
+      rgba(185, 255, 220, 0.16),
+      transparent 42%
+    ),
+    radial-gradient(
+      ellipse at 12% 72%,
+      rgba(62, 146, 153, 0.14),
+      transparent 36%
+    ),
+    radial-gradient(
+      ellipse at 88% 66%,
+      rgba(255, 138, 98, 0.1),
+      transparent 34%
+    ),
     var(--abyss);
   transition: opacity 2.4s ease;
 }
 
 /* Creatures and plants are drawn their stored colours; the aquarium makes them more vivid. */
 .collective-wall .collective-swim-field {
-  filter:
-    saturate(calc(1.4 - 0.4 * var(--tank-sea, 1)))
+  filter: saturate(calc(1.4 - 0.4 * var(--tank-sea, 1)))
     brightness(calc(1.05 - 0.05 * var(--tank-sea, 1)));
   transition: filter 2.4s ease;
 }
@@ -704,14 +948,26 @@ a:focus-visible {
 }
 
 @media (min-width: 801px) and (max-width: 1100px) {
-  .collective-recents-grid { grid-template-columns: minmax(0, 1fr); }
-  .collective-recents-previous { display: none; }
-  .collective-recents-latest { border-right: 0; padding-right: 0; }
+  .collective-recents-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .collective-recents-previous {
+    display: none;
+  }
+  .collective-recents-latest {
+    border-right: 0;
+    padding-right: 0;
+  }
 }
 
 @media (max-width: 600px) {
-  .collective-recents .collective-recents-latest { grid-template-columns: minmax(0, 1fr); padding-left: 1rem; }
-  .collective-recents-latest > .aspect-square { display: none; }
+  .collective-recents .collective-recents-latest {
+    grid-template-columns: minmax(0, 1fr);
+    padding-left: 1rem;
+  }
+  .collective-recents-latest > .aspect-square {
+    display: none;
+  }
 }
 
 /* The tank's compartments; they break open as the day's creatures arrive (--tank-breakdown, 0 to 1). */
@@ -728,7 +984,11 @@ a:focus-visible {
   top: 0;
   bottom: 0;
   overflow: hidden;
-  background: radial-gradient(circle at 30% 36%, var(--compartment-glow), transparent 42%);
+  background: radial-gradient(
+    circle at 30% 36%,
+    var(--compartment-glow),
+    transparent 42%
+  );
 }
 
 /* Labelled at the bottom, clear of the title and view switch along the top. */
@@ -814,10 +1074,15 @@ a:focus-visible {
   border-radius: 50%;
   opacity: var(--wall-open);
   background: rgba(185, 255, 220, 0.19);
-  box-shadow: 0 0 calc(0.5rem + var(--wall-open) * 2rem) rgba(185, 255, 220, 0.35);
+  box-shadow: 0 0 calc(0.5rem + var(--wall-open) * 2rem)
+    rgba(185, 255, 220, 0.35);
   filter: blur(calc(var(--wall-open) * 0.4rem));
   transform: translate(-50%, -50%) scale(calc(0.25 + var(--wall-open) * 0.75));
-  transition: opacity 2.4s ease, width 2.4s ease, height 2.4s ease, transform 2.4s ease;
+  transition:
+    opacity 2.4s ease,
+    width 2.4s ease,
+    height 2.4s ease,
+    transform 2.4s ease;
 }
 
 .compartment-flows {
@@ -836,14 +1101,41 @@ a:focus-visible {
   animation: compartment-flow 11s ease-in-out infinite alternate;
 }
 
-.compartment-flows span:nth-child(1) { left: 22%; top: 31%; transform: rotate(-20deg); }
-.compartment-flows span:nth-child(2) { right: 18%; top: 38%; animation-delay: -3s; transform: rotate(18deg); background: rgba(88, 214, 255, 0.14); }
-.compartment-flows span:nth-child(3) { left: 31%; bottom: 22%; animation-delay: -6s; transform: rotate(27deg); background: rgba(255, 138, 98, 0.12); }
-.compartment-flows span:nth-child(4) { right: 29%; bottom: 18%; animation-delay: -8s; transform: rotate(-12deg); }
+.compartment-flows span:nth-child(1) {
+  left: 22%;
+  top: 31%;
+  transform: rotate(-20deg);
+}
+.compartment-flows span:nth-child(2) {
+  right: 18%;
+  top: 38%;
+  animation-delay: -3s;
+  transform: rotate(18deg);
+  background: rgba(88, 214, 255, 0.14);
+}
+.compartment-flows span:nth-child(3) {
+  left: 31%;
+  bottom: 22%;
+  animation-delay: -6s;
+  transform: rotate(27deg);
+  background: rgba(255, 138, 98, 0.12);
+}
+.compartment-flows span:nth-child(4) {
+  right: 29%;
+  bottom: 18%;
+  animation-delay: -8s;
+  transform: rotate(-12deg);
+}
 
 @keyframes compartment-flow {
-  from { translate: -2vw -1vh; scale: 0.72 0.8; }
-  to { translate: 4vw 2vh; scale: 1.18 1.05; }
+  from {
+    translate: -2vw -1vh;
+    scale: 0.72 0.8;
+  }
+  to {
+    translate: 4vw 2vh;
+    scale: 1.18 1.05;
+  }
 }
 
 .tank-time-slider {
@@ -884,24 +1176,45 @@ a:focus-visible {
 }
 
 @keyframes collective-float {
-  0%, 100% { transform: translate3d(-50%, -50%, 0) rotate(-2deg); }
-  33% { transform: translate3d(calc(-50% + 26px), calc(-50% - 18px), 0) rotate(2deg); }
-  66% { transform: translate3d(calc(-50% - 18px), calc(-50% + 20px), 0) rotate(-1deg); }
+  0%,
+  100% {
+    transform: translate3d(-50%, -50%, 0) rotate(-2deg);
+  }
+  33% {
+    transform: translate3d(calc(-50% + 26px), calc(-50% - 18px), 0) rotate(2deg);
+  }
+  66% {
+    transform: translate3d(calc(-50% - 18px), calc(-50% + 20px), 0)
+      rotate(-1deg);
+  }
 }
 
 .collective-fragment {
-  animation: collective-float var(--float-duration, 24s) ease-in-out var(--float-delay, 0s) infinite;
+  animation: collective-float var(--float-duration, 24s) ease-in-out
+    var(--float-delay, 0s) infinite;
   filter: saturate(1.2);
 }
 
 @keyframes arrival-stage {
-  0%, 90% { opacity: 1; }
-  100% { opacity: 0; }
+  0%,
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 @keyframes arrival-story {
-  0% { opacity: 0; transform: translateY(16px); }
-  10%, 100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  10%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* An arrival lasts --arrival-duration, which is shorter while other visitors wait for theirs. */
@@ -969,7 +1282,8 @@ a:focus-visible {
 
 .creature-reveal-stage {
   isolation: isolate;
-  transition: height 900ms cubic-bezier(0.22, 1, 0.36, 1),
+  transition:
+    height 900ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -988,7 +1302,9 @@ a:focus-visible {
   position: absolute;
   inset: 0;
   z-index: 2;
-  transition: filter 700ms ease, opacity 700ms ease;
+  transition:
+    filter 700ms ease,
+    opacity 700ms ease;
 }
 
 .creature-reveal-stage[data-phase="assembling"] .creature-reveal-model,
@@ -1021,7 +1337,12 @@ a:focus-visible {
   aspect-ratio: 1;
   border-radius: 50%;
   opacity: 0.18;
-  background: radial-gradient(circle, rgba(185, 255, 220, 0.42), rgba(88, 214, 255, 0.12) 42%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(185, 255, 220, 0.42),
+    rgba(88, 214, 255, 0.12) 42%,
+    transparent 70%
+  );
   filter: blur(1rem);
   transform: translate(-50%, -50%);
 }
@@ -1052,8 +1373,16 @@ a:focus-visible {
   animation: creature-ring 2.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.creature-reveal-stage[data-phase="formation"] .creature-reveal-rings i:nth-child(2) { animation-delay: 380ms; }
-.creature-reveal-stage[data-phase="formation"] .creature-reveal-rings i:nth-child(3) { animation-delay: 760ms; }
+.creature-reveal-stage[data-phase="formation"]
+  .creature-reveal-rings
+  i:nth-child(2) {
+  animation-delay: 380ms;
+}
+.creature-reveal-stage[data-phase="formation"]
+  .creature-reveal-rings
+  i:nth-child(3) {
+  animation-delay: 760ms;
+}
 
 .creature-reveal-status {
   animation: reveal-status-in 600ms ease-out both;
@@ -1065,39 +1394,90 @@ a:focus-visible {
 }
 
 @keyframes specimen-preview-update {
-  0% { opacity: 0.45; transform: scale(0.78); filter: brightness(1.7); }
-  55% { opacity: 1; transform: scale(1.12); }
-  100% { opacity: 1; transform: scale(1); filter: brightness(1); }
+  0% {
+    opacity: 0.45;
+    transform: scale(0.78);
+    filter: brightness(1.7);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
 }
 
 @keyframes creature-arrive {
-  from { opacity: 0; transform: scale(0.35); filter: blur(6px) brightness(1.6); }
-  45% { opacity: 1; }
-  to { opacity: 1; transform: scale(1); filter: blur(0) brightness(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.35);
+    filter: blur(6px) brightness(1.6);
+  }
+  45% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0) brightness(1);
+  }
 }
 
 @keyframes creature-grow {
-  0% { filter: brightness(0.85) saturate(0.8); }
-  32% { filter: brightness(1.45) saturate(1.35); }
-  58% { filter: brightness(1.12) saturate(1.15); }
-  100% { filter: brightness(1) saturate(1); }
+  0% {
+    filter: brightness(0.85) saturate(0.8);
+  }
+  32% {
+    filter: brightness(1.45) saturate(1.35);
+  }
+  58% {
+    filter: brightness(1.12) saturate(1.15);
+  }
+  100% {
+    filter: brightness(1) saturate(1);
+  }
 }
 
 @keyframes creature-halo {
-  0% { opacity: 0.12; transform: translate(-50%, -50%) scale(0.55); }
-  38% { opacity: 0.72; }
-  100% { opacity: 0.18; transform: translate(-50%, -50%) scale(1.2); }
+  0% {
+    opacity: 0.12;
+    transform: translate(-50%, -50%) scale(0.55);
+  }
+  38% {
+    opacity: 0.72;
+  }
+  100% {
+    opacity: 0.18;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
 }
 
 @keyframes creature-ring {
-  0% { inset: 44%; opacity: 0; }
-  18% { opacity: 0.65; }
-  100% { inset: 2%; opacity: 0; }
+  0% {
+    inset: 44%;
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.65;
+  }
+  100% {
+    inset: 2%;
+    opacity: 0;
+  }
 }
 
 @keyframes reveal-status-in {
-  from { opacity: 0; transform: translateY(0.5rem); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1195,9 +1575,21 @@ a:focus-visible {
 /* Poster: a warm glow behind the left of the cast and a cold one behind the right. */
 .creature-poster-light {
   background:
-    radial-gradient(ellipse 62% 48% at 14% 28%, rgb(255 117 87 / 0.5), transparent 70%),
-    radial-gradient(ellipse 62% 52% at 88% 30%, rgb(88 214 255 / 0.46), transparent 70%),
-    radial-gradient(ellipse 45% 30% at 48% 48%, rgb(185 255 220 / 0.28), transparent 75%);
+    radial-gradient(
+      ellipse 62% 48% at 14% 28%,
+      rgb(255 117 87 / 0.5),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 62% 52% at 88% 30%,
+      rgb(88 214 255 / 0.46),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 45% 30% at 48% 48%,
+      rgb(185 255 220 / 0.28),
+      transparent 75%
+    );
   mix-blend-mode: screen;
 }
 
@@ -1211,7 +1603,12 @@ a:focus-visible {
 }
 
 .creature-poster-fade {
-  background: linear-gradient(to bottom, transparent, rgb(3 16 21 / 0.82) 55%, var(--abyss));
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgb(3 16 21 / 0.82) 55%,
+    var(--abyss)
+  );
 }
 
 /* The exhibition's A4 tutorial sheet, the same size on screen as in its exported PDF. */

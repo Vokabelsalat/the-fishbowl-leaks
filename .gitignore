@@ -34,3 +34,7 @@ certificates
 
 # print exports (npm run targets:print)
 /print/
+
+# trailer recordings (scripts/trailer)
+/scripts/trailer/node_modules/
+/scripts/trailer/work/

@@ -39,4 +39,4 @@ have the mating scale up when less contributions occurr
 come up with a menu of artifacts which collapses or groups under different themes
 we have to update the heatmap
 
-
+The narwhal still has the uggly side fin (in the synthetic test data set?)

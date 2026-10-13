@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { CollectiveVisualizationField } from "@/components/collective/CollectiveVisualizationField";
 import { tankOrbitMilliseconds, type CreatureArrival } from "@/components/collective/CollectiveCreatureField";
+import { worldEventIds, worldEventLabels, type WorldEventId, type WorldEventRequest } from "@/components/collective/WorldEvents";
 import { CollectiveHeatmap } from "@/components/collective/CollectiveHeatmap";
 import { AquariumAudio } from "@/components/collective/AquariumAudio";
 import { SpecimenDialog } from "@/components/collective/SpecimenDialog";
@@ -116,6 +117,9 @@ export function CollectiveWall({ initialView = "collective" }: {
   // Development only: each request circles the view once around the tank.
   const [orbitRequest, setOrbitRequest] = useState(0);
   const [orbiting, setOrbiting] = useState(false);
+  // Development only: which world event the debug controls fire next, and the last request.
+  const [chosenWorldEvent, setChosenWorldEvent] = useState<WorldEventId>(worldEventIds[0]);
+  const [worldEventRequest, setWorldEventRequest] = useState<WorldEventRequest | null>(null);
   const [dayCreatureCount, setDayCreatureCount] = useState(0);
   const latestId = useRef(0);
   const initialized = useRef(false);
@@ -377,6 +381,7 @@ export function CollectiveWall({ initialView = "collective" }: {
             reduceGeometryDetail
             meshQuality={meshQuality}
             orbitRequest={orbitRequest}
+            worldEventRequest={worldEventRequest}
           />
         </div>
       ) : (
@@ -435,6 +440,27 @@ export function CollectiveWall({ initialView = "collective" }: {
                 >
                   Test an arrival
                 </button>
+              )}
+              {isDevelopment && (
+                <span className="flex items-center gap-3">
+                  <select
+                    aria-label="World event to fire"
+                    value={chosenWorldEvent}
+                    onChange={(event) => setChosenWorldEvent(event.target.value as WorldEventId)}
+                    className="cursor-pointer bg-transparent text-white/70 transition-colors hover:text-white"
+                  >
+                    {worldEventIds.map((id) => (
+                      <option key={id} value={id} className="bg-[var(--abyss)]">{worldEventLabels[id]}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="transition-colors hover:text-white/70"
+                    onClick={() => setWorldEventRequest((request) => ({ id: chosenWorldEvent, nonce: (request?.nonce ?? 0) + 1 }))}
+                  >
+                    Fire event
+                  </button>
+                </span>
               )}
               <MeshQualityControl quality={meshQuality} onChange={setMeshQuality} />
               <span ref={renderStatsRef} aria-hidden="true" />

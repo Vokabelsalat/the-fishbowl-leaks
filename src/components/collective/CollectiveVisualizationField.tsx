@@ -5,6 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { memo, useMemo, useRef, type CSSProperties } from "react";
 import * as THREE from "three";
 import { CollectiveCreatureField, type CreatureArrival } from "@/components/collective/CollectiveCreatureField";
+import type { WorldEventRequest } from "@/components/collective/WorldEvents";
 import { AbstractCreatureModel } from "@/components/visualization/AbstractCreatureCanvas";
 import { NetworkGlyph } from "@/components/visualization/NetworkGlyph";
 import { RenderStats, type RenderStatsReport } from "@/components/development/RenderStats";
@@ -125,6 +126,7 @@ function VisualizationField({
   reduceGeometryDetail = false,
   meshQuality = 1,
   orbitRequest,
+  worldEventRequest,
 }: {
   contributions: ExhibitionContribution[];
   progress?: number;
@@ -133,6 +135,8 @@ function VisualizationField({
   arrival?: CreatureArrival | null;
   /** Each change circles the view once around the 3D aquarium. */
   orbitRequest?: number;
+  /** Each change starts the requested world event in the 3D aquarium. */
+  worldEventRequest?: WorldEventRequest | null;
   onSelectContribution?: (contribution: ExhibitionContribution) => void;
   /** Merges each creature's still parts into a few meshes in the 3D aquarium. */
   mergeStaticMeshes?: boolean;
@@ -163,6 +167,7 @@ function VisualizationField({
       reduceGeometryDetail={reduceGeometryDetail}
       meshQuality={meshQuality}
       orbitRequest={orbitRequest}
+      worldEventRequest={worldEventRequest}
     />
   );
 }

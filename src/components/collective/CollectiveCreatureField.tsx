@@ -9,6 +9,7 @@ import { GeometryDetailReducer } from "@/components/creature/GeometryDetailReduc
 import { StaticMeshMerger } from "@/components/creature/StaticMeshMerger";
 import { TankMeshBatches } from "@/components/creature/MeshBatcher";
 import { AquariumDioramaPlants } from "@/components/collective/AquariumDioramaPlants";
+import { WorldEvents, type WorldEventRequest } from "@/components/collective/WorldEvents";
 import { creatureSizeScale, creatureSpeedFactor, creatureSpeedHoldSeconds, type AquaticForm } from "@/lib/creature/aquaticForms";
 import { creatureColorPalette } from "@/lib/creature/colorPalettes";
 import { creaturePattern, patternForTraitCount } from "@/lib/creature/patterns";
@@ -1304,6 +1305,7 @@ export function CollectiveCreatureField({
   reduceGeometryDetail = false,
   meshQuality = 1,
   orbitRequest = 0,
+  worldEventRequest,
 }: {
   contributions: ExhibitionContribution[];
   progress?: number;
@@ -1323,6 +1325,8 @@ export function CollectiveCreatureField({
   meshQuality?: number;
   /** Each change circles the view once around the tank. */
   orbitRequest?: number;
+  /** Each change starts the requested world event at once; others also happen on their own. */
+  worldEventRequest?: WorldEventRequest | null;
 }) {
   const [babies, setBabies] = useState<BabyCreature[]>([]);
   // Starts sharp; the monitor lowers the resolution while the frame rate stays low, and raises it again once it recovers.
@@ -1455,6 +1459,7 @@ export function CollectiveCreatureField({
           ))}
           <AquariumDioramaPlants layer="front" />
         </TankMeshBatches>
+        <WorldEvents request={worldEventRequest} />
       </TankOrbit>
     </Canvas>
   );

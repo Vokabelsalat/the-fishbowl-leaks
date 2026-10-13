@@ -5,6 +5,7 @@ import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import * as THREE from "three";
 import { AquariumPlant, editorPlantSpecs, plantKindLabels, plantKinds, type PlantKind } from "@/components/collective/AquariumDioramaPlants";
+import { WorldEventModel, worldEventIds, worldEventLabels, worldEventStillAges, type WorldEventId } from "@/components/collective/WorldEvents";
 import { AquaticCreatureModel } from "@/components/creature/AquaticCreatureModel";
 import { AquaticAddon, TraitPreviewContext, type TraitMount } from "@/components/creature/AquaticModelShared";
 import { caudalTailShapes, dorsalFinStyles, pectoralFinStyles, pelvicFinStyles } from "@/components/creature/CreatureModel";
@@ -14,6 +15,7 @@ import type { CreaturePiece } from "@/components/creature/CreatureModel";
 import { clearCreatureModelOverrides, loadCreatureModelOverrides, meshKey, saveCreatureModelOverrides, type SavedNodeTransform } from "@/lib/creature/modelOverrides";
 import { clearPlantModelOverrides, savePlantModelOverrides } from "@/lib/creature/plantOverrides";
 import { clearAddonModelOverrides, saveAddonModelOverrides } from "@/lib/creature/addonOverrides";
+import { clearWorldEventOverrides, saveWorldEventOverrides } from "@/lib/creature/worldEventOverrides";
 import type { CreaturePartId } from "@/types/exhibition";
 
 type ProductionShape = {
@@ -123,13 +125,14 @@ function initialShapes() {
   }])) as Record<string, EditedShape>;
 }
 
-type EditorView = "models" | "addons" | "shapes" | "plants";
+type EditorView = "models" | "addons" | "shapes" | "plants" | "events";
 
 const editorViews: Array<{ view: EditorView; label: string }> = [
   { view: "models", label: "Creature models" },
   { view: "addons", label: "Add-ons" },
   { view: "shapes", label: "Bézier shapes" },
   { view: "plants", label: "Plants" },
+  { view: "events", label: "World events" },
 ];
 
 function EditorViewLinks({ current, onShow }: { current: EditorView; onShow: (view: EditorView) => void }) {
@@ -147,6 +150,7 @@ export function CreatureShapeEditor() {
   if (view === "models") return <AquaticModelEditor onShow={setView} />;
   if (view === "addons") return <AddonModelEditor onShow={setView} />;
   if (view === "shapes") return <ProductionShapeEditor onShow={setView} />;
+  if (view === "events") return <WorldEventModelEditor onShow={setView} />;
   return <PlantModelEditor onShow={setView} />;
 }
 
@@ -800,6 +804,221 @@ function PlantModelEditor({ onShow }: { onShow: (view: EditorView) => void }) {
             </>
           ) : (
             <div><h2 className="font-display text-xl">Plant controls</h2><p className="mt-3 text-sm leading-relaxed text-white/45">Select a visible stem, blade, leaf, tip, or base in the plant to expose its construction and transforms.</p></div>
+          )}
+        </aside>
+      </div>
+    </main>
+  );
+}
+
+/** Where the camera looks and how close it is for each world event's model, which differ a lot in size. */
+const worldEventFraming: Record<WorldEventId, { x: number; y: number; zoom: number }> = {
+  mermaid: { x: -0.55, y: 0.25, zoom: 170 },
+  boat: { x: -0.2, y: -0.1, zoom: 70 },
+  kraken: { x: 0, y: 2, zoom: 55 },
+  shark: { x: -0.4, y: 0.1, zoom: 80 },
+  sardines: { x: 0, y: 0, zoom: 600 },
+  sardineCan: { x: 0, y: 0, zoom: 260 },
+  fishingHook: { x: 0.05, y: -0.2, zoom: 200 },
+  fishSticks: { x: 0, y: 0, zoom: 500 },
+};
+
+function WorldEventModelEditor({ onShow }: { onShow: (view: EditorView) => void }) {
+  const [eventId, setEventId] = useState<WorldEventId>(worldEventIds[0]);
+  const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [transform, setTransform] = useState<NodeTransform | null>(null);
+  const [pending, setPending] = useState<Record<string, SavedNodeTransform>>({});
+  const [saveStatus, setSaveStatus] = useState("Saved changes are used whenever this event happens in the aquarium.");
+  const [hiddenFeatures, setHiddenFeatures] = useState<HiddenFeature[]>([]);
+  const [modelRevision, setModelRevision] = useState(0);
+  const modelRootRef = useRef<THREE.Group>(null);
+  const initialTransforms = useRef(new Map<string, NodeTransform>());
+  const framing = worldEventFraming[eventId];
+
+  const clearSelection = () => {
+    setSelectedObject(null);
+    setSelectedKey(null);
+    setTransform(null);
+  };
+
+  const selectObject = (object: THREE.Object3D) => {
+    const key = modelRootRef.current ? meshKey(modelRootRef.current, object) : null;
+    const next = readTransform(object);
+    if (!initialTransforms.current.has(object.uuid)) initialTransforms.current.set(object.uuid, next);
+    setSelectedObject(object);
+    setSelectedKey(key);
+    setTransform(next);
+  };
+
+  const updateTransform = (changes: Partial<NodeTransform>) => {
+    if (!selectedObject || !transform) return;
+    const next = { ...transform, ...changes };
+    selectedObject.position.set(next.x, next.y, next.z);
+    selectedObject.scale.set(next.scaleX, next.scaleY, next.scaleZ);
+    selectedObject.rotation.set(
+      THREE.MathUtils.degToRad(next.rotationX),
+      THREE.MathUtils.degToRad(next.rotationY),
+      THREE.MathUtils.degToRad(next.rotationZ),
+    );
+    setTransform(next);
+    if (selectedKey) {
+      setPending((current) => ({ ...current, [selectedKey]: next }));
+      setSaveStatus("Unsaved changes");
+    }
+  };
+
+  const resetNode = () => {
+    if (!selectedObject) return;
+    const initial = initialTransforms.current.get(selectedObject.uuid);
+    if (initial) updateTransform(initial);
+  };
+
+  const setFeatureVisibility = (key: string, visible: boolean) => {
+    if (!modelRootRef.current) return;
+    let meshIndex = 0;
+    modelRootRef.current.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      if (`mesh-${meshIndex}` === key) object.visible = visible;
+      meshIndex += 1;
+    });
+  };
+
+  const hideSelectedFeature = () => {
+    if (!selectedObject || !selectedKey) return;
+    const label = selectedObject.name || `${selectedObject.type} · ${selectedKey}`;
+    setFeatureVisibility(selectedKey, false);
+    setHiddenFeatures((current) => current.some((feature) => feature.key === selectedKey)
+      ? current
+      : [...current, { key: selectedKey, label }]);
+    clearSelection();
+  };
+
+  const showFeature = (key: string) => {
+    setFeatureVisibility(key, true);
+    setHiddenFeatures((current) => current.filter((feature) => feature.key !== key));
+  };
+
+  const showAllFeatures = () => {
+    hiddenFeatures.forEach((feature) => setFeatureVisibility(feature.key, true));
+    setHiddenFeatures([]);
+  };
+
+  const changeEvent = (nextEvent: WorldEventId) => {
+    setEventId(nextEvent);
+    clearSelection();
+    setPending({});
+    setHiddenFeatures([]);
+    setSaveStatus("Saved changes are used whenever this event happens in the aquarium.");
+    initialTransforms.current.clear();
+  };
+
+  const geometry = selectedObject instanceof THREE.Mesh ? selectedObject.geometry : null;
+  const construction = geometry
+    ? JSON.stringify({ type: geometry.type, parameters: geometry.parameters ?? {} }, null, 2)
+    : "Select a visible part of the model to inspect its geometry.";
+
+  return (
+    <main className="shape-editor film-grain min-h-dvh bg-[var(--abyss)] text-[var(--foam)]">
+      <header className="shape-editor-header flex items-end justify-between border-b border-white/15 px-8 py-6 lg:px-10">
+        <div>
+          <h1 className="font-display text-3xl tracking-[-0.035em]">World event models</h1>
+          <p className="mt-1 text-sm text-white/48">The aquarium&apos;s world events rendered directly through WorldEvents.tsx, held still at a typical moment.</p>
+        </div>
+        <div className="flex items-center gap-5">
+          <p className="font-mono text-xs text-white/40">Click a mesh to edit it</p>
+          <EditorViewLinks current="events" onShow={onShow} />
+        </div>
+      </header>
+
+      <div className="shape-editor-workspace grid min-h-0 grid-cols-[17rem_minmax(0,1fr)_22rem]">
+        <nav className="min-h-0 overflow-y-auto border-r border-white/15 px-4 py-5" aria-label="World event models">
+          <h2 className="mb-4 px-3 font-display text-lg">World events</h2>
+          <ul className="space-y-1">
+            {worldEventIds.map((item) => (
+              <li key={item}>
+                <button type="button" className={`w-full px-3 py-2.5 text-left text-sm transition-colors ${eventId === item ? "bg-white/10 text-white" : "text-white/55 hover:bg-white/5 hover:text-white/80"}`} onClick={() => changeEvent(item)}>
+                  {worldEventLabels[item]}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <section className="shape-editor-stage min-w-0 px-6 py-5 lg:px-8" aria-label={`${worldEventLabels[eventId]} model canvas`}>
+          <div className="mb-4">
+            <p className="text-sm text-white/42">WorldEvents.tsx</p>
+            <h2 className="font-display text-2xl">{worldEventLabels[eventId]}</h2>
+          </div>
+          <div className="shape-editor-canvas relative overflow-hidden border border-white/18 bg-black/20">
+            <Canvas key={eventId} orthographic camera={{ position: [framing.x, framing.y, 10], zoom: framing.zoom, near: 0.1, far: 40 }} dpr={[1, 1.5]} onPointerMissed={clearSelection}>
+              <color attach="background" args={["#06151b"]} />
+              <ambientLight intensity={1.8} />
+              <directionalLight position={[3, 5, 8]} intensity={2.6} color="#fff4df" />
+              <pointLight position={[-4, 2, 5]} intensity={2.2} color="#58d6ff" />
+              <group
+                key={`${eventId}-${modelRevision}`}
+                ref={modelRootRef}
+                onPointerDown={(event: ThreeEvent<PointerEvent>) => {
+                  event.stopPropagation();
+                  selectObject(event.object);
+                }}
+              >
+                <WorldEventModel id={eventId} seed={1} onDone={() => undefined} still={worldEventStillAges[eventId]} />
+              </group>
+              {selectedObject instanceof THREE.Mesh && <SelectedMeshBlink object={selectedObject} />}
+              <OrbitControls enablePan enableRotate enableZoom target={[framing.x, framing.y, 0]} minZoom={framing.zoom * 0.3} maxZoom={framing.zoom * 3} />
+            </Canvas>
+          </div>
+          <p className="mt-4 border-t border-white/12 pt-4 text-sm leading-relaxed text-white/45">Each saved adjustment is applied to the matching mesh whenever this event happens in the aquarium. Parts the event moves itself, like the mermaid&apos;s tail fin or the boat&apos;s bubbles, are placed anew every frame, so their position cannot be changed here. A school is shown as one member: its size and turn apply to every member.</p>
+        </section>
+
+        <aside className="shape-editor-controls min-h-0 overflow-y-auto border-l border-white/15 px-5 py-5">
+          {hiddenFeatures.length > 0 && (
+            <section className="mb-5 border-b border-white/12 pb-5" aria-labelledby="hidden-event-features-title">
+              <div className="mb-3 flex items-center justify-between gap-4">
+                <h2 id="hidden-event-features-title" className="font-display text-xl">Hidden features</h2>
+                <button type="button" className="text-xs text-white/55 hover:text-white" onClick={showAllFeatures}>Show all</button>
+              </div>
+              <ul className="space-y-1">
+                {hiddenFeatures.map((feature) => (
+                  <li key={feature.key} className="flex items-center justify-between gap-3 border border-white/12 px-3 py-2">
+                    <span className="min-w-0 truncate text-sm text-white/62">{feature.label}</span>
+                    <button type="button" className="shrink-0 text-xs text-white/55 hover:text-white" onClick={() => showFeature(feature.key)}>Show</button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {selectedObject && transform ? (
+            <>
+              <div className="flex items-start justify-between gap-4 border-b border-white/12 pb-4">
+                <div><h2 className="font-display text-xl">{selectedObject.name || selectedObject.type}</h2><p className="mt-1 font-mono text-[10px] text-white/38">{geometry?.type ?? selectedObject.type}</p></div>
+                <div className="flex shrink-0 gap-2">
+                  <button type="button" className="border border-white/18 px-2.5 py-1.5 text-xs text-white/48 hover:border-white/35 hover:text-white" onClick={hideSelectedFeature}>Hide feature</button>
+                  <button type="button" className="border border-white/18 px-2.5 py-1.5 text-xs text-white/48 hover:border-white/35 hover:text-white" onClick={resetNode}>Reset part</button>
+                </div>
+              </div>
+              <div className="space-y-5 py-5">
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" className="bg-[var(--phosphor)] px-3 py-2.5 text-sm text-[var(--abyss)] disabled:cursor-not-allowed disabled:opacity-35" disabled={Object.keys(pending).length === 0} onClick={() => { saveWorldEventOverrides(eventId, pending); setPending({}); setSaveStatus("Saved and active in the aquarium"); }}>Save to app</button>
+                  <button type="button" className="border border-white/20 px-3 py-2.5 text-sm text-white/58 hover:border-white/40 hover:text-white" onClick={() => { clearWorldEventOverrides(eventId); clearSelection(); setPending({}); setHiddenFeatures([]); initialTransforms.current.clear(); setModelRevision((current) => current + 1); setSaveStatus("Saved overrides removed for this event"); }}>Restore original</button>
+                </div>
+                <p className="text-xs leading-relaxed text-white/40">{saveStatus}</p>
+                <ModelControl label="Translate X" value={transform.x} min={-6} max={6} step={0.01} onChange={(x) => updateTransform({ x })} />
+                <ModelControl label="Translate Y" value={transform.y} min={-6} max={6} step={0.01} onChange={(y) => updateTransform({ y })} />
+                <ModelControl label="Translate Z" value={transform.z} min={-3} max={3} step={0.01} onChange={(z) => updateTransform({ z })} />
+                <div className="border-t border-white/12 pt-5"><ModelControl label="Scale X" value={transform.scaleX} min={0.01} max={4} step={0.01} onChange={(scaleX) => updateTransform({ scaleX })} /></div>
+                <ModelControl label="Scale Y" value={transform.scaleY} min={0.01} max={4} step={0.01} onChange={(scaleY) => updateTransform({ scaleY })} />
+                <ModelControl label="Scale Z" value={transform.scaleZ} min={0.01} max={4} step={0.01} onChange={(scaleZ) => updateTransform({ scaleZ })} />
+                <div className="border-t border-white/12 pt-5"><ModelControl label="Rotate X" value={transform.rotationX} min={-180} max={180} step={1} suffix="°" onChange={(rotationX) => updateTransform({ rotationX })} /></div>
+                <ModelControl label="Rotate Y" value={transform.rotationY} min={-180} max={180} step={1} suffix="°" onChange={(rotationY) => updateTransform({ rotationY })} />
+                <ModelControl label="Rotate Z" value={transform.rotationZ} min={-180} max={180} step={1} suffix="°" onChange={(rotationZ) => updateTransform({ rotationZ })} />
+                <label className="block border-t border-white/12 pt-5"><span className="mb-2 block text-sm text-white/68">Geometry construction</span><textarea className="min-h-44 w-full resize-y border border-white/16 bg-black/25 p-3 font-mono text-xs leading-relaxed text-white/60 outline-none" value={construction} readOnly /></label>
+              </div>
+            </>
+          ) : (
+            <div><h2 className="font-display text-xl">Event model controls</h2><p className="mt-3 text-sm leading-relaxed text-white/45">Select a visible part of the model to expose its construction and transforms.</p></div>
           )}
         </aside>
       </div>

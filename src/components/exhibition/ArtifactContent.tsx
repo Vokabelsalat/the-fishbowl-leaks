@@ -24,6 +24,8 @@ type ArtifactContentProps = {
 export function ArtifactContent({ artifact, onContinue, mini = false, onEnlargedChange }: ArtifactContentProps) {
   const [expanded, setExpanded] = useState(false);
   const [viewingImage, setViewingImage] = useState(false);
+  // The artists' bios are long, so they start folded away behind their heading.
+  const [biosOpen, setBiosOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const imageAlt = `${artifact.title} by ${artifact.artist}`;
 
@@ -138,15 +140,26 @@ export function ArtifactContent({ artifact, onContinue, mini = false, onEnlarged
             {artifact.bios.length > 0 && (
               <section className="mt-6 border-t border-white/15 pt-5" aria-labelledby="artifact-bios">
                 <h3 id="artifact-bios" className="font-display text-xl text-white/85">
-                  {artifact.bios.length > 1 ? "About the artists" : "About the artist"}
+                  <button
+                    type="button"
+                    onClick={() => setBiosOpen(!biosOpen)}
+                    aria-expanded={biosOpen}
+                    aria-controls="artifact-bios-text"
+                    className="flex min-h-11 w-full items-center justify-between gap-3 text-left transition-colors hover:text-white"
+                  >
+                    <span>{artifact.bios.length > 1 ? "About the artists" : "About the artist"}</span>
+                    <span aria-hidden="true" className="font-sans text-base">{biosOpen ? "↑" : "↓"}</span>
+                  </button>
                 </h3>
-                {artifact.bios.map((bio) => (
-                  <div key={bio} className="mt-4">
-                    {bio.split("\n\n").map((paragraph, index) => (
-                      <p key={paragraph} className={`${index > 0 ? "mt-3 " : ""}text-base leading-7 text-white/78`}>{paragraph}</p>
-                    ))}
-                  </div>
-                ))}
+                <div id="artifact-bios-text" hidden={!biosOpen}>
+                  {artifact.bios.map((bio) => (
+                    <div key={bio} className="mt-4">
+                      {bio.split("\n\n").map((paragraph, index) => (
+                        <p key={paragraph} className={`${index > 0 ? "mt-3 " : ""}text-base leading-7 text-white/78`}>{paragraph}</p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </section>
             )}
             <p className="mt-5 text-sm text-white/50">Traits carried forward: {artifact.visualTraits.join(" · ")}</p>

@@ -3,10 +3,10 @@ import {
   artifactCollected,
   artifactDetected,
   artifactRevisited,
-  finishJourney,
   feedbackRated,
   hydrateJourney,
   journeyReducer,
+  journeyReleased,
   resetJourney,
   setActiveArtifact,
   startJourney,
@@ -187,13 +187,25 @@ describe("journeySlice", () => {
     });
   });
 
-  it("records when the visitor finishes the story", () => {
-    const state = journeyReducer(
-      journeyReducer(undefined, artifactDetected("memory-fragment", 100)),
-      finishJourney(1_500),
-    );
+  it("ends the journey when the creature is released, and collects nothing after", () => {
+    let state = journeyReducer(undefined, artifactDetected("memory-fragment", 100));
+    state = journeyReducer(state, journeyReleased(1_500));
 
     expect(state.completedAt).toBe(1_500);
+    expect(state.released).toBe(true);
     expect(state.experiencePhase).toBe("ending");
+    expect(journeyReducer(state, artifactDetected("body-space", 2_000)).discoveries).toHaveLength(1);
+  });
+
+  it("keeps a release across a reload", () => {
+    const state = journeyReducer(undefined, hydrateJourney({
+      sessionId: "session-released",
+      startedAt: 10,
+      completedAt: 1_500,
+      released: true,
+      discoveries: [{ artifactId: "memory-fragment", sequence: 1, discoveredAt: 100 }],
+    }));
+
+    expect(state.released).toBe(true);
   });
 });

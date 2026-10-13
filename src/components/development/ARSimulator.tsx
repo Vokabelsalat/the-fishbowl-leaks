@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { artifacts } from "@/data/artifacts";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { finishJourney, resetJourney } from "@/store/journeySlice";
+import { resetJourney } from "@/store/journeySlice";
 import { selectDiscoveryCount } from "@/store/selectors";
 
 type ARSimulatorProps = {
@@ -124,14 +124,12 @@ export function ARSimulator({
         </button>
         <button
           type="button"
-          onClick={() => {
-            dispatch(finishJourney());
-            router.push("/journey");
-          }}
-          disabled={discoveryCount < 3}
+          // The ending page is where the creature is released, once it has enough encounters.
+          onClick={() => router.push("/journey")}
+          disabled={discoveryCount === 0}
           className="min-h-10 rounded-full bg-white px-3 text-[11px] text-black transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-35"
         >
-          {discoveryCount < 3 ? `${3 - discoveryCount} more needed` : "Finish journey"}
+          Open the ending
         </button>
       </div>
     </aside>

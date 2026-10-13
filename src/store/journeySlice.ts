@@ -12,7 +12,6 @@ export type ExperiencePhase =
   | "scanning"
   | "revealing"
   | "content"
-  | "journey"
   | "ending";
 
 export type Discovery = {
@@ -35,6 +34,8 @@ export type JourneyState = {
   creaturePalette: CreatureColorPalette | null;
   creaturePattern: CreaturePattern | null;
   creatureProportions: CreatureProportions | null;
+  /** The creature has been released into the shared tank, which closes the journey; `completedAt` is when. */
+  released: boolean;
   /**
    * Whether the shared tank has become the open sea, so the visitor's specimen may be an open-sea
    * form like a whale. Asked of the server on every visit, so it is never saved with the journey.
@@ -46,6 +47,7 @@ export type PersistedJourney = Pick<
   JourneyState,
   "sessionId" | "startedAt" | "completedAt" | "discoveries"
 > & {
+  released?: boolean;
   narrativeState?: NarrativeState;
   creatureForm?: AquaticForm | null;
   creaturePalette?: CreatureColorPalette | null;
@@ -73,6 +75,7 @@ export const initialJourneyState: JourneyState = {
   creaturePalette: null,
   creaturePattern: null,
   creatureProportions: null,
+  released: false,
   openSea: false,
 };
 
@@ -128,7 +131,8 @@ const journeySlice = createSlice({
           (discovery) => discovery.artifactId === artifactId,
         );
 
-        if (alreadyDiscovered) return;
+        // A released creature is final, so nothing more is collected.
+        if (alreadyDiscovered || state.released) return;
 
         if (!state.creatureForm) giveSpecimen(state, state.sessionId ?? "anonymous");
 
@@ -210,19 +214,17 @@ const journeySlice = createSlice({
       state.experiencePhase = action.payload;
       if (action.payload === "scanning") state.completedAt = null;
     },
-    finishJourney: {
-      reducer(state, action: PayloadAction<number>) {
-        state.completedAt = action.payload;
-        state.experiencePhase = "ending";
-      },
-      prepare(completedAt = Date.now()) {
-        return { payload: completedAt };
-      },
+    /** The creature reached the shared tank; the journey ends at the moment it was sent. */
+    journeyReleased(state, action: PayloadAction<number>) {
+      state.completedAt = action.payload;
+      state.released = true;
+      state.experiencePhase = "ending";
     },
     hydrateJourney(state, action: PayloadAction<PersistedJourney>) {
       state.sessionId = action.payload.sessionId;
       state.startedAt = action.payload.startedAt;
       state.completedAt = action.payload.completedAt;
+      state.released = action.payload.released ?? false;
       state.discoveries = action.payload.discoveries;
       state.narrativeState = { ...(action.payload.narrativeState ?? neutralNarrativeState) };
       // A specimen exists only once something was scanned; keep the saved one, or draw it again.
@@ -256,10 +258,10 @@ export const {
   artifactRevisited,
   choiceMade,
   feedbackRated,
-  finishJourney,
   hydrateJourney,
   resetJourney,
   openSeaChanged,
+  journeyReleased,
   setActiveArtifact,
   setExperiencePhase,
   startJourney,

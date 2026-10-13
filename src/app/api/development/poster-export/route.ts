@@ -1,11 +1,13 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { tutorialExampleArtifactId } from "@/components/poster/tutorialCopy";
 import { artifactById } from "@/data/artifacts";
+import { parseModelOverrides } from "@/lib/poster/exportOverrides";
+import { exportDirectoryPrefix, exportToken, overridesFileName } from "@/lib/poster/exportOverridesFile";
 import { tutorialSheetSvg } from "@/lib/poster/tutorialSvg";
 
 export const runtime = "nodejs";
@@ -44,10 +46,11 @@ function failure(error: string, status: number) {
 type ExportKind = "image" | "tutorial" | "svg";
 
 /** The page Chrome loads for an export, and the capture it makes there. */
-function exportPlan(kind: ExportKind, origin: string, seed: string, pose: string | null, landscape: boolean, output: string) {
+function exportPlan(kind: ExportKind, origin: string, seed: string, pose: string | null, landscape: boolean, output: string, overrides: string | null) {
   const page = new URL(kind === "tutorial" ? "/poster/tutorial" : "/poster", origin);
   page.searchParams.set("seed", seed);
   if (pose) page.searchParams.set("pose", pose);
+  if (overrides) page.searchParams.set("overrides", overrides);
   if (kind === "tutorial") {
     return { page, captureArguments: [`--force-device-scale-factor=${pdfScale}`, "--no-pdf-header-footer", `--print-to-pdf=${output}`] };
   }
@@ -68,8 +71,9 @@ function exportPlan(kind: ExportKind, origin: string, seed: string, pose: string
 }
 
 // Captures the poster as a PNG, the A4 tutorial sheet as a PDF, or the sheet as an editable SVG,
-// with a headless Chrome loading the pages from this server.
-export async function GET(request: Request) {
+// with a headless Chrome loading the pages from this server. Its profile starts empty, so the
+// request carries the editors' saved overrides, which the pages write into its storage.
+export async function POST(request: Request) {
   if (!developmentOnly()) return failure("Posters can only be exported during development.", 404);
   const chrome = chromeCandidates.find((path) => existsSync(path));
   if (!chrome) return failure("No Chrome found. Set CHROME_PATH to a Chrome or Chromium executable.", 500);
@@ -81,11 +85,14 @@ export async function GET(request: Request) {
   const landscape = requestUrl.searchParams.get("format") === "landscape";
   if (kind !== "image" && kind !== "tutorial" && kind !== "svg") return failure("Unknown export kind.", 400);
 
-  const directory = await mkdtemp(join(tmpdir(), "poster-export-"));
+  const overrides = parseModelOverrides(await request.json().catch(() => null));
+  const directory = await mkdtemp(join(tmpdir(), exportDirectoryPrefix));
   const output = join(directory, kind === "tutorial" ? "tutorial.pdf" : "poster.png");
-  const { page, captureArguments } = exportPlan(kind, requestUrl.origin, seed, pose, landscape, output);
+  const hasOverrides = Object.keys(overrides).length > 0;
+  const { page, captureArguments } = exportPlan(kind, requestUrl.origin, seed, pose, landscape, output, hasOverrides ? exportToken(directory) : null);
 
   try {
+    if (hasOverrides) await writeFile(join(directory, overridesFileName), JSON.stringify(overrides));
     await run(chrome, [
       "--headless=new",
       "--no-sandbox",

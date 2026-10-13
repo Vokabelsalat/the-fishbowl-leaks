@@ -46,6 +46,7 @@ export function loadJourney(storage: StorageLike): PersistedJourney | null {
       (value.sessionId !== null && typeof value.sessionId !== "string") ||
       (value.startedAt !== null && typeof value.startedAt !== "number") ||
       (value.completedAt != null && typeof value.completedAt !== "number") ||
+      (value.released !== undefined && typeof value.released !== "boolean") ||
       (creatureForm !== undefined && creatureForm !== null && !isAquaticForm(creatureForm)) ||
       (creaturePalette !== undefined && creaturePalette !== null && !isCreatureColorPalette(creaturePalette)) ||
       (creaturePattern !== undefined && creaturePattern !== null && !isCreaturePattern(creaturePattern)) ||
@@ -59,6 +60,7 @@ export function loadJourney(storage: StorageLike): PersistedJourney | null {
       sessionId: value.sessionId ?? null,
       startedAt: value.startedAt ?? null,
       completedAt: value.completedAt ?? null,
+      ...(value.released ? { released: true } : {}),
       ...(creatureForm ? { creatureForm } : {}),
       ...(creaturePalette ? { creaturePalette } : {}),
       ...(creaturePattern ? { creaturePattern } : {}),
@@ -90,13 +92,13 @@ export function subscribeToJourneyPersistence(
 ) {
   let previous = "";
   return store.subscribe(() => {
-    const { sessionId, startedAt, completedAt, discoveries, narrativeState, creatureForm, creaturePalette, creaturePattern, creatureProportions } = store.getState().journey;
+    const { sessionId, startedAt, completedAt, released, discoveries, narrativeState, creatureForm, creaturePalette, creaturePattern, creatureProportions } = store.getState().journey;
     if (!sessionId && startedAt === null && discoveries.length === 0) {
       previous = "";
       storage.removeItem(JOURNEY_STORAGE_KEY);
       return;
     }
-    const serialized = JSON.stringify({ sessionId, startedAt, completedAt, discoveries, narrativeState, creatureForm, creaturePalette, creaturePattern, creatureProportions });
+    const serialized = JSON.stringify({ sessionId, startedAt, completedAt, released, discoveries, narrativeState, creatureForm, creaturePalette, creaturePattern, creatureProportions });
     if (serialized === previous) return;
     previous = serialized;
     storage.setItem(JOURNEY_STORAGE_KEY, serialized);

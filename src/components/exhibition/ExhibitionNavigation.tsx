@@ -1,6 +1,6 @@
 "use client";
 
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAppSelector } from "@/store/hooks";
 import {
   selectDiscoveries,
   selectDiscoveryCount,
@@ -12,13 +12,13 @@ import {
   selectExperiencePhase,
   selectActiveArtifactId,
 } from "@/store/selectors";
-import { setExperiencePhase } from "@/store/journeySlice";
+import { useRouter } from "next/navigation";
 import { PathVisualization } from "@/components/visualization/PathVisualization";
 import { activeVisualizationCopy } from "@/config/visualization";
 import { artifacts } from "@/data/artifacts";
 
 export function ExhibitionNavigation() {
-  const dispatch = useAppDispatch();
+  const router = useRouter();
   const count = useAppSelector(selectDiscoveryCount);
   const discoveries = useAppSelector(selectDiscoveries);
   const creatureForm = useAppSelector(selectCreatureForm);
@@ -59,7 +59,8 @@ export function ExhibitionNavigation() {
       {previewDiscoveries.length > 0 && (
         <button
           type="button"
-          onClick={() => dispatch(setExperiencePhase("journey"))}
+          // The creature, its story so far and the release all live on the ending page.
+          onClick={() => router.push("/journey")}
           className="pointer-events-auto flex items-center gap-2 border border-white/45 bg-[var(--abyss)] pr-3 text-sm text-white shadow-[0_0_1.5rem_rgba(0,0,0,0.35)] transition-colors hover:border-white"
           aria-label={`Open ${activeVisualizationCopy.personalTitle}, ${count} parts collected`}
         >

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { artifactByTargetIndex } from "@/data/artifacts";
 import {
   ARScanner,
@@ -11,7 +12,6 @@ import { ARSimulator } from "@/components/development/ARSimulator";
 import { ArtifactReveal } from "@/components/exhibition/ArtifactReveal";
 import { ExhibitionNavigation } from "@/components/exhibition/ExhibitionNavigation";
 import { IntroScreen } from "@/components/exhibition/IntroScreen";
-import { JourneyScreen } from "@/components/journey/JourneyScreen";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   artifactDetected,
@@ -21,6 +21,7 @@ import {
 import {
   selectDiscoveries,
   selectExperiencePhase,
+  selectJourney,
 } from "@/store/selectors";
 
 export function ExhibitionExperience() {
@@ -28,6 +29,8 @@ export function ExhibitionExperience() {
   const scannerRef = useRef<ARScannerHandle>(null);
   const phase = useAppSelector(selectExperiencePhase);
   const discoveries = useAppSelector(selectDiscoveries);
+  const released = useAppSelector(selectJourney).released;
+  const router = useRouter();
   const [simulatorVisible, setSimulatorVisible] = useState(false);
   const [alreadyDiscovered, setAlreadyDiscovered] = useState<string | null>(null);
   const [revealPresentation, setRevealPresentation] = useState<
@@ -53,6 +56,11 @@ export function ExhibitionExperience() {
       cancelled = true;
     };
   }, [dispatch]);
+
+  // A released creature is final, so returning visitors go straight to its ending.
+  useEffect(() => {
+    if (released) router.replace("/journey");
+  }, [released, router]);
 
   useEffect(() => {
     if (!alreadyDiscovered) return;
@@ -89,7 +97,6 @@ export function ExhibitionExperience() {
   );
 
   if (phase === "intro") return <IntroScreen />;
-  if (phase === "journey") return <JourneyScreen />;
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[var(--abyss)] text-white">

@@ -35,6 +35,11 @@ export type JourneyState = {
   creaturePalette: CreatureColorPalette | null;
   creaturePattern: CreaturePattern | null;
   creatureProportions: CreatureProportions | null;
+  /**
+   * Whether the shared tank has become the open sea, so the visitor's specimen may be an open-sea
+   * form like a whale. Asked of the server on every visit, so it is never saved with the journey.
+   */
+  openSea: boolean;
 };
 
 export type PersistedJourney = Pick<
@@ -68,11 +73,12 @@ export const initialJourneyState: JourneyState = {
   creaturePalette: null,
   creaturePattern: null,
   creatureProportions: null,
+  openSea: false,
 };
 
 /** Draws the visitor's specimen: its form, colours, skin pattern and body proportions. */
 function giveSpecimen(state: JourneyState, seed: string) {
-  state.creatureForm = pickAquaticForm(seed);
+  state.creatureForm = pickAquaticForm(seed, { openSea: state.openSea });
   state.creaturePalette = creatureColorPalette(seed);
   state.creaturePattern = creaturePattern(seed);
   state.creatureProportions = creatureProportions(seed);
@@ -227,7 +233,7 @@ const journeySlice = createSlice({
         state.creatureProportions = null;
       } else {
         const seed = action.payload.sessionId ?? "anonymous";
-        state.creatureForm = action.payload.creatureForm ?? pickAquaticForm(seed);
+        state.creatureForm = action.payload.creatureForm ?? pickAquaticForm(seed, { openSea: state.openSea });
         state.creaturePalette = action.payload.creaturePalette ?? creatureColorPalette(seed);
         state.creaturePattern = action.payload.creaturePattern ?? creaturePattern(seed);
         state.creatureProportions = action.payload.creatureProportions ?? creatureProportions(seed);
@@ -235,8 +241,11 @@ const journeySlice = createSlice({
       state.activeArtifactId = null;
       state.experiencePhase = action.payload.sessionId ? "scanning" : "intro";
     },
-    resetJourney() {
-      return { ...initialJourneyState };
+    resetJourney(state) {
+      return { ...initialJourneyState, openSea: state.openSea };
+    },
+    openSeaChanged(state, action: PayloadAction<boolean>) {
+      state.openSea = action.payload;
     },
   },
 });
@@ -250,6 +259,7 @@ export const {
   finishJourney,
   hydrateJourney,
   resetJourney,
+  openSeaChanged,
   setActiveArtifact,
   setExperiencePhase,
   startJourney,

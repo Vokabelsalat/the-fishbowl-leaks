@@ -34,6 +34,11 @@ export const compartmentWalls: readonly CompartmentWall[] = [
 
 const wallOpeningSpan = 0.16;
 
+/** Whether a tank with this many of the day's creatures has become the open sea, with every wall gone. */
+export function isOpenSea(creatureCount: number) {
+  return creatureCount >= fullBreakdownCreatures;
+}
+
 /** How far the walls have broken down for this many creatures, from 0 (sealed) to 1 (gone). */
 export function tankBreakdown(creatureCount: number) {
   return Math.min(1, Math.max(0, creatureCount / fullBreakdownCreatures));

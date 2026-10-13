@@ -9,7 +9,7 @@ import {
   listContributions,
 } from "@/lib/contributions/database";
 import { generateJourneyNarrative } from "@/lib/narrative/generateJourneyNarrative";
-import { tankBreakdown } from "@/lib/collective/tankCompartments";
+import { isOpenSea, tankBreakdown } from "@/lib/collective/tankCompartments";
 import { calculateDwellTimes } from "@/lib/contributions/dwellTime";
 import { isAquaticForm, pickAquaticForm } from "@/lib/creature/aquaticForms";
 import { creatureColorPalette, isCreatureColorPalette } from "@/lib/creature/colorPalettes";
@@ -89,7 +89,9 @@ function parseSubmission(value: unknown): ContributionSubmission | string {
 
   const creatureForm = isAquaticForm(candidate.creatureForm)
     ? candidate.creatureForm
-    : pickAquaticForm(`${candidate.sessionId}:${discoveries[0]?.artifactId ?? "unknown"}:${firstDiscoveredAt}`);
+    : pickAquaticForm(`${candidate.sessionId}:${discoveries[0]?.artifactId ?? "unknown"}:${firstDiscoveredAt}`, {
+      openSea: isOpenSea(getContributionCount()),
+    });
   const creaturePalette = isCreatureColorPalette(candidate.creaturePalette)
     ? candidate.creaturePalette
     : creatureColorPalette(candidate.sessionId);

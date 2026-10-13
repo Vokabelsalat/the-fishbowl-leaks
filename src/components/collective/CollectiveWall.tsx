@@ -21,6 +21,14 @@ import { aggregateContributionDwellTimes } from "@/lib/contributions/heatmap";
 import type { CollectiveHeatDatum, ExhibitionContribution } from "@/types/contribution";
 
 const ARRIVAL_DURATION_MS = 17_000;
+/** Each visitor waiting for their creature's arrival shortens the current one by this much, down to the shortest. */
+const ARRIVAL_SHORTENING_PER_WAITING_MS = 3_000;
+const SHORTEST_ARRIVAL_MS = 8_000;
+
+/** How long an arrival lasts while this many more creatures wait for theirs. */
+function arrivalDurationFor(waiting: number) {
+  return Math.max(SHORTEST_ARRIVAL_MS, ARRIVAL_DURATION_MS - waiting * ARRIVAL_SHORTENING_PER_WAITING_MS);
+}
 const ARRIVAL_FIT_SCALE = 0.72;
 const MINUTES_IN_DAY = 24 * 60 - 1;
 // The largest page the contributions API returns.
@@ -113,6 +121,9 @@ export function CollectiveWall({ initialView = "collective" }: {
   const initialized = useRef(false);
   const activeRef = useRef<ExhibitionContribution | null>(null);
   const queueRef = useRef<ExhibitionContribution[]>([]);
+  // Creatures waiting for their arrival stay out of the tank, the recent stories and the count until their turn.
+  const [waitingIds, setWaitingIds] = useState<ReadonlySet<number>>(() => new Set());
+  const [arrivalDurationMs, setArrivalDurationMs] = useState(ARRIVAL_DURATION_MS);
   const cycleDateRef = useRef<string | null>(null);
   const syntheticCountRef = useRef<number | null>(null);
   const arrivalCreatureRef = useRef<HTMLDivElement>(null);
@@ -128,6 +139,23 @@ export function CollectiveWall({ initialView = "collective" }: {
     () => isDevelopment || new URLSearchParams(window.location.search).has("stats"),
     () => false,
   );
+
+  const syncWaiting = useCallback(() => {
+    setWaitingIds(new Set(queueRef.current.map((contribution) => contribution.id)));
+  }, []);
+
+  /** Starts the next creature's arrival, or ends the arrivals; the more visitors are waiting, the shorter it is. */
+  const beginArrival = useCallback((next: ExhibitionContribution | null) => {
+    activeRef.current = next;
+    setActive(next);
+    setArrivalDurationMs(arrivalDurationFor(queueRef.current.length));
+    syncWaiting();
+  }, [syncWaiting]);
+
+  const clearArrivals = useCallback(() => {
+    queueRef.current = [];
+    beginArrival(null);
+  }, [beginArrival]);
 
   useEffect(() => {
     let cancelled = false;
@@ -157,9 +185,7 @@ export function CollectiveWall({ initialView = "collective" }: {
 
         if (cycleDateRef.current && cycleDateRef.current !== data.cycleDate) {
           latestId.current = 0;
-          queueRef.current = [];
-          activeRef.current = null;
-          setActive(null);
+          clearArrivals();
           setContributions([]);
         }
         cycleDateRef.current = data.cycleDate;
@@ -171,9 +197,7 @@ export function CollectiveWall({ initialView = "collective" }: {
         syntheticCountRef.current = data.syntheticCount;
         if (syntheticDatasetWasRemoved) {
           latestId.current = 0;
-          queueRef.current = [];
-          activeRef.current = null;
-          setActive(null);
+          clearArrivals();
           setContributions([]);
           heatmapSignature.current = JSON.stringify(data.heatmap);
           setHeatmap(data.heatmap);
@@ -189,14 +213,9 @@ export function CollectiveWall({ initialView = "collective" }: {
           // The seed creatures are already in the tank when the day begins, so they never arrive.
           const arrivals = data.contributions.filter((item) => !item.dailySeed);
           if (initialized.current && arrivals.length > 0) {
-            if (!activeRef.current) {
-              const [next, ...remaining] = arrivals;
-              activeRef.current = next;
-              setActive(next);
-              queueRef.current.push(...remaining);
-            } else {
-              queueRef.current.push(...arrivals);
-            }
+            queueRef.current.push(...arrivals);
+            if (!activeRef.current) beginArrival(queueRef.current.shift() ?? null);
+            else syncWaiting();
           }
         }
         const signature = JSON.stringify(data.heatmap);
@@ -221,7 +240,7 @@ export function CollectiveWall({ initialView = "collective" }: {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, []);
+  }, [beginArrival, clearArrivals, syncWaiting]);
 
   useEffect(() => {
     if (!orbiting) return;
@@ -245,19 +264,17 @@ export function CollectiveWall({ initialView = "collective" }: {
       rect: rect && { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
       fill: creatureFitMargin * ARRIVAL_FIT_SCALE,
     });
-    const timeout = window.setTimeout(() => {
-      const next = queueRef.current.shift() ?? null;
-      activeRef.current = next;
-      setActive(next);
-    }, ARRIVAL_DURATION_MS);
+    const timeout = window.setTimeout(() => beginArrival(queueRef.current.shift() ?? null), arrivalDurationMs);
     return () => {
       window.clearTimeout(timeout);
     };
-  }, [active]);
+  }, [active, arrivalDurationMs, beginArrival]);
 
   const visibleContributions = useMemo(
-    () => contributions.filter((contribution) => minuteOfDay(contribution.createdAt) <= clockMinutes),
-    [clockMinutes, contributions],
+    () => contributions.filter(
+      (contribution) => !waitingIds.has(contribution.id) && minuteOfDay(contribution.createdAt) <= clockMinutes,
+    ),
+    [clockMinutes, contributions, waitingIds],
   );
   const visibleActive = liveTime && active && minuteOfDay(active.createdAt) <= clockMinutes ? active : null;
   const habitatCreatures = useMemo(
@@ -436,7 +453,7 @@ export function CollectiveWall({ initialView = "collective" }: {
       )}
 
       {view === "collective" && visibleActive && (
-        <section key={visibleActive.id} className="collective-arrival absolute inset-0 z-20 grid grid-cols-[58%_42%]" aria-label={`A new visitor ${activeVisualizationCopy.singular} has arrived`}>
+        <section key={visibleActive.id} className="collective-arrival absolute inset-0 z-20 grid grid-cols-[58%_42%]" style={{ "--arrival-duration": `${arrivalDurationMs}ms` } as CSSProperties} aria-label={`A new visitor ${activeVisualizationCopy.singular} has arrived`}>
           <div className="collective-arrival-habitat relative min-w-0" aria-label={`New ${activeVisualizationCopy.singular} entering the aquarium`}>
             <div ref={arrivalCreatureRef} className="collective-arrival-origin absolute left-[7%] top-[16%] h-[65%] w-[78%]" aria-hidden="true" />
           </div>

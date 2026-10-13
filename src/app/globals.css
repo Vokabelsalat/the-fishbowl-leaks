@@ -908,8 +908,9 @@ a:focus-visible {
   10%, 100% { opacity: 1; transform: translateY(0); }
 }
 
+/* An arrival lasts --arrival-duration, which is shorter while other visitors wait for theirs. */
 .collective-arrival {
-  animation: arrival-stage 17s ease-in-out both;
+  animation: arrival-stage var(--arrival-duration, 17s) ease-in-out both;
   pointer-events: none;
 }
 
@@ -918,7 +919,7 @@ a:focus-visible {
 }
 
 .collective-story {
-  animation: arrival-story 17s ease-in-out both;
+  animation: arrival-story var(--arrival-duration, 17s) ease-in-out both;
   pointer-events: auto;
   border-left: 1px solid rgba(232, 245, 239, 0.32);
   background: rgba(3, 16, 21, 0.78);

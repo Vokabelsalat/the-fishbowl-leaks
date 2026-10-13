@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { artifacts } from "@/data/artifacts";
-import { aquaticForms } from "@/lib/creature/aquaticForms";
+import { aquaticForms, isOpenSeaForm } from "@/lib/creature/aquaticForms";
 import { isCreatureColorPalette } from "@/lib/creature/colorPalettes";
 import { isCreaturePattern } from "@/lib/creature/patterns";
 import { isCreatureProportions } from "@/lib/creature/proportions";
@@ -49,8 +49,10 @@ describe("createSyntheticDataset", () => {
   it("features the new marine species in the test aquarium", () => {
     const dataset = createSyntheticDataset(cycleStart);
 
-    expect(dataset.slice(0, SYNTHETIC_FEATURED_FORMS.length).map((visitor) => visitor.creatureForm)).toEqual(
-      [...SYNTHETIC_FEATURED_FORMS],
+    // Whales come only once the tank is the open sea, so the first visitors meet the other featured forms.
+    const aquariumFeaturedForms = SYNTHETIC_FEATURED_FORMS.filter((form) => !isOpenSeaForm(form));
+    expect(dataset.slice(0, aquariumFeaturedForms.length).map((visitor) => visitor.creatureForm)).toEqual(
+      aquariumFeaturedForms,
     );
     const includedForms = new Set(dataset.map((visitor) => visitor.creatureForm));
     SYNTHETIC_FEATURED_FORMS.forEach((form) => expect(includedForms.has(form)).toBe(true));

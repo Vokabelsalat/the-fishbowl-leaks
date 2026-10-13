@@ -40,13 +40,25 @@ export function isAquaticForm(value: unknown): value is AquaticForm {
   return typeof value === "string" && aquaticForms.some((form) => form === value);
 }
 
-export function pickAquaticForm(seed: string): AquaticForm {
+/**
+ * Forms that belong to the open sea rather than the aquarium a day's tank starts as: they can only be
+ * drawn once every wall of the tank has broken.
+ */
+export const openSeaForms = ["whale"] as const satisfies readonly AquaticForm[];
+
+export function isOpenSeaForm(form: AquaticForm) {
+  return openSeaForms.some((openSeaForm) => openSeaForm === form);
+}
+
+/** Draws a form for the seed; without `openSea`, from the aquarium's forms only. */
+export function pickAquaticForm(seed: string, { openSea = true }: { openSea?: boolean } = {}): AquaticForm {
+  const forms = openSea ? aquaticForms : aquaticForms.filter((form) => !isOpenSeaForm(form));
   let hash = 2166136261;
   for (let index = 0; index < seed.length; index += 1) {
     hash ^= seed.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
   }
-  return aquaticForms[(hash >>> 0) % aquaticForms.length];
+  return forms[(hash >>> 0) % forms.length];
 }
 
 const creatureSizeTiers = [0.72, 0.86, 1, 1.16, 1.32] as const;

@@ -16,6 +16,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   artifactDetected,
   artifactRevisited,
+  openSeaChanged,
 } from "@/store/journeySlice";
 import {
   selectDiscoveries,
@@ -37,6 +38,21 @@ export function ExhibitionExperience() {
     () => new Set(discoveries.map((discovery) => discovery.artifactId)),
     [discoveries],
   );
+
+  // Open-sea forms like whales may only be drawn once the shared tank's walls are gone. Unless the
+  // server says so, the visitor's specimen comes from the aquarium's forms.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/tank", { cache: "no-store" })
+      .then((response) => (response.ok ? (response.json() as Promise<{ openSea?: boolean }>) : null))
+      .then((tank) => {
+        if (!cancelled && tank?.openSea) dispatch(openSeaChanged(true));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     if (!alreadyDiscovered) return;

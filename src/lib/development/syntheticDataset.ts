@@ -1,8 +1,8 @@
 import { artifacts } from "@/data/artifacts";
 import { calculateDwellTimes } from "@/lib/contributions/dwellTime";
-import { aquaticForms, type AquaticForm } from "@/lib/creature/aquaticForms";
+import { aquaticForms, isOpenSeaForm, type AquaticForm } from "@/lib/creature/aquaticForms";
 import { generateJourneyNarrative } from "@/lib/narrative/generateJourneyNarrative";
-import { tankBreakdown } from "@/lib/collective/tankCompartments";
+import { isOpenSea, tankBreakdown } from "@/lib/collective/tankCompartments";
 import type { SharedCreaturePart } from "@/types/contribution";
 import { creatureColorPalette, type CreatureColorPalette } from "@/lib/creature/colorPalettes";
 import { creaturePattern, type CreaturePattern } from "@/lib/creature/patterns";
@@ -22,6 +22,16 @@ const syntheticFormRotation: AquaticForm[] = [
   ...SYNTHETIC_FEATURED_FORMS,
   ...aquaticForms.filter((form) => !SYNTHETIC_FEATURED_FORMS.some((featured) => featured === form)),
 ];
+
+/**
+ * The form a synthetic visitor gets, in turn through every form. Like real visitors, the day's first
+ * ones cannot get an open-sea form until the tank's walls are gone; they get the next form instead.
+ */
+function syntheticForm(visitorIndex: number) {
+  let turn = visitorIndex;
+  while (!isOpenSea(visitorIndex) && isOpenSeaForm(syntheticFormRotation[turn % syntheticFormRotation.length])) turn += 1;
+  return syntheticFormRotation[turn % syntheticFormRotation.length];
+}
 
 export type SyntheticContribution = {
   publicId: string;
@@ -116,7 +126,7 @@ export function createSyntheticDataset(
     return {
       publicId,
       sessionId,
-      creatureForm: syntheticFormRotation[visitorIndex % syntheticFormRotation.length],
+      creatureForm: syntheticForm(visitorIndex),
       creaturePalette: creatureColorPalette(sessionId),
       creaturePattern: creaturePattern(sessionId),
       creatureProportions: creatureProportions(sessionId),

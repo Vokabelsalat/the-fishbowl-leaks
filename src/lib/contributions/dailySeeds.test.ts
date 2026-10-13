@@ -8,6 +8,7 @@ describe("createDailySeeds", () => {
     const seeds = createDailySeeds(cycleStart, "2026-10-12");
     expect(seeds).toHaveLength(DAILY_SEED_COUNT);
     expect(new Set(seeds.map((seed) => seed.creatureForm)).size).toBe(DAILY_SEED_COUNT);
+    expect(seeds.some((seed) => seed.creatureForm === "whale")).toBe(false);
     expect(seeds.every((seed) => seed.sessionId.startsWith("daily-seed:20261012:"))).toBe(true);
     expect(seeds[0].createdAt).toBe(cycleStart);
     expect(seeds.at(-1)!.createdAt < "2026-10-11T22:01:00.000Z").toBe(true);

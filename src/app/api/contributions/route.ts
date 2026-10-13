@@ -165,7 +165,7 @@ export async function POST(request: Request) {
   });
   // The walls have broken as far as this creature, counted with the day's others, takes them.
   const breakdown = tankBreakdown(getContributionCount() + 1);
-  const narrative = generateJourneyNarrative(submission.discoveries, artifacts, { breakdown });
+  const narrative = generateJourneyNarrative(submission.discoveries, artifacts, { breakdown, seed: submission.sessionId });
   const contribution = createContribution({
     publicId: randomUUID(),
     sessionId: submission.sessionId,

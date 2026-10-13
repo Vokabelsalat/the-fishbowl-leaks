@@ -1,4 +1,6 @@
+import { artifacts } from "@/data/artifacts";
 import { aquaticForms, isOpenSeaForm } from "@/lib/creature/aquaticForms";
+import { generateJourneyNarrative } from "@/lib/narrative/generateJourneyNarrative";
 import { creatureColorPalette } from "@/lib/creature/colorPalettes";
 import { creaturePattern } from "@/lib/creature/patterns";
 import { creatureProportions } from "@/lib/creature/proportions";
@@ -37,6 +39,12 @@ export function createDailySeeds(cycleStartIso: string, cycleDate: string): Synt
         creaturePalette: creatureColorPalette(sessionId),
         creaturePattern: creaturePattern(sessionId),
         creatureProportions: creatureProportions(sessionId),
+        // Told in the genre its own session draws, as the tank will tell it, with the walls still whole.
+        narrative: generateJourneyNarrative(
+          creature.parts.map((part) => ({ artifactId: part.artifactId, sequence: part.sequence, discoveredAt: part.sequence })),
+          artifacts,
+          { seed: sessionId },
+        ),
         tankBreakdown: 0,
         createdAt: new Date(cycleStart + index * 1_000).toISOString(),
       };

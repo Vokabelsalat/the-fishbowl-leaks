@@ -219,7 +219,7 @@ function deserialize(row: ContributionRow): ExhibitionContribution {
         discoveredAt: createdAt + part.sequence,
       })),
       artifacts,
-      { breakdown: row.tank_breakdown ?? 0 },
+      { breakdown: row.tank_breakdown ?? 0, seed: row.session_id },
     ),
     createdAt: row.created_at,
     ...(row.synthetic_kind === "daily-seed" ? { dailySeed: true } : {}),

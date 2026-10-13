@@ -131,7 +131,7 @@ export function createSyntheticDataset(
       creaturePattern: creaturePattern(sessionId),
       creatureProportions: creatureProportions(sessionId),
       parts,
-      narrative: generateJourneyNarrative(discoveries, artifacts, { breakdown }),
+      narrative: generateJourneyNarrative(discoveries, artifacts, { breakdown, seed: sessionId }),
       tankBreakdown: breakdown,
       createdAt: new Date(completedAt).toISOString(),
     };

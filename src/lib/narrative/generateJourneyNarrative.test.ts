@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { artifacts } from "@/data/artifacts";
-import { artworkBanks, exhibitionNarrativeThemes, middleConnectorKinds, sentenceConnectors, sentenceTemplates, themeBanks } from "@/data/narrativeGrammar";
-import { generateJourneyNarrative } from "@/lib/narrative/generateJourneyNarrative";
+import { artworkBanks, exhibitionNarrativeThemes, middleConnectorKinds, narrativeGenreIds, narrativeGenres, sentenceConnectors, sentenceTemplates, themeBanks } from "@/data/narrativeGrammar";
+import { generateJourneyNarrative, narrativeGenreFor } from "@/lib/narrative/generateJourneyNarrative";
 import { parseNarrativeLine, plainNarrativeLine } from "@/lib/narrative/narrativeMarkup";
 import type { Discovery } from "@/store/journeySlice";
 
@@ -91,6 +91,52 @@ describe("generateJourneyNarrative", () => {
     }
     expect(linked / following).toBeGreaterThan(0.3);
     expect(linked / following).toBeLessThan(0.7);
+  });
+
+  it("tells each visitor's story in a genre their session decides", () => {
+    const route = discoveries(["finding-frida", "emperor", "earth-fortunes", "goliath"]);
+    const seeds = Array.from({ length: 60 }, (_, index) => `session-${index}`);
+    expect(new Set(seeds.map(narrativeGenreFor))).toEqual(new Set(narrativeGenreIds));
+    for (const seed of seeds) {
+      expect(narrativeGenreFor(seed)).toBe(narrativeGenreFor(seed));
+      expect(generateJourneyNarrative(route, artifacts, { seed })).toEqual(generateJourneyNarrative(route, artifacts, { seed }));
+    }
+    expect(narrativeGenreFor(undefined)).toBe("aquarium");
+  });
+
+  it("gives every genre enough words, and templates that name the artwork", () => {
+    for (const id of narrativeGenreIds) {
+      const genre = narrativeGenres[id];
+      expect(genre.templates.length, id).toBeGreaterThanOrEqual(5);
+      expect(genre.templates.every((template) => /\{NP:subject\}/.test(template)), id).toBe(true);
+      if (!genre.bank) continue;
+      for (const words of [genre.bank.NN.place, genre.bank.NN.boundary, genre.bank.NN.trace, genre.bank.JJ.quality, genre.bank.NP.figure, genre.bank.VBD.action]) {
+        expect(words.length, id).toBeGreaterThanOrEqual(8);
+      }
+    }
+  });
+
+  it("keeps every genre's sentences brief and complete", () => {
+    // One seed per genre, found by trying sessions until each genre has one.
+    const seedFor = new Map<string, string>();
+    for (let index = 0; seedFor.size < narrativeGenreIds.length; index += 1) {
+      const seed = `genre-probe-${index}`;
+      if (!seedFor.has(narrativeGenreFor(seed))) seedFor.set(narrativeGenreFor(seed), seed);
+    }
+    for (const [genre, seed] of seedFor) {
+      for (let offset = 0; offset < artifacts.length; offset += 1) {
+        const route = discoveries(Array.from({ length: 5 }, (_, index) => artifacts[(offset + index * 7) % artifacts.length].id));
+        for (const breakdown of [0, 1]) {
+          for (const line of generateJourneyNarrative(route, artifacts, { seed, breakdown })) {
+            const plain = plainNarrativeLine(line);
+            expect(plain, genre).not.toMatch(/\{[^}]+\}/);
+            expect(plain.length, `${genre}: ${plain}`).toBeLessThanOrEqual(120);
+            expect(plain.split(/\s+/).length, `${genre}: ${plain}`).toBeLessThanOrEqual(19);
+            expect(plain[0], plain).toBe(plain[0].toUpperCase());
+          }
+        }
+      }
+    }
   });
 
   it("keeps every stop in a longer path", () => {

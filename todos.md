@@ -37,4 +37,6 @@ The separators in the tank are hard to see. Can you increase the thickness a bit
 check the color settings of the tv
 have the mating scale up when less contributions occurr
 come up with a menu of artifacts which collapses or groups under different themes
+we have to update the heatmap
+
 

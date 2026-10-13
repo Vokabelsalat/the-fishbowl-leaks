@@ -27,8 +27,8 @@ export function JourneyFinal() {
   const discoveries = useAppSelector(selectDiscoveries);
   const journey = useAppSelector(selectJourney);
   const lines = useMemo(
-    () => generateJourneyNarrative(discoveries, artifacts),
-    [discoveries],
+    () => generateJourneyNarrative(discoveries, artifacts, { seed: journey.sessionId }),
+    [discoveries, journey.sessionId],
   );
   const themesInOrder = discoveries.flatMap((discovery) => {
     const artifact = artifactById.get(discovery.artifactId);

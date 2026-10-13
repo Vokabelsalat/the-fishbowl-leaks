@@ -79,6 +79,8 @@ export type ExhibitionArtifact = {
   title: string;
   artist: string;
   theme: ThemeId;
+  /** The exhibition's own themes for the work, from the `Themes` column of public/exhibition.csv; `theme` groups works for the creature art instead. */
+  exhibitionThemes: string[];
   particleForm: ParticleFormId;
   color: string;
   /** Foreground color used when the constellation is shown on white. */

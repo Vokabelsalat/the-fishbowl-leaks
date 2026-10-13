@@ -20,6 +20,9 @@ take out the piano track
 integrate questionaire in the end
 fix up the fish and narwhal fins (delete the model part and make sure it stays deleted)
 collapse the short bios of the creators
+the release animation is still messed up.
+new poster
+fix up the buttons and the user guidance
 
 
 The release animation of the creature needs to be smoother. Drop the creature into the collective screen with a smooth animation.
@@ -31,11 +34,7 @@ http://localhost:3066/poster?format=landscape&seed=cdf4ff45&pose=dolphin-8%3A-0.
 
 The separators in the tank are hard to see. Can you increase the thickness a bit and also make sure that the creatures are colliding earlier with it? Sometimes it looks like the creature is swimming through the separator but then it turns.
 
-new poster
 check the color settings of the tv
-fix up the buttons and the user guidance
 have the mating scale up when less contributions occurr
-
-
 come up with a menu of artifacts which collapses or groups under different themes
-the release animation is still messed up.
+

@@ -443,6 +443,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#356B4B",
     alternativeColor: "#245137",
     theme: "memory",
+    exhibitionThemes: ["Memory and afterlives"],
     description:
       "In a “real unreality” VR space, a miniature Art Nouveau villa appears before expanding to full scale. Past and present weave together as we step into the world of Frida Hansen – once an internationally acclaimed textile artist, now largely forgotten. Guided by her great-great-granddaughter Cecilie, we explore a lush garden where archival photographs, a gramophone and woven artworks become portals into Frida’s life. As bankruptcy and profound personal grief descend, the vibrant garden withers into darkness. From this desolation emerge four enigmatic female figures, foreshadowing the work Semper Vadentes and the beginning of Frida’s artistic awakening. Across a century, Frida and Cecilie’s lives intertwine. Through art, hardship is transformed into enduring beauty – a testament to how the role models we uncover continue to inspire and shape who we become.",
     workType: ["Immersive Installation", "Immersive video"],
@@ -474,6 +475,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#6C3F61",
     alternativeColor: "#5A2F4F",
     theme: "memory",
+    exhibitionThemes: ["Synthetic systems and constructed authority"],
     description:
       "Historically Yours is an interactive podcast broadcasting from the Underworld. This work in progress gives visitors a direct line to Cleo, Toinette and Henri, three fictional hosts loosely inspired by Cleopatra, Queen Marie Antoinette and astronomer Henrietta Swan Leavitt.\n\nIn the installation, visitors listen through headphones and send the hosts a question, a grievance or whatever is keeping them awake. Artificial intelligence transforms each contribution into a new conversation, performed through three synthetic voices. A live transcript accompanies the discussion, while illuminated sculptural heads reveal who has the microphone.\n\nThe hosts are not digital reconstructions of historical people. They are deliberately unreliable approximations assembled from historical fragments, popular myths and cultural stereotypes. Their appearances, both on screen and as 3D printed sculptures, reflect the familiar visual clichés through which historical women are recognised. Their voices are equally speculative. We do not know what these women sounded like, yet synthetic speech gives each host the persuasive impression of an individual personality.\n\nThe work draws on the Dialogues of the Dead, a satirical tradition in which historical figures meet in the afterlife to gossip, argue and judge the living. Here, it becomes a feminist podcast in which women who have been celebrated, blamed, romanticised or overlooked discuss the present from the Underworld.\n\nPart podcast, part séance and part critique of synthetic authority, Historically Yours asks who gets to represent the past and why a convincing face and voice can be so easy to believe.",
     workType: ["Interactive Installation", "Work in progress"],
@@ -502,6 +504,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#597D8C",
     alternativeColor: "#365E6D",
     theme: "memory",
+    exhibitionThemes: ["Memory and afterlives"],
     description:
       "Technology is reshaping our relationships and communication with the dead, using digital traces of the data they leave behind. Decades before these technologies emerged, I was already doing something similar.\n\nFrom Ingrid to Bergen is an interactive documentary about grief, memory, theatre, and the technologies we use to maintain relationships with what is no longer there. Moving across nineteen years, the project brings together personal archives, photographs, paintings, videos, and texts from different phases of my experience of loss. An idea of a grandmother, a promise, ghosts, forests, neurodivergence, theatre, and Ingrid Bergman form a shifting map through memory and reconstruction, tracing not only the loss of a person, but also the loss of what I once imagined becoming.",
     workType: ["Interactive Documentary"],
@@ -530,6 +533,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#79A83B",
     alternativeColor: "#4D751C",
     theme: "interface",
+    exhibitionThemes: ["Synthetic systems and constructed authority"],
     description:
       "YOUR UPDATE HAS FAILED is an interactive browser and WebXR experience tracing the digital evolution of SOGICE—sexual orientation and gender identity change efforts. These interventions seek to change or suppress LGBTQIA+ people’s sexual orientation, gender identity, or expression.\n\nA computer anchors the narrative as three composite lives unfold across 1997, 2003, 2016, and 2026—each in a room shaped by its era. SOGICE’s forms evolve: printed questionnaires become software, then wellness platforms, moderation tools, and, eventually, AI-driven systems that classify and collect data. Blending documented practices with imagined scenes, the work reveals SOGICE not as a single event, but as a digital ecosystem spanning “ex-gay” testimonies, promotional videos, exercises, prayers, and data systems. Language shifts toward care and progress, but the underlying pressure to conform remains.\n\nWith each update, the system appears new; with each restart, it enters another era; and with every glitch, its limits are exposed. Visitors navigate the story through a headset, desktop, or phone—clicking, reading, and turning to explore the changing rooms. A dossier accompanies the work, linking sources with the narrative. Through its many transformations, SOGICE’s apparatus adapts and renews its promise of correction, but its failure endures: queer life persists.",
     workType: ["WebXR", "Interactive Browser", "Work in progress"],
@@ -558,6 +562,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#D5A62E",
     alternativeColor: "#8A6500",
     theme: "worldmaking",
+    exhibitionThemes: ["Dreams and simulated worlds"],
     description:
       "The Grand Hotel Bald Cockatoo is an immersive installation, the second work in the Visitations: The Grand Hotels (of Joseph Cornell) series. Based on perhaps the most absurd of Robert Coover’s sketches from his book The Grand Hotels (of Joseph Cornell), this hotel is a hotel of dreams, in which the hotel manager is a fortunetelling cockatoo. The audience enters a large installation in the form of a bird’s nest. Embedded in the walls of the nest are four large screens, where short dream narratives recombine. The authors wrote the dream narratives in an adapted exquisite-corpse fashion, using AI text-to-video generation as a prompt. Voices based on modernist authors, tracked separately from the videos, narrate the stories. At the back of the nest is the fortune-teller and an interactive fortune-telling device. Guests can press a button to generate a fortune of their own, which is printed for them to take home.",
     workType: ["Immersive Installation"],
@@ -589,6 +594,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#C4473D",
     alternativeColor: "#A52E27",
     theme: "interface",
+    exhibitionThemes: ["Language across materials"],
     description:
       "Glasslike Fabric is an interactive narrative where the reader scans the world, anything, everywhere, and generates strange stories about things capture by their phone’s camera. The viewer points at a room, street, object or landscape and presses Scan. The work captures a still image, finds shapes within it and outlines selected regions. Red and grey lines, arrows, labels and fragments of equations connect the shapes.\n\nThe work uses OpenCV.js to detect edges and colour boundaries, identify contours and select prominent shapes. Tapping an outlined shape opens a short fictional incident report, assembled from prewritten phrases using a far too complex generative story engine. The shape’s type determines which opening phrases are available, while its size and complexity also affect the brief stories.\n\nThese are generated stories of places where neighbouring dimensions overlapped, allowing materials and objects to intermingle and impact their respective worlds. Trajectories change direction, glass retains an image, a wall becomes fabric.\n\nWith a near infinite number of stories, the work builds new worlds with every new snapshot of what’s around you, ordinary surroundings become imagined incidents, diagrams measure the evidential rate.",
     workType: ["Augmented Reality", "Interactive Digital Literature"],
@@ -617,6 +623,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#ffffff",
     alternativeColor: "#000000",
     theme: "interface",
+    exhibitionThemes: ["Language across materials"],
     description:
       "An unlikely marriage of print and digital, Between Page and Screen chronicles a love affair between two characters, P and S.\n\nThe book has no words, only inscrutable black and white geometric patterns that, when coupled with a webcam, conjure the written word. Reflected on screen, the reader sees him or herself with open book in hand, language springing alive and shape-shifting with each turn of the page.\n\nThe story unfolds through a playful and cryptic exchange of letters between P and S as they struggle to define their relationship. Rich with innuendo, anagrams, etymological and sonic affinities between words, Between Page and Screen revels in language and the act of reading.",
     workType: ["Augmented Reality", "Interactive Digital Literature"],
@@ -647,6 +654,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#8B5E3C",
     alternativeColor: "#6B4027",
     theme: "embodiment",
+    exhibitionThemes: ["Synthetic systems and constructed authority"],
     description:
       "Bybanen Slop Surfer is a playable descent into AI slop: a version of Bergen flattened, exaggerated and reassembled through the visual language of algorithmically generated culture.\n\nThe work takes a recognizable city and subjects it to the same processes increasingly applied to images, writing, music and online culture: simplification, repetition, imitation and endless recombination.\n\nBergen becomes simultaneously familiar and synthetic — a cheerful approximation of itself.",
     workType: ["VR Game", "VR Installation"],
@@ -675,6 +683,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#555555",
     alternativeColor: "#333333",
     theme: "embodiment",
+    exhibitionThemes: ["Embodiment, care, and resistance"],
     description:
       "Emperor, an interactive and narrative experience which invites us to travel inside the brain of a father, suffering from aphasia. Alongside his daughter, we journey into the father’s mental space – imagined as a hand-drawn, monochrome landscape – as she seeks to learn more about his inner self, now obscured by illness.",
     workType: ["VR"],
@@ -704,6 +713,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#51477F",
     alternativeColor: "#40356D",
     theme: "worldmaking",
+    exhibitionThemes: ["Dreams and simulated worlds"],
     description:
       "The third work in the Visitations: The Grand Hotels (of Joseph Cornell) series, the headset VR experience The Grand Hotel Galactic Center is perhaps the grandest of the grand hotels–at a glance–but after several days in the bubble you realize why the rooms come so cheap. It is a hotel of both wonder and despair. The clouds are on an infinite loop. The stars are all flickering. Glitzy exteriors concealing broken-down infrastructure Like a boarding house that is maintained without care. The exotic floor show almost makes up for it. But you sense that it is the same every night, and the performers are just going through the motions. You wish you could see something beyond the banality, but it just isn’t there. You might have loved this when you were a child, but every ounce of your childhood is gone, sapped from you. This is the kind of palliative care you get with the basic insurance. Galactic Center explores text-to-VR environment and gaussian splats as components of a Unity development process. Trigger warning: includes a reference to suicide.",
     workType: ["VR", "Work in progress"],
@@ -733,6 +743,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#B44772",
     alternativeColor: "#8E2F57",
     theme: "agency",
+    exhibitionThemes: ["Embodiment, care, and resistance"],
     description:
       "Her Name Was Gisberta is a VR/2D documentary that portrays the life and death of Gisberta Salce, a Brazilian Trans woman murdered by 14 young men (12 - 16 years old) in the city of Porto (Portugal) in 2006. Uniting the knowledge provided by Virtual Reality Perspective-Taking Tasks, this project was created as a tool of education, social intervention and activism against transphobia.",
     workType: ["VR"],
@@ -759,6 +770,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#2D7F88",
     alternativeColor: "#185F68",
     theme: "worldmaking",
+    exhibitionThemes: ["Embodiment, care, and resistance"],
     description:
       "Through mind-bending animation, GOLIATH: PLAYING WITH REALITY explores the limits of reality and a true story of so-called ‘schizophrenia’ and the power of gaming communities. Echo (Tilda Swinton) guides you through the many realities of Goliath, a man who spent years isolated in psychiatric institutions but finds connection in multiplayer games. Combining heartfelt dialogue, mesmerising visuals and symbolic interactions, weave through multiple worlds to uncover Goliath’s poignant story.",
     workType: ["VR"],
@@ -787,6 +799,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#8CB6C7",
     alternativeColor: "#3D7288",
     theme: "memory",
+    exhibitionThemes: ["Memory and afterlives"],
     description:
       "The Land of Crystals creates a moving panorama from archival photographs and historical images of Edvard Munch’s demolished house and studios at Ekely in Oslo. Through the manipulation and sequencing of these still images, the film reconstructs a place that no longer exists, creating a virtual passage through Munch’s working environment and the landscape that surrounded it.\n\nThe film’s voice-over is drawn from Munch’s writings in The Tree of Knowledge of Good and Evil, a portfolio of texts and images compiled at Ekely in 1915–16. Several of the archival photographs show Munch in his Winter Studio, creating a direct connection between the written voice heard in the film and the physical spaces in which these texts were conceived.\n\nThe Norwegian texts are spoken by an AI-generated voice. This introduces an intentional tension between historical memory and contemporary technology. Munch recorded his voice onto wax cylinders during his lifetime, but none of these recordings have survived, and there is no known surviving recording that allows us to hear what his voice sounded like. The voice in The Land of Crystals is therefore neither an attempt to reproduce Munch’s actual voice nor a historical reconstruction. Instead, it occupies the space between absence and imagination: a technologically generated voice giving sound to words whose author’s own voice has been irretrievably lost.\n\nThe title is taken from Munch’s writings, in which he refers to a “Land of Crystals.” For O’Kane, the phrase becomes both a poetic image and a conceptual framework for thinking about memory, geological time, transformation, and the archive. The film considers how technology can reactivate fragments of the past while simultaneously reminding us of what can never be recovered.",
     workType: ["Video"],
@@ -816,6 +829,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#C19D65",
     alternativeColor: "#77572F",
     theme: "memory",
+    exhibitionThemes: ["Memory and afterlives"],
     description:
       "The first of the Visitations: The Grand Hotels of Joseph Cornell series, Sand Fountain is a collaborative AR project that extends one of the imaginary universes of Joseph Cornell's collage shadowbox hotel series and the Robert Coover’s book of short fictions The Grand Hotels (of Joseph Cornell). The Grand Hotel Sand Fountain is a place of memory and loss. The work takes a kaleidoscopic approach to time, image, and language through the creation of evocative and entangled narratives interweaving past texts and imagined actions. Visitors walk three poetic narratives were individually written and collaboratively crafted. The visuals range from deeply personal ephemera to AI-generated images. The narration plays between human voice and generated speech. Haunted objects come to life through collaborative writing methods, assembling fleeting stories, experimenting with generative AI platforms in the AR production workflow, resulting new storytelling methods.",
     workType: ["Augmented Reality"],
@@ -848,6 +862,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#E45D3E",
     alternativeColor: "#B43822",
     theme: "interface",
+    exhibitionThemes: ["Language across materials"],
     description:
       "Fiery Sparks of Light is an AR experience that reimagines a collection of poems by four renowned Canadian women poets - Margaret Atwood, Nicole Brossard, Canisia Lubrin and Sarah Tolmie. It was launched as part of an exclusive hybrid (onsite/digital) programme in Germany that celebrates Canada as the Frankfurt Book Fair Guest of Honor 2021.\n\nUsing volumetric cinema technology as the foundation, Fiery Sparks of Light includes an accompanying printed book that contains QR codes that bring  Atwood, Brossard, Lubrin and Tolmie to life as holograms on a mobile device. This enabled Book Fair guests to experience these four poets reading their own original poems, which explore feminist perspectives of patriarchy, gendered objectification, stereotyping and oppression, while further augmented audiovisual after-effects enhance the viewer’s experience. This sensory exploration is designed to elicit an emotional response as users set the stage for these fiery written words to spark to life.",
     workType: ["Augmented Reality"],
@@ -877,6 +892,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#2F6FB5",
     alternativeColor: "#1D4F8A",
     theme: "worldmaking",
+    exhibitionThemes: ["Dreams and simulated worlds", "Synthetic systems and constructed authority"],
     description:
       "The Fishbowl Leaks transform(s) the exhibition into a porous virtual aquarium…\nVisitors encounter fragments of the surrounding works as marine life and unstable species through a browser-based augmented reality layer. Each encounter alters a personal creature, shaped by the visitor’s movement through the exhibition, transforming it into a generative story.\n\nThe aquarium acts as both environment and metaphor. It displays containment but also resembles a collective, developing system. On a shared screen, the aquarium begins in a state of order: partitioned and classified. As visitors contribute their creatures, this order gradually breaks down. Texts detach, species break free, the tank falls apart, and memory is leaking, releasing the creatures into open waters…\n\nThe Fishbowl Leaks imagine(s) a living narrative ecosystem. The single artworks start in fixed \ncategories and grow together into a symbiotic, participatory collective, by the help of exhibition \nvisitors. The result sits between exhibition guide, generative story system, and shared \nhallucination in a container. What might evolve when that container starts to leak?",
     workType: ["Augmented Reality", "Work in Progress"],
@@ -905,6 +921,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#9A6BDB",
     alternativeColor: "#5E2E9A",
     theme: "agency",
+    exhibitionThemes: ["Language across materials", "Embodiment, care, and resistance"],
     description:
       "Realidad Mitigada (Mitigated Reality) is an AR/Extended Reality App created for the project and hybrid book Realidad Mitigada, a book that collects poems and digital “artefacts” by Tina Escaja (aka Alm@ Pérez). Many of Escaja’s poems and digital works reflects upon issues of social justice, such as domestic violence (Luna Morada/Black Moon) and informatics control (Bar Codes), which makes this book particularly relevant given its potential subversion of traditional technologies that have served to legitimate oppression, such as the printing press. Realidad mitigada / Mitigated Reality is an innovative work created by four professionals in the digital arts. The AR app for the project allows the reader to have an “extended reality” experience that will provide a unique and groundbreaking involvement. The series of stickers located at the end of the book expands the “Virus and the Sea” segment of the book to the community by inviting the reader to place them in random locations, in the way that the QR codes for Escaja’s COVID-19 project have already been posted in cities around the world to collect testimonies about our experiences during the pandemic.",
     workType: ["Augmented Reality", "Interactive Digital Literature"],
@@ -934,6 +951,7 @@ const exhibitionSources: ArtifactSource[] = [
     color: "#C77B30",
     alternativeColor: "#94531A",
     theme: "worldmaking",
+    exhibitionThemes: ["Dreams and simulated worlds", "Synthetic systems and constructed authority"],
     description:
       "Earth Fortunes is conceived of as an exploratory journey through some of the ways energy systems affect our lives. If you are excited, worried, or unsure about future energy systems, Earth Fortunes allows you to ‘foretell’ the planet’s future using tarot cards outfitted with augmented reality (AR) visualization informed by the climate science and scientific climate modelling.\n\nWhen activated as a role playing game, the character of the fortune teller can lay out the tarot deck and then point a smart phone at the centre cards to make holographic visualizations appear. They can then use those augmented reality images to recount and bring to life the story of five different Shared Socioeconomic Pathways (SSPs).\n\nThe Augmented Reality visualizations linked to the tarot cards were created using the Global Change Analysis Model (GCAM), developed by the Joint Global Change Research Institute, and a set of long-term scenarios, otherwise known as the Shared Socio-economic Pathways (SSP), to model possible socio-economic and environmental futures.\n\nThe graphs and values reported in this kit were developed by consulting with a computer model called GCAM: the Global Change Analysis Model.",
     workType: ["Augmented Reality"],

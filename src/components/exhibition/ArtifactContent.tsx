@@ -162,7 +162,6 @@ export function ArtifactContent({ artifact, onContinue, mini = false, onEnlarged
                 </div>
               </section>
             )}
-            <p className="mt-5 text-sm text-white/50">Traits carried forward: {artifact.visualTraits.join(" · ")}</p>
           </div>
 
           <ArtworkFeedback artifactId={artifact.id} />

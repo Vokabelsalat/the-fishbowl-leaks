@@ -1,6 +1,9 @@
 import type { ExhibitionArtifact } from "@/types/exhibition";
 import type { Discovery } from "@/store/journeySlice";
-import { artworkBanks, exhibitionNarrativeThemes, leakBanks, leakReadiness, sentenceTemplates, themeBanks, type PosTag, type Slot } from "@/data/narrativeGrammar";
+import { artworkBanks, connectorShare, exhibitionNarrativeThemes, leakBanks, leakReadiness, middleConnectorKinds, sentenceConnectors, sentenceTemplates, themeBanks, type PosTag, type Slot } from "@/data/narrativeGrammar";
+
+type ConnectorKind = (typeof middleConnectorKinds)[number];
+type Connector = { kind: ConnectorKind | "closing"; words: string };
 import { replacementMarkup } from "@/lib/narrative/narrativeMarkup";
 
 function hash(value: string) {
@@ -31,7 +34,22 @@ function leak(word: string, slot: Slot, breakdown: number, seed: string) {
   return replacementMarkup(word, pick(replacements, `${seed}:leak-word`));
 }
 
-function renderSentence(artifact: ExhibitionArtifact, route: string, position: number, breakdown: number) {
+/**
+ * The words that link a sentence to the one before it. The first sentence has none, and of the others
+ * only about `connectorShare` do. The last of three or more closes the story; the rest link in a
+ * different way than the last connector did, so the story moves on in time, follows from what came
+ * before, or goes against it, in turn.
+ */
+function connectorFor(route: string, position: number, count: number, previous: Connector | null): Connector | null {
+  if (position === 0 || unit(`${route}:${position}:connected`) >= connectorShare) return null;
+  if (position === count - 1 && count >= 3) {
+    return { kind: "closing", words: pick(sentenceConnectors.closing, `${route}:${position}:closing`) };
+  }
+  const kind = pick(middleConnectorKinds.filter((candidate) => candidate !== previous?.kind), `${route}:${position}:kind`);
+  return { kind, words: pick(sentenceConnectors[kind], `${route}:${position}:connector`) };
+}
+
+function renderSentence(artifact: ExhibitionArtifact, route: string, position: number, breakdown: number, connector: Connector | null) {
   const artwork = artworkBanks[artifact.id] ?? {
     NP: { subject: [artifact.title] },
     VBD: { motion: ["drifted"] },
@@ -50,7 +68,9 @@ function renderSentence(artifact: ExhibitionArtifact, route: string, position: n
     else throw new Error(`Invalid narrative slot: ${tag}:${slot}`);
     return leak(pick(words, `${seed}:${tag}:${slot}`), slot, breakdown, `${seed}:${tag}:${slot}`);
   });
-  // Every template opens with a subject or "The", neither of which is ever replaced.
+  // Every template opens with a subject or "The", neither of which is ever replaced. After a
+  // connector, "The" turns lower case; subjects keep their own case, since some are names.
+  if (connector) return `${connector.words} ${line.startsWith("The ") ? `the${line.slice(3)}` : line}`;
   return line[0].toUpperCase() + line.slice(1);
 }
 
@@ -74,8 +94,13 @@ export function generateJourneyNarrative(
   if (orderedDiscoveries.length === 0) return ["The fishbowl waits."];
 
   const route = orderedDiscoveries.map((discovery) => discovery.artifactId).join("|");
+  let previousConnector: Connector | null = null;
   return orderedDiscoveries.flatMap((discovery, position) => {
     const artifact = artifactMap.get(discovery.artifactId);
-    return artifact ? [renderSentence(artifact, route, position, breakdown)] : [];
+    if (!artifact) return [];
+    const connector = connectorFor(route, position, orderedDiscoveries.length, previousConnector);
+    // A sentence without a connector leaves the last one standing, so the next still links differently.
+    if (connector) previousConnector = connector;
+    return [renderSentence(artifact, route, position, breakdown, connector)];
   });
 }

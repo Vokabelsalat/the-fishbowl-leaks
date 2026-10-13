@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { artifacts } from "@/data/artifacts";
-import { artworkBanks, exhibitionNarrativeThemes, sentenceTemplates, themeBanks } from "@/data/narrativeGrammar";
+import { artworkBanks, exhibitionNarrativeThemes, middleConnectorKinds, sentenceConnectors, sentenceTemplates, themeBanks } from "@/data/narrativeGrammar";
 import { generateJourneyNarrative } from "@/lib/narrative/generateJourneyNarrative";
 import { parseNarrativeLine, plainNarrativeLine } from "@/lib/narrative/narrativeMarkup";
 import type { Discovery } from "@/store/journeySlice";
@@ -72,6 +72,25 @@ describe("generateJourneyNarrative", () => {
         }
       }
     }
+  });
+
+  it("links about half the sentences to the one before, each time in a different way", () => {
+    const kindOf = (line: string) => middleConnectorKinds.find((kind) =>
+      sentenceConnectors[kind].some((words) => line.startsWith(`${words} `)));
+    const closes = (line: string) => sentenceConnectors.closing.some((words) => line.startsWith(`${words} `));
+    let linked = 0;
+    let following = 0;
+    for (let offset = 0; offset < artifacts.length; offset += 1) {
+      const route = Array.from({ length: 6 }, (_, index) => artifacts[(offset + index * 5) % artifacts.length].id);
+      const lines = generateJourneyNarrative(discoveries(route), artifacts);
+      expect(kindOf(lines[0])).toBeUndefined();
+      const kinds = lines.slice(1, -1).map(kindOf).filter((kind) => kind !== undefined);
+      kinds.slice(1).forEach((kind, index) => expect(kind).not.toBe(kinds[index]));
+      linked += kinds.length + (closes(lines.at(-1)!) ? 1 : 0);
+      following += lines.length - 1;
+    }
+    expect(linked / following).toBeGreaterThan(0.3);
+    expect(linked / following).toBeLessThan(0.7);
   });
 
   it("keeps every stop in a longer path", () => {

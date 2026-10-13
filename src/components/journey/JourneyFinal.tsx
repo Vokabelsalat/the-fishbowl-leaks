@@ -1,17 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { artifacts, artifactById } from "@/data/artifacts";
 import { generateJourneyNarrative } from "@/lib/narrative/generateJourneyNarrative";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { journeyReleased, resetJourney, setExperiencePhase } from "@/store/journeySlice";
 import { clearJourney } from "@/store/persistence";
-import { selectDiscoveredArtifacts, selectDiscoveries, selectJourney } from "@/store/selectors";
+import { selectDiscoveries, selectJourney } from "@/store/selectors";
 import { ShareContribution } from "@/components/journey/ShareContribution";
 import { themes } from "@/data/themes";
 import { PathVisualization } from "@/components/visualization/PathVisualization";
-import { activeVisualizationCopy, visualizationDesign } from "@/config/visualization";
+import { activeVisualizationCopy } from "@/config/visualization";
 import dynamic from "next/dynamic";
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 import { ScrollNotice } from "@/components/ui/ScrollNotice";
@@ -26,9 +26,6 @@ export function JourneyFinal() {
   const dispatch = useAppDispatch();
   const discoveries = useAppSelector(selectDiscoveries);
   const journey = useAppSelector(selectJourney);
-  const discoveredArtifacts = useAppSelector(selectDiscoveredArtifacts);
-  // The traits gathered so far are a long list, so they start folded away.
-  const [traitsOpen, setTraitsOpen] = useState(false);
   const lines = useMemo(
     () => generateJourneyNarrative(discoveries, artifacts),
     [discoveries],
@@ -89,39 +86,6 @@ export function JourneyFinal() {
       <section className="relative z-10 mx-auto max-w-xl pb-8">
         <p className="mb-6 text-sm text-white/45">The aquarium, remembered from inside</p>
         <GeneratedNarrative lines={lines} />
-
-        <section className="mt-10 border-t border-white/15 pt-5" aria-labelledby="journey-traits">
-          <h2 id="journey-traits" className="font-display text-xl text-white/85">
-            <button
-              type="button"
-              onClick={() => setTraitsOpen(!traitsOpen)}
-              aria-expanded={traitsOpen}
-              aria-controls="journey-traits-list"
-              className="flex min-h-11 w-full items-center justify-between gap-3 text-left transition-colors hover:text-white"
-            >
-              <span>{visualizationDesign === "constellation" ? "Signals, in encounter order" : "Traits crossing the glass"}</span>
-              <span aria-hidden="true" className="font-sans text-base">{traitsOpen ? "↑" : "↓"}</span>
-            </button>
-          </h2>
-          <ol id="journey-traits-list" className="mt-4 space-y-3" hidden={!traitsOpen}>
-            {discoveredArtifacts.map(({ artifact, sequence }) => (
-              <li key={artifact.id} className="flex items-baseline gap-4">
-                <span className="text-sm text-white/30">{String(sequence).padStart(2, "0")}</span>
-                {visualizationDesign === "constellation" ? (
-                  <span className="font-display text-xl">{artifact.title}</span>
-                ) : (
-                  <span>
-                    <span className="font-display block text-xl">{artifact.creaturePart.label}</span>
-                    <span className="mt-0.5 block text-sm text-white/45">{artifact.marineType} · from {artifact.title}</span>
-                  </span>
-                )}
-                <span className="ml-auto text-xs" style={{ color: artifact.color }}>
-                  {themes[artifact.theme].label.toLowerCase()}
-                </span>
-              </li>
-            ))}
-          </ol>
-        </section>
 
         <div className="mt-10">
           <ShareContribution

@@ -39,6 +39,25 @@ export const sentenceTemplates = [
   "{NP:subject} {VBD:motion} beneath the {JJ:quality} {NN:place}.",
 ] as const;
 
+/**
+ * Words that open each sentence after the first, so the lines read as one passage through the
+ * exhibition rather than separate notes. They are grouped by how they tie a sentence to the one
+ * before: in time, as its consequence, or against it. Each carries its own punctuation, since short
+ * ones like "So" run straight into the sentence. The last sentence of a longer story closes it.
+ */
+export const sentenceConnectors = {
+  time: ["Then,", "Later,", "Meanwhile,", "Soon,", "Further on,", "Afterwards,", "Before long,", "Elsewhere,"],
+  cause: ["So", "Because of this,", "As a result,", "And so", "In turn,", "Drawn by it,", "For that reason,", "Stirred by this,"],
+  contrast: ["Yet", "Despite this,", "Even so,", "Nevertheless,", "Instead,", "Undeterred,", "In spite of that,", "Still,"],
+  closing: ["Finally,", "At last,", "In the end,", "And in the end,"],
+} as const;
+
+/** The share of sentences after the first that open with a connector; the others simply follow on. */
+export const connectorShare = 0.5;
+
+/** The kinds of link a sentence in the middle of a story can have to the one before it. */
+export const middleConnectorKinds = ["time", "cause", "contrast"] as const;
+
 export type PosTag = "NP" | "NN" | "JJ" | "VBD";
 export type Slot = "subject" | "motion" | "place" | "boundary" | "trace" | "quality";
 

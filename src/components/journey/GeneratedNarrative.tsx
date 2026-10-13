@@ -8,7 +8,7 @@ export function GeneratedNarrative({ lines }: GeneratedNarrativeProps) {
       {lines.map((line, index) => (
         <p
           key={`${index}-${line}`}
-          className="mb-7 whitespace-pre-line"
+          className="mb-3 whitespace-pre-line"
         >
           {line}
         </p>

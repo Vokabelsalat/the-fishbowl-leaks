@@ -18,6 +18,8 @@ bow
 hat
 take out the piano track
 integrate questionaire in the end
+fix up the fish and narwhal fins (delete the model part and make sure it stays deleted)
+collapse the short bios of the creators
 
 
 The release animation of the creature needs to be smoother. Drop the creature into the collective screen with a smooth animation.
@@ -33,7 +35,7 @@ new poster
 check the color settings of the tv
 fix up the buttons and the user guidance
 have the mating scale up when less contributions occurr
-fix up the fish and narwhal fins (delete the model part and make sure it stays deleted)
-collapse the short bios of the creators
+
+
 come up with a menu of artifacts which collapses or groups under different themes
 the release animation is still messed up.

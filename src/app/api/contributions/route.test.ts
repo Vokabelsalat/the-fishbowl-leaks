@@ -29,7 +29,7 @@ describe("contribution feedback submission", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("passes artwork ratings to database storage along with their artifact ID", async () => {
-    const feedback = { narrative: 4, ludicEntertainment: 2, interaction: null };
+    const feedback = { connection: 4, ludic: 2, narrative: 5, feelings: ["Curious", "Uneasy"] };
     const response = await POST(request(feedback));
     expect(response.status).toBe(201);
     expect(createContribution).toHaveBeenCalledWith(expect.objectContaining({
@@ -45,7 +45,7 @@ describe("contribution feedback submission", () => {
     expect(input.parts[0]).not.toHaveProperty("feedback");
   });
 
-  it.each([{ narrative: 8 }, { interaction: 2.5 }, { narrative: "3" }, { other: 4 }, [], null])(
+  it.each([{ narrative: 8 }, { ludic: 2.5 }, { narrative: "3" }, { narrative: null }, { other: 4 }, { feelings: ["Happy"] }, { feelings: ["Calm", "Sad", "Moved", "Bored"] }, [], null])(
     "rejects malformed feedback before storage: %j",
     async (feedback) => {
       expect((await POST(request(feedback))).status).toBe(422);

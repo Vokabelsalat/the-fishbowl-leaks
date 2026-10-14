@@ -24,9 +24,16 @@ function isDiscovery(value: unknown): value is Discovery {
   return (
     typeof candidate.artifactId === "string" &&
     typeof candidate.sequence === "number" &&
-    typeof candidate.discoveredAt === "number" &&
-    (candidate.feedback === undefined || isArtworkFeedback(candidate.feedback))
+    typeof candidate.discoveredAt === "number"
   );
+}
+
+// Feedback saved under an earlier questionnaire is dropped rather than discarding the whole journey.
+function withValidFeedback(discovery: Discovery): Discovery {
+  if (discovery.feedback === undefined || isArtworkFeedback(discovery.feedback)) return discovery;
+  const rest = { ...discovery };
+  delete rest.feedback;
+  return rest;
 }
 
 export function loadJourney(storage: StorageLike): PersistedJourney | null {
@@ -67,7 +74,7 @@ export function loadJourney(storage: StorageLike): PersistedJourney | null {
       ...(creatureProportions ? { creatureProportions } : {}),
       ...(value.narrativeState ? { narrativeState: value.narrativeState } : {}),
       discoveries: value.discoveries
-        .slice()
+        .map(withValidFeedback)
         .sort((a, b) => a.sequence - b.sequence),
     };
   } catch {

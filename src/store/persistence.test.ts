@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeStore } from "@/store";
-import { artifactDetected, feedbackRated, startJourney } from "@/store/journeySlice";
+import { artifactDetected, feedbackRated, feelingToggled, startJourney } from "@/store/journeySlice";
 import {
   JOURNEY_STORAGE_KEY,
   clearJourney,
@@ -29,16 +29,29 @@ class MemoryStorage {
 }
 
 describe("journey persistence", () => {
-  it("persists partial ratings and not-applicable responses across reloads", () => {
+  it("persists partial ratings and feeling words across reloads", () => {
     const storage = new MemoryStorage();
     const store = makeStore();
     const unsubscribe = subscribeToJourneyPersistence(store, storage);
     store.dispatch(startJourney({ sessionId: "session-rated", startedAt: 10 }));
     store.dispatch(artifactDetected("body-space", 20));
     store.dispatch(feedbackRated({ artifactId: "body-space", dimension: "narrative", rating: 4 }));
-    store.dispatch(feedbackRated({ artifactId: "body-space", dimension: "interaction", rating: null }));
+    store.dispatch(feelingToggled({ artifactId: "body-space", feeling: "Moved" }));
     unsubscribe();
-    expect(loadJourney(storage)?.discoveries[0].feedback).toEqual({ narrative: 4, interaction: null });
+    expect(loadJourney(storage)?.discoveries[0].feedback).toEqual({ narrative: 4, feelings: ["Moved"] });
+  });
+
+  it("keeps discoveries but drops feedback saved under the earlier questionnaire", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(JOURNEY_STORAGE_KEY, JSON.stringify({
+      sessionId: "session-legacy",
+      startedAt: 10,
+      completedAt: null,
+      discoveries: [{ artifactId: "body-space", sequence: 1, discoveredAt: 20, feedback: { ludicEntertainment: 2, interaction: null } }],
+    }));
+    const discoveries = loadJourney(storage)?.discoveries;
+    expect(discoveries).toHaveLength(1);
+    expect(discoveries?.[0]).not.toHaveProperty("feedback");
   });
 
   it("round-trips the serializable journey fields", () => {

@@ -57,7 +57,7 @@ function parseSubmission(value: unknown): ContributionSubmission | string {
     const artifact = artifactById.get(item.artifactId);
     if (!artifact) return `Unknown artifact "${item.artifactId}".`;
     if (item.feedback !== undefined && !isArtworkFeedback(item.feedback)) {
-      return `Artifact "${item.artifactId}" has invalid ratings. Use integers from 1 to 5, or null for not applicable.`;
+      return `Artifact "${item.artifactId}" has invalid ratings. Use integers from 1 to 5 and at most three known feeling words.`;
     }
     if (seen.has(item.artifactId)) return `Artifact "${item.artifactId}" appears twice.`;
     if (item.sequence !== index + 1) {

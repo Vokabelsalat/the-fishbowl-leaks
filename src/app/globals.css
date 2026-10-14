@@ -349,10 +349,22 @@ a:focus-visible {
   }
 }
 
+.feeling-word {
+  animation: feeling-word-appear 420ms ease-out both;
+}
+
+@keyframes feeling-word-appear {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .radar-sweep,
   .radar-contact,
-  .theme-echo {
+  .theme-echo,
+  .feeling-word {
     animation: none;
   }
 }

@@ -164,7 +164,7 @@ export function ArtifactContent({ artifact, onContinue, mini = false, onEnlarged
             )}
           </div>
 
-          <ArtworkFeedback artifactId={artifact.id} />
+          <ArtworkFeedback key={artifact.id} artifactId={artifact.id} />
         </div>
       </div>
 

@@ -5,7 +5,15 @@ import { creatureColorPalette, type CreatureColorPalette } from "@/lib/creature/
 import { creaturePattern, type CreaturePattern } from "@/lib/creature/patterns";
 import { creatureProportions, type CreatureProportions } from "@/lib/creature/proportions";
 import type { NarrativeState } from "@/types/exhibition";
-import { isArtworkFeedback, type ArtworkFeedback, type FeedbackDimension, type FeedbackRating } from "@/lib/evaluation/artworkFeedback";
+import {
+  isFeedbackRating,
+  isFeelingWord,
+  MAX_FEELINGS,
+  type ArtworkFeedback,
+  type FeedbackDimension,
+  type FeedbackRating,
+  type FeelingWord,
+} from "@/lib/evaluation/artworkFeedback";
 
 export type ExperiencePhase =
   | "intro"
@@ -200,12 +208,23 @@ const journeySlice = createSlice({
     },
     feedbackRated(
       state,
-      action: PayloadAction<{ artifactId: string; dimension: FeedbackDimension; rating: FeedbackRating | null }>,
+      action: PayloadAction<{ artifactId: string; dimension: FeedbackDimension; rating: FeedbackRating }>,
     ) {
       const { artifactId, dimension, rating } = action.payload;
       const discovery = state.discoveries.find((item) => item.artifactId === artifactId);
-      if (!discovery || !isArtworkFeedback({ [dimension]: rating })) return;
+      if (!discovery || !isFeedbackRating(rating)) return;
       discovery.feedback = { ...discovery.feedback, [dimension]: rating };
+    },
+    feelingToggled(state, action: PayloadAction<{ artifactId: string; feeling: FeelingWord }>) {
+      const { artifactId, feeling } = action.payload;
+      const discovery = state.discoveries.find((item) => item.artifactId === artifactId);
+      if (!discovery || !isFeelingWord(feeling)) return;
+      const feelings = discovery.feedback?.feelings ?? [];
+      if (feelings.includes(feeling)) {
+        discovery.feedback = { ...discovery.feedback, feelings: feelings.filter((word) => word !== feeling) };
+      } else if (feelings.length < MAX_FEELINGS) {
+        discovery.feedback = { ...discovery.feedback, feelings: [...feelings, feeling] };
+      }
     },
     setActiveArtifact(state, action: PayloadAction<string | null>) {
       state.activeArtifactId = action.payload;
@@ -258,6 +277,7 @@ export const {
   artifactRevisited,
   choiceMade,
   feedbackRated,
+  feelingToggled,
   hydrateJourney,
   resetJourney,
   openSeaChanged,

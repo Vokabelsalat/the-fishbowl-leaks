@@ -9,6 +9,16 @@ Two advertisement trailers for The Fishbowl Leaks, recorded from the running app
 
 The video files are not in the repository: `scripts/trailer/work/` is gitignored and holds the raw footage (about 1 GB). Copies of the finished cuts were exported to `~/Movies`.
 
+## Stills
+
+Every shot of both cuts is also exported as a still: its middle frame, 1920 × 1080 PNG, numbered in trailer order and named after the recording it comes from.
+
+- `scripts/trailer/work/stills/teaser/` holds 20 stills; `scripts/trailer/work/stills/extended/` holds 25.
+- Each folder has a `clean/` set without captions, for posters and social media.
+- Each folder also has a `captioned/` set, with the caption showing at that moment as in the trailer.
+
+Regenerate them with `python3 build.py teaser stills` or `python3 build.py extended stills`.
+
 ## What the trailers show
 
 Both follow one visitor's story and then the tank over a day. Captions are set in the app's display face (Iowan Old Style) in `--foam`, adapted from the intro screen and the README.

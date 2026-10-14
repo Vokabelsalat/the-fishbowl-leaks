@@ -34,9 +34,9 @@ http://localhost:3066/poster?format=landscape&seed=cdf4ff45&pose=dolphin-8%3A-0.
 
 The separators in the tank are hard to see. Can you increase the thickness a bit and also make sure that the creatures are colliding earlier with it? Sometimes it looks like the creature is swimming through the separator but then it turns.
 
-check the color settings of the tv
-have the mating scale up when less contributions occurr
-come up with a menu of artifacts which collapses or groups under different themes
-we have to update the heatmap
 
-The narwhal still has the uggly side fin (in the synthetic test data set?)
+
+have the mating scale up when less contributions occurr
+Update the heat map with the current plan
+check the color settings of the tv
+fix up the naming of the rating scales

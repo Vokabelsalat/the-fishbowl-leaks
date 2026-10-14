@@ -1,4 +1,4 @@
-"""Cuts a trailer from the recorded clips: python3 build.py [teaser|extended]"""
+"""Cuts a trailer from the recorded clips, or exports a still of every shot: python3 build.py [teaser|extended] [stills]"""
 import os
 import subprocess
 import sys
@@ -102,6 +102,54 @@ def run(args):
         sys.exit(result.returncode)
 
 
+def framing_graph(kind, clip, src, framing, speed, dur, still=False):
+    """The inputs and filter graph that frame one shot into 1920x1080 as [v]; a still takes one frame from `src`."""
+    inputs = ["-ss", f"{src:.3f}", "-t", f"{dur * speed + 0.3:.3f}", "-i", f"{S}clips/{clip}.mp4"]
+    retime = f"setpts=PTS/{speed}," if speed != 1 and not still else ""
+    if kind in ("wide", "poster"):
+        f = f"[0]{retime}scale=1920:1080:flags=lanczos,setsar=1[v]"
+    elif kind == "punch":
+        f = f"[0]{retime}crop=1920:1080:{framing[0]}:{framing[1]},setsar=1[v]"
+    elif kind == "close":
+        f = f"[0]{retime}crop=1440:810:{framing[0]}:{framing[1]},scale=1920:1080:flags=lanczos,setsar=1[v]"
+    elif kind == "phone":
+        inputs += ["-i", S + "ov/phone-under.png", "-i", S + "ov/phone-mask.png"]
+        f = ("[0]split[a][b];"
+             "[a]scale=1920:-2,crop=1920:1080,boxblur=40:2,eq=brightness=-0.16:saturation=0.8[bg];"
+             "[bg][1]overlay=0:0[bg2];"
+             "[b]scale=444:960:flags=lanczos,format=rgba[ph];[2]format=gray[m];[ph][m]alphamerge[phm];"
+             "[bg2][phm]overlay=480:60,setsar=1[v]")
+    elif kind == "end":
+        inputs += ["-loop", "1", "-t", f"{dur:.3f}", "-i", S + "ov/endcard.png"]
+        fade = "" if still else ",fade=t=in:st=0.3:d=1.2:alpha=1"
+        f = ("[0]scale=1920:1080:flags=lanczos,gblur=sigma=5[bg];"
+             f"[1]format=rgba{fade}[ec];[bg][ec]overlay=0:0,setsar=1[v]")
+    return inputs, f
+
+
+def stills(name):
+    """Writes the middle frame of every shot as a PNG, once clean and once with the caption showing at that moment."""
+    cut = CUTS[name]
+    folders = {variant: f"{S}stills/{name}/{variant}/" for variant in ("clean", "captioned")}
+    for folder in folders.values():
+        os.makedirs(folder, exist_ok=True)
+    t0 = 0.0
+    for i, (length, kind, clip, src, framing, speed) in enumerate(cut["shots"]):
+        dur = round(length * FPS) / FPS
+        middle = t0 + dur / 2
+        base, graph = framing_graph(kind, clip, src + dur * speed / 2, framing, speed, dur, still=True)
+        captions = [cap for cap, cin, cout in cut["captions"] if cin + 0.5 <= middle <= cout - 0.5]
+        for variant, folder in folders.items():
+            inputs, f = list(base), graph
+            for cap in captions if variant == "captioned" else []:
+                index = sum(1 for arg in inputs if arg == "-i")
+                inputs += ["-i", f"{S}ov/{cap}.png"]
+                f = f.replace("[v]", "[pre]") + f";[pre][{index}]overlay=0:0[v]"
+            run([*inputs, "-filter_complex", f, "-map", "[v]", "-frames:v", "1", f"{folder}{i + 1:02d}-{clip}.png"])
+        print(f"{i + 1:02d} {middle:6.2f}s {clip}{'  · ' + captions[0] if captions else ''}")
+        t0 += dur
+
+
 def build(name):
     cut = CUTS[name]
     work = f"{S}seg-{name}/"
@@ -114,25 +162,7 @@ def build(name):
         t1 = t0 + dur
         out = f"{work}{i:02d}.mp4"
         segments.append(out)
-        inputs = ["-ss", f"{src:.3f}", "-t", f"{dur * speed + 0.3:.3f}", "-i", f"{S}clips/{clip}.mp4"]
-        retime = f"setpts=PTS/{speed}," if speed != 1 else ""
-        if kind in ("wide", "poster"):
-            f = f"[0]{retime}scale=1920:1080:flags=lanczos,setsar=1[v]"
-        elif kind == "punch":
-            f = f"[0]{retime}crop=1920:1080:{framing[0]}:{framing[1]},setsar=1[v]"
-        elif kind == "close":
-            f = f"[0]{retime}crop=1440:810:{framing[0]}:{framing[1]},scale=1920:1080:flags=lanczos,setsar=1[v]"
-        elif kind == "phone":
-            inputs += ["-i", S + "ov/phone-under.png", "-i", S + "ov/phone-mask.png"]
-            f = ("[0]split[a][b];"
-                 "[a]scale=1920:-2,crop=1920:1080,boxblur=40:2,eq=brightness=-0.16:saturation=0.8[bg];"
-                 "[bg][1]overlay=0:0[bg2];"
-                 "[b]scale=444:960:flags=lanczos,format=rgba[ph];[2]format=gray[m];[ph][m]alphamerge[phm];"
-                 "[bg2][phm]overlay=480:60,setsar=1[v]")
-        elif kind == "end":
-            inputs += ["-loop", "1", "-t", f"{dur:.3f}", "-i", S + "ov/endcard.png"]
-            f = ("[0]scale=1920:1080:flags=lanczos,gblur=sigma=5[bg];"
-                 "[1]format=rgba,fade=t=in:st=0.3:d=1.2:alpha=1[ec];[bg][ec]overlay=0:0,setsar=1[v]")
+        inputs, f = framing_graph(kind, clip, src, framing, speed, dur)
         # Every caption that overlaps this shot, faded only where it really begins or ends.
         for cap, cin, cout in cut["captions"]:
             if cout <= t0 or cin >= t1:
@@ -184,4 +214,6 @@ def build(name):
 
 
 if __name__ == "__main__":
-    build(sys.argv[1] if len(sys.argv) > 1 else "extended")
+    # python3 build.py [teaser|extended] [stills]
+    cut_name = sys.argv[1] if len(sys.argv) > 1 else "extended"
+    stills(cut_name) if "stills" in sys.argv[2:] else build(cut_name)

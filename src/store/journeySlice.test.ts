@@ -4,6 +4,7 @@ import {
   artifactDetected,
   artifactRevisited,
   feedbackRated,
+  feelingToggled,
   hydrateJourney,
   journeyReducer,
   journeyReleased,
@@ -19,16 +20,30 @@ describe("journeySlice", () => {
     state = journeyReducer(state, artifactDetected("body-space", 200));
     const narrative = state.narrativeState;
     state = journeyReducer(state, feedbackRated({ artifactId: "memory-fragment", dimension: "narrative", rating: 4 }));
-    state = journeyReducer(state, feedbackRated({ artifactId: "memory-fragment", dimension: "interaction", rating: null }));
+    state = journeyReducer(state, feedbackRated({ artifactId: "memory-fragment", dimension: "connection", rating: 3 }));
     state = journeyReducer(state, feedbackRated({ artifactId: "body-space", dimension: "narrative", rating: 2 }));
     state = journeyReducer(state, artifactRevisited("memory-fragment"));
     state = journeyReducer(state, feedbackRated({ artifactId: "memory-fragment", dimension: "narrative", rating: 5 }));
-    expect(state.discoveries[0].feedback).toEqual({ narrative: 5, interaction: null });
+    expect(state.discoveries[0].feedback).toEqual({ narrative: 5, connection: 3 });
     expect(state.discoveries[1].feedback).toEqual({ narrative: 2 });
     expect(state.discoveries).toHaveLength(2);
     expect(state.narrativeState).toEqual(narrative);
-    const unchanged = journeyReducer(state, feedbackRated({ artifactId: "unscanned", dimension: "interaction", rating: 3 }));
+    const unchanged = journeyReducer(state, feedbackRated({ artifactId: "unscanned", dimension: "ludic", rating: 3 }));
     expect(unchanged).toEqual(state);
+  });
+
+  it("toggles up to three feeling words per artwork", () => {
+    let state = journeyReducer(undefined, artifactDetected("memory-fragment", 100));
+    const toggle = (feeling: Parameters<typeof feelingToggled>[0]["feeling"]) =>
+      (state = journeyReducer(state, feelingToggled({ artifactId: "memory-fragment", feeling })));
+    toggle("Curious");
+    toggle("Strange");
+    toggle("Uneasy");
+    toggle("Calm");
+    expect(state.discoveries[0].feedback?.feelings).toEqual(["Curious", "Strange", "Uneasy"]);
+    toggle("Strange");
+    toggle("Calm");
+    expect(state.discoveries[0].feedback?.feelings).toEqual(["Curious", "Uneasy", "Calm"]);
   });
 
   it("starts a reproducible journey session", () => {

@@ -18,5 +18,6 @@ Run the steps in this order; each writes its clip to `work/clips/`.
 7. `node pages.mjs [editor|palettes|particles|poster]` records the creature editor, palettes, particle constellations and the curated poster from `todos.md`.
 8. `node overlays.mjs` renders the captions, phone frame and end card.
 9. `python3 build.py teaser` cuts the 94-second trailer; `python3 build.py extended` the two-minute one. Shots, captions and music cues are listed at the top of `build.py`.
+10. `python3 build.py teaser stills` (or `extended stills`) exports the middle frame of every shot as a 1920 × 1080 PNG to `work/stills/<cut>/`, once `clean` and once `captioned`.
 
 The screencast captures the whole headless window, so `fitWindow` makes it larger than the viewport and `record` crops the viewport out of each frame.

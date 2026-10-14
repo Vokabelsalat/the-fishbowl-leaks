@@ -79,12 +79,22 @@ export function ShareContribution({
         {state === "sharing" && `Releasing your ${activeVisualizationCopy.singular}…`}
         {state === "shared" && `Your ${activeVisualizationCopy.singular} crossed the glass`}
         {state === "error" && "Try sharing again"}
-        {state === "idle" && (encountersNeeded > 0
-          ? `${encountersNeeded} more ${encountersNeeded === 1 ? "encounter" : "encounters"} before release`
-          : "Release into the shared tank")}
+        {state === "idle" && "Release into the shared tank"}
       </span>
     </button>
   );
+
+  // Until enough works are encountered there is nothing to press, so the block only says what is missing.
+  if (state !== "shared" && encountersNeeded > 0) {
+    return (
+      <div className="border-t border-white/20 pt-6">
+        <p className="text-base leading-6">
+          Scan {encountersNeeded} more {encountersNeeded === 1 ? "artwork" : "artworks"} to release your {activeVisualizationCopy.singular} into
+          the shared tank. It needs at least {RELEASE_MINIMUM_ENCOUNTERS} encounters to hold together outside the glass.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div ref={blockRef} className="border-t border-white/20 pt-6">
@@ -101,7 +111,7 @@ export function ShareContribution({
           </div>
         </div>
       )}
-      <p className="mt-3 px-3 text-center text-sm leading-5 text-white/45" role="status" aria-live="polite">
+      <p className="mt-3 px-3 text-center text-sm leading-5 text-white/74" role="status" aria-live="polite">
         {state === "shared"
           ? `Your ${activeVisualizationCopy.singular} is now swimming on the shared screen.`
           : state === "error"

@@ -105,6 +105,15 @@ a:focus-visible {
   backdrop-filter: blur(20px);
 }
 
+/* On phones the porthole fills whatever height the title leaves above the start button, so it
+   grows on tall screens without pushing the button below the fold on short ones. */
+.porthole-well {
+  display: grid;
+  place-items: center;
+  min-height: 11rem;
+  container-type: size;
+}
+
 /* Width and height share one explicit size so the porthole stays a circle wherever aspect-ratio
    with max sizes is unreliable (older Safari). The vh lines are fallbacks for browsers without dvh. */
 .porthole {
@@ -114,6 +123,8 @@ a:focus-visible {
   width: min(48vw, 25rem, 28dvh);
   height: min(48vw, 25rem, 28vh);
   height: min(48vw, 25rem, 28dvh);
+  width: min(80vw, 25rem, 100cqh);
+  height: min(80vw, 25rem, 100cqh);
   padding: clamp(0.8rem, 3vw, 1.45rem);
   border: 1px solid rgba(232, 245, 239, 0.62);
   border-radius: 50%;
@@ -146,7 +157,20 @@ a:focus-visible {
 }
 
 /* Tablets give the title column more room so the byline beside "Leaks" clears the porthole. */
+/* On short phones the radar is too small for all five themes, so two of them stay unspoken. */
+@container (height < 17rem) {
+  .theme-echo-dreams,
+  .theme-echo-embodiment {
+    display: none;
+  }
+}
+
 @media (width >= 48rem) {
+  .porthole-well {
+    min-height: 0;
+    container-type: normal;
+  }
+
   .porthole {
     width: min(34vw, 25rem, 62vh);
     width: min(34vw, 25rem, 62dvh);
@@ -526,6 +550,13 @@ a:focus-visible {
 
 .safe-bottom {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Text over the live camera keeps a soft dark halo, so it stays readable in front of bright walls. */
+.camera-legible {
+  text-shadow:
+    0 0 0.5rem rgba(3, 16, 21, 0.85),
+    0 0 1.25rem rgba(3, 16, 21, 0.6);
 }
 
 .camera-vignette {

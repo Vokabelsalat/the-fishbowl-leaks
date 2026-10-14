@@ -1,15 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { artifacts, artifactById } from "@/data/artifacts";
 import { generateJourneyNarrative } from "@/lib/narrative/generateJourneyNarrative";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { journeyReleased, resetJourney, setExperiencePhase } from "@/store/journeySlice";
 import { clearJourney } from "@/store/persistence";
 import { selectDiscoveries, selectJourney } from "@/store/selectors";
-import { ShareContribution } from "@/components/journey/ShareContribution";
-import { themes } from "@/data/themes";
+import { RELEASE_MINIMUM_ENCOUNTERS, ShareContribution } from "@/components/journey/ShareContribution";
 import { PathVisualization } from "@/components/visualization/PathVisualization";
 import { activeVisualizationCopy } from "@/config/visualization";
 import dynamic from "next/dynamic";
@@ -29,10 +28,13 @@ export function JourneyFinal() {
     () => generateJourneyNarrative(discoveries, artifacts, { seed: journey.sessionId }),
     [discoveries, journey.sessionId],
   );
-  const themesInOrder = discoveries.flatMap((discovery) => {
+  const worksInOrder = discoveries.flatMap((discovery) => {
     const artifact = artifactById.get(discovery.artifactId);
     return artifact ? [artifact] : [];
   });
+
+  const [confirmingRestart, setConfirmingRestart] = useState(false);
+  const releaseBlocked = !journey.released && discoveries.length < RELEASE_MINIMUM_ENCOUNTERS;
 
   const startAgain = () => {
     dispatch(resetJourney());
@@ -48,41 +50,41 @@ export function JourneyFinal() {
   return (
     <main className="biome-field biome-screen film-grain safe-top safe-bottom relative min-h-dvh overflow-x-hidden bg-[var(--abyss)] px-5">
       <BiomeBackdrop progress={0.88} />
-      <header className="relative z-10 flex items-center justify-between">
-        <Link href="/" className="font-display text-2xl tracking-[-0.04em]">
+      <header className="relative z-10">
+        <Link href="/" className="text-lg leading-none tracking-[-0.04em] transition-colors hover:text-[var(--phosphor)]">
           The Fishbowl Leaks
         </Link>
-        <p className="text-sm text-white/60">
-          Release chamber
-        </p>
       </header>
 
-      <section className="relative left-1/2 mt-1 h-[46dvh] min-h-80 w-screen -translate-x-1/2 overflow-visible" aria-labelledby="reading-title">
-        <h1 id="reading-title" className="absolute inset-x-0 top-6 z-10 text-center text-[10px] tracking-[0.32em] text-white/48">
-          {journey.released ? "Specimen released" : "Specimen pending release"}
+      <section className="relative mt-6" aria-labelledby="reading-title">
+        <h1 id="reading-title" className="relative z-10 text-center font-display text-[clamp(2rem,9vw,3.3rem)] leading-[0.94] tracking-[-0.055em]">
+          {journey.released ? "Your specimen, released" : "Your specimen"}
         </h1>
-        <PathVisualization
-          artifactIds={discoveries.map((item) => item.artifactId)}
-          creatureForm={journey.creatureForm}
-          creaturePalette={journey.creaturePalette ?? undefined}
-          creaturePattern={journey.creaturePattern ?? undefined}
-          creatureProportions={journey.creatureProportions ?? undefined}
-          creatureSeed={journey.sessionId ?? undefined}
-          fitToView
-          label={`Your finished exhibition ${activeVisualizationCopy.singular}`}
-        />
-        <div className="absolute inset-x-0 bottom-5 flex flex-wrap justify-center gap-x-4 gap-y-1">
-          {themesInOrder.map((artifact, index) => (
-            <span key={`${artifact.id}-${index}`} className="flex items-center gap-1.5 text-[9px] tracking-[0.14em] text-white/48">
-              <span className="size-1 rounded-full" style={{ backgroundColor: artifact.color }} aria-hidden="true" />
-              {themes[artifact.theme].label}
-            </span>
-          ))}
+        <div className="relative left-1/2 h-[40dvh] min-h-72 w-screen -translate-x-1/2">
+          <PathVisualization
+            artifactIds={discoveries.map((item) => item.artifactId)}
+            creatureForm={journey.creatureForm}
+            creaturePalette={journey.creaturePalette ?? undefined}
+            creaturePattern={journey.creaturePattern ?? undefined}
+            creatureProportions={journey.creatureProportions ?? undefined}
+            creatureSeed={journey.sessionId ?? undefined}
+            fitToView
+            label={`Your finished exhibition ${activeVisualizationCopy.singular}`}
+          />
         </div>
+        {/* Each dot is the colour an artwork left on the creature, so the works name them. */}
+        <ul className="relative z-10 mx-auto flex max-w-xl flex-wrap justify-center gap-x-4 gap-y-1" aria-label="The artworks it carries">
+          {worksInOrder.map((artifact, index) => (
+            <li key={`${artifact.id}-${index}`} className="flex items-center gap-2 text-sm text-white/74">
+              <span className="size-2 rounded-full" style={{ backgroundColor: artifact.color }} aria-hidden="true" />
+              {artifact.title}
+            </li>
+          ))}
+        </ul>
       </section>
 
-      <section className="relative z-10 mx-auto max-w-xl pb-8">
-        <p className="mb-6 text-sm text-white/45">The aquarium, remembered from inside</p>
+      <section className="relative z-10 mx-auto max-w-xl pb-8 pt-10">
+        <h2 className="mb-4 text-base leading-6 text-white/74">The aquarium, remembered from inside</h2>
         <GeneratedNarrative lines={lines} />
 
         <div className="mt-10">
@@ -98,26 +100,59 @@ export function JourneyFinal() {
           />
         </div>
 
-        <div className="mt-8 border-t border-white/12 pt-6">
-          {/* Until the creature is released, the visitor can always go back and gather more. */}
+        <div className="mt-8 border-t border-white/20 pt-6">
+          {/* Until the creature is released, the visitor can always go back and gather more. While
+              release is still out of reach, that is the page's main action. */}
           {!journey.released && (
             <Link
               href="/"
               onClick={() => dispatch(setExperiencePhase("scanning"))}
-              className="mb-3 flex min-h-14 items-center justify-between border border-white/35 px-5 text-sm text-white transition-colors hover:border-white"
+              className={`mb-3 flex min-h-14 items-center justify-between px-5 text-base transition-colors ${
+                releaseBlocked
+                  ? "bg-[var(--phosphor)] text-[#031015] hover:opacity-85"
+                  : "border border-white/45 text-white hover:border-white"
+              }`}
             >
               <span>Continue this journey</span>
               <span aria-hidden="true">→</span>
             </Link>
           )}
-          <button
-            type="button"
-            onClick={startAgain}
-            className="flex min-h-14 w-full items-center justify-between bg-white px-5 text-sm text-[#031015] transition-opacity hover:opacity-85"
-          >
-            <span>Start again</span>
-            <span aria-hidden="true">→</span>
-          </button>
+          {/* Starting again erases this device's journey, so it asks once before doing so. */}
+          {confirmingRestart ? (
+            <div className="border border-white/45 p-4" role="alertdialog" aria-labelledby="restart-question">
+              <p id="restart-question" className="text-base leading-6">
+                {journey.released
+                  ? "Your released creature stays in the shared tank. This phone forgets it and starts a new journey."
+                  : "This erases your creature and its story from this phone. It cannot be undone."}
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  autoFocus
+                  onClick={() => setConfirmingRestart(false)}
+                  className="min-h-12 border border-white/45 px-4 text-sm transition-colors hover:border-white"
+                >
+                  Keep it
+                </button>
+                <button
+                  type="button"
+                  onClick={startAgain}
+                  className="min-h-12 bg-white px-4 text-sm text-[#031015] transition-opacity hover:opacity-85"
+                >
+                  {journey.released ? "Start again" : "Erase it"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingRestart(true)}
+              className="flex min-h-14 w-full items-center justify-between border border-white/45 px-5 text-sm text-white transition-colors hover:border-white"
+            >
+              <span>Start again</span>
+              <span aria-hidden="true">→</span>
+            </button>
+          )}
         </div>
       </section>
     </main>

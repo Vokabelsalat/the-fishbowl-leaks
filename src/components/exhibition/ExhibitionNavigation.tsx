@@ -11,7 +11,6 @@ import {
   selectCreaturePattern,
   selectCreatureProportions,
   selectExperiencePhase,
-  selectActiveArtifactId,
 } from "@/store/selectors";
 import { useRouter } from "next/navigation";
 import { PathVisualization } from "@/components/visualization/PathVisualization";
@@ -29,14 +28,10 @@ export function ExhibitionNavigation() {
   const creaturePattern = useAppSelector(selectCreaturePattern);
   const creatureProportions = useAppSelector(selectCreatureProportions);
   const phase = useAppSelector(selectExperiencePhase);
-  const activeArtifactId = useAppSelector(selectActiveArtifactId);
-  const previewDiscoveries = phase === "revealing"
-    ? discoveries.filter((item) => item.artifactId !== activeArtifactId)
-    : discoveries;
-  const previewKey = previewDiscoveries.map((item) => item.artifactId).join(":") || "base";
+  const previewKey = discoveries.map((item) => item.artifactId).join(":") || "base";
 
   return (
-    <header className="safe-top pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between px-4">
+    <header className="camera-legible safe-top pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between px-4">
       <div>
         {/* The journey is kept; entering the tank again from the title screen resumes it. */}
         <button
@@ -59,13 +54,8 @@ export function ExhibitionNavigation() {
           <span className="text-sm leading-none tabular-nums">/ {artifacts.length}</span>
         </div>
       </div>
-      {/* Visitors start without a specimen; until the first scan, the corner asks for one. */}
-      {count === 0 && (
-        <p className="flex min-h-14 items-center border border-white/45 bg-[var(--abyss)] px-4 text-sm text-white shadow-[0_0_1.5rem_rgba(0,0,0,0.35)]">
-          Scan your first marker
-        </p>
-      )}
-      {previewDiscoveries.length > 0 && (
+      {/* During a reveal the creature already fills the screen, so its shortcut steps aside. */}
+      {phase === "scanning" && discoveries.length > 0 && (
         <button
           type="button"
           // The creature, its story so far and the release all live on the ending page.
@@ -74,7 +64,7 @@ export function ExhibitionNavigation() {
           aria-label={`Open ${activeVisualizationCopy.personalTitle}, ${count} parts collected`}
         >
           <div key={previewKey} className="specimen-preview-update size-14 overflow-hidden bg-white/[0.035]" aria-hidden="true">
-            <PathVisualization artifactIds={previewDiscoveries.map((item) => item.artifactId)} creatureForm={creatureForm} creatureSeed={creatureSeed} creaturePalette={creaturePalette ?? undefined} creaturePattern={creaturePattern ?? undefined} creatureProportions={creatureProportions ?? undefined} compact />
+            <PathVisualization artifactIds={discoveries.map((item) => item.artifactId)} creatureForm={creatureForm} creatureSeed={creatureSeed} creaturePalette={creaturePalette ?? undefined} creaturePattern={creaturePattern ?? undefined} creatureProportions={creatureProportions ?? undefined} compact />
           </div>
           <span>My Creature</span>
         </button>

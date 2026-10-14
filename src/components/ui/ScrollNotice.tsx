@@ -78,7 +78,12 @@ export function ScrollNotice({
     <button
       type="button"
       onClick={moveForward}
-      className="pointer-events-auto flex min-h-11 items-center gap-3 bg-[var(--phosphor)] px-5 text-sm text-[#031015] shadow-[0_0_2rem_rgba(184,255,69,0.22)] transition-transform active:scale-[0.98]"
+      // Inline it sits beside a page's main action, so it is outlined rather than filled to stay secondary.
+      className={`pointer-events-auto flex min-h-11 items-center gap-3 px-5 text-sm transition-transform active:scale-[0.98] ${
+        placement === "inline"
+          ? "border border-white/45 text-white transition-colors hover:border-white"
+          : "bg-[var(--phosphor)] text-[#031015] shadow-[0_0_2rem_rgba(184,255,69,0.22)]"
+      }`}
     >
       <span>{label}</span>
       <span aria-hidden="true">↓</span>

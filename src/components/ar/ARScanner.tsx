@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import type {
+  ARAdapterErrorCode,
   MindARAdapter as MindARAdapterType,
   TargetDetectionResult,
 } from "@/components/ar/MindARAdapter";
@@ -84,6 +85,21 @@ export function CategoryOrbit() {
 }
 
 type ScannerState = "idle" | "starting" | "running" | "paused" | "error";
+
+/** What visitors can do about each failure, instead of the tracker's technical message. */
+const cameraErrorCopy: Record<ARAdapterErrorCode, string> = {
+  "permission-denied": "The tank needs your camera to see the markers. Allow camera access in your browser settings, then try again.",
+  unsupported: "This browser cannot open the camera here. Try Safari on iPhone or Chrome on Android.",
+  "missing-targets": "The markers could not be loaded. Check your connection and try again.",
+  "initialization-failed": "The camera could not be started. Close other apps that use it, then try again.",
+};
+
+function cameraErrorMessage(error: unknown) {
+  const code = error instanceof Error && error.name === "ARAdapterError"
+    ? (error as Error & { code: ARAdapterErrorCode }).code
+    : "initialization-failed";
+  return cameraErrorCopy[code] ?? cameraErrorCopy["initialization-failed"];
+}
 
 type ARScannerProps = {
   autoStart?: boolean;
@@ -194,11 +210,7 @@ function ARScannerComponent(
       adapterRef.current = null;
       if (cancelled) return;
       setScannerState("error");
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "The AR scanner could not be started.",
-      );
+      setErrorMessage(cameraErrorMessage(error));
     }
   }, [scannerState, stopScanner]);
 
@@ -235,17 +247,12 @@ function ARScannerComponent(
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-[var(--abyss)]">
-      {/* <div className="absolute inset-0 z-1" aria-hidden="true">
-        <div className="absolute top-1/2 left-1/2 h-[60vh] w-[80vw] -translate-x-1/2 -translate-y-1/2 border border-white/10" style={{
-          boxShadow: "0 0 0 9999px rgba(20, 30, 40, 0.85"
-        }} />
-        <div className="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/30" />
-      </div> */}
       <div ref={containerRef} className="absolute inset-0 z-0 [&>canvas]:!absolute [&>canvas]:!inset-0 [&>canvas]:!h-full [&>canvas]:!w-full [&>video]:!absolute [&>video]:!inset-0 [&>video]:!h-full [&>video]:!w-full [&>video]:!object-cover" />
       <div className="camera-vignette pointer-events-none absolute inset-0" aria-hidden="true" />
 
       {
-        (waiting || scannerState === "error") && (
+        // While the artwork picker is open it stands in for the camera, so the prompt steps aside.
+        (waiting || scannerState === "error") && !simulatorVisible && (
           <div className="biome-field absolute inset-0 z-10 flex items-center justify-center bg-[var(--abyss)] px-7">
             <BiomeBackdrop progress={0.42} quiet />
             <div className="relative z-10 w-full max-w-sm text-center flex items-center flex-col">
@@ -273,15 +280,13 @@ function ARScannerComponent(
               >
                 {scannerState === "error" ? "Try camera again" : "Start camera"}
               </button>
-              {!simulatorVisible && (
-                <button
-                  type="button"
-                  onClick={onUseSimulator}
-                  className="mt-3 min-h-11 w-full border border-white/35 px-5 text-sm text-white/75 transition-colors hover:border-white hover:text-white"
-                >
-                  Explore without a camera
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={onUseSimulator}
+                className="mt-3 min-h-11 w-full border border-white/35 px-5 text-sm text-white/75 transition-colors hover:border-white hover:text-white"
+              >
+                Explore without a camera
+              </button>
             </div>
           </div>
         )
@@ -307,15 +312,11 @@ function ARScannerComponent(
                 <Image src={exampleTarget.glow} alt="" width={exampleTarget.width} height={exampleTarget.height} className="h-auto w-full" />
               </div>
             )}
-            {showTargetHint ? (
-              <p className="absolute inset-x-0 bottom-[9rem] z-10 px-7 text-center text-base leading-6 text-white/80" role="status">
-                Find a constellation like this beside an artwork
-              </p>
-            ) : (
-              <p className="absolute inset-x-0 bottom-[9rem] z-10 text-center text-[10px] tracking-[0.22em] text-white/60" role="status">
-                Hold the artwork marker inside the frame
-              </p>
-            )}
+            <p className="camera-legible absolute inset-x-0 bottom-[9rem] z-10 px-7 text-center text-base leading-6 text-white/80" role="status">
+              {showTargetHint
+                ? "Find a marker like this beside an artwork"
+                : "Point your camera at the marker beside the next artwork"}
+            </p>
           </>
         )
       }

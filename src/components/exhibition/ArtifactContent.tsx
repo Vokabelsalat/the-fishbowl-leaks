@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ExhibitionArtifact } from "@/types/exhibition";
 import { ArtworkFeedback } from "@/components/exhibition/ArtworkFeedback";
 import { ArtworkImageViewer } from "@/components/exhibition/ArtworkImageViewer";
@@ -25,6 +25,7 @@ export function ArtifactContent({ artifact, onContinue, mini = false, onEnlarged
   const [viewingImage, setViewingImage] = useState(false);
   // The artists' bios are long, so they start folded away behind their heading.
   const [biosOpen, setBiosOpen] = useState(false);
+  const feedbackRef = useRef<HTMLDivElement>(null);
   const imageAlt = `${artifact.title} by ${artifact.artist}`;
 
   const toggleExpanded = () => {
@@ -42,7 +43,7 @@ export function ArtifactContent({ artifact, onContinue, mini = false, onEnlarged
         onClick={toggleExpanded}
         className="mx-auto mb-4 flex min-h-11 items-center gap-3 border border-white/30 bg-[var(--abyss)] px-4 text-sm text-white transition-colors hover:border-white/65"
       >
-        <span>{expanded ? "Show less" : "Enlarge the artwork details"}</span>
+        <span>{expanded ? "Read less" : "Read more"}</span>
         <span aria-hidden="true">{expanded ? "↓" : "↑"}</span>
       </button>
 
@@ -58,6 +59,16 @@ export function ArtifactContent({ artifact, onContinue, mini = false, onEnlarged
             {artifact.storylet}
             <span className="mt-2 block text-white/88">{artifact.choice.prompt}</span>
           </p>
+
+          {/* The questions sit at the end of a long text, so a shortcut leads there before visitors move on. */}
+          <button
+            type="button"
+            onClick={() => feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="mt-5 inline-flex min-h-11 items-center gap-3 border border-white/45 px-4 text-sm text-white transition-colors hover:border-white"
+          >
+            <span>Rate this piece</span>
+            <span aria-hidden="true">↓</span>
+          </button>
 
           <div className="mt-6 border-t border-white/15 pt-5">
             {artifact.image && (
@@ -156,7 +167,9 @@ export function ArtifactContent({ artifact, onContinue, mini = false, onEnlarged
             )}
           </div>
 
-          <ArtworkFeedback key={artifact.id} artifactId={artifact.id} />
+          <div ref={feedbackRef} className="scroll-mt-2">
+            <ArtworkFeedback key={artifact.id} artifactId={artifact.id} />
+          </div>
         </div>
       </div>
 

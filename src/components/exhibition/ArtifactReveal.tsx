@@ -111,7 +111,7 @@ function ArtifactRevealSequence({
           {phase === "release" && (visualizationDesign === "constellation"
             ? "Releasing language"
             : isFirstSpecimen ? `${capitalize(artifact.marineType)} is forming your specimen` : `${artifact.marineType} is joining it`)}
-          {phase === "formation" && (visualizationDesign === "constellation" ? "Classification unstable" : `${artifact.creaturePart.label} is taking shape`)}
+          {phase === "formation" && (visualizationDesign === "constellation" ? "Classification unstable" : `${artifact.creaturePart.label} taking shape`)}
         </p>
       )}
       {contentVisible && (

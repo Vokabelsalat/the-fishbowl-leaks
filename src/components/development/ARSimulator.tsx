@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { artifacts } from "@/data/artifacts";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { resetJourney } from "@/store/journeySlice";
-import { selectDiscoveryCount } from "@/store/selectors";
+import { selectDiscoveries } from "@/store/selectors";
+
+/** The works in exhibition order, as the catalogue and the title screen list them. */
+const worksInExhibitionOrder = artifacts.slice().sort((a, b) => a.exhibitionId - b.exhibitionId);
 
 type ARSimulatorProps = {
   onArtifactDetected: (artifactId: string) => void;
@@ -18,7 +21,8 @@ export function ARSimulator({
 }: ARSimulatorProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const discoveryCount = useAppSelector(selectDiscoveryCount);
+  const discoveries = useAppSelector(selectDiscoveries);
+  const discoveredIds = new Set(discoveries.map((discovery) => discovery.artifactId));
   const [syntheticActive, setSyntheticActive] = useState(false);
   const [syntheticCount, setSyntheticCount] = useState(0);
   const [syntheticBusy, setSyntheticBusy] = useState(false);
@@ -66,71 +70,78 @@ export function ARSimulator({
     }
   }
 
+  const pillClass =
+    "min-h-11 border border-white/35 px-3 text-sm transition-colors hover:border-white disabled:cursor-not-allowed disabled:opacity-40";
+
   return (
-    <aside className="safe-bottom absolute inset-x-3 bottom-3 z-30 rounded-[1.5rem] bg-[#101010]/92 p-3 text-white shadow-2xl backdrop-blur-xl" aria-label="AR simulator controls">
-      <div className="mb-3 flex items-center justify-between px-1">
-        <p className="text-sm text-white/70">
-          Exhibition simulator
-        </p>
-        {onClose && (
-          <button type="button" onClick={onClose} className="min-h-8 px-2 text-xs text-white/55">
-            Hide
-          </button>
-        )}
-      </div>
-      {syntheticAvailable && (
-        <div className="mb-3 flex items-center justify-between gap-4 border-y border-white/12 px-1 py-3">
+    <aside className="safe-bottom absolute inset-x-0 bottom-0 z-30 border-t border-white/25 bg-[var(--abyss)] px-4 pt-4 text-white" aria-labelledby="simulator-title">
+      <div className="mx-auto w-full max-w-xl">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm text-white/85">Synthetic exhibition day</p>
-            <p className="mt-1 text-xs leading-5 text-white/50" aria-live="polite">
-              {syntheticActive
-                ? `${syntheticCount} test journeys and poems are flowing through the collective screen.`
-                : "Add timed visitor pathways and poems to test the aquarium and activity map."}
-            </p>
-            {syntheticError && <p className="mt-1 text-xs text-[#ff9e86]" role="alert">{syntheticError}</p>}
+            <h2 id="simulator-title" className="font-display text-2xl leading-tight tracking-[-0.03em]">Choose an artwork</h2>
+            <p className="mt-1 text-sm leading-5 text-white/74">Without a camera, pick the work you are standing in front of.</p>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={syntheticActive}
-            aria-label="Use synthetic exhibition activity"
-            disabled={syntheticBusy}
-            onClick={() => void toggleSyntheticDataset()}
-            className={`relative h-8 w-14 shrink-0 rounded-full transition-colors disabled:cursor-wait disabled:opacity-50 ${syntheticActive ? "bg-[var(--phosphor)]" : "bg-white/18"}`}
-          >
-            <span className={`absolute left-1 top-1 size-6 rounded-full bg-white shadow transition-transform ${syntheticActive ? "translate-x-6" : "translate-x-0"}`} />
-          </button>
+          {onClose && (
+            <button type="button" onClick={onClose} className={`${pillClass} flex shrink-0 items-center gap-3`}>
+              <span>Close</span>
+              <span aria-hidden="true">×</span>
+            </button>
+          )}
         </div>
-      )}
-      <div className="grid max-h-40 grid-cols-3 gap-2 overflow-y-auto overscroll-contain pr-1">
-        {artifacts.map((artifact, index) => (
-          <button
-            key={artifact.id}
-            type="button"
-            onClick={() => onArtifactDetected(artifact.id)}
-            className="min-h-11 rounded-full bg-white/[0.08] px-2 text-[11px] transition-colors hover:bg-white/[0.14]"
-          >
-            {index + 1}. {artifact.title}
-          </button>
-        ))}
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => dispatch(resetJourney())}
-          className="min-h-10 rounded-full px-3 text-[11px] text-white/50 transition-colors hover:text-white"
-        >
-          Reset journey
-        </button>
-        <button
-          type="button"
-          // The ending page is where the creature is released, once it has enough encounters.
-          onClick={() => router.push("/journey")}
-          disabled={discoveryCount === 0}
-          className="min-h-10 rounded-full bg-white px-3 text-[11px] text-black transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          Open the ending
-        </button>
+        <ul className="mt-4 grid max-h-[40dvh] grid-cols-2 gap-2 overflow-y-auto overscroll-contain">
+          {worksInExhibitionOrder.map((artifact) => {
+            const found = discoveredIds.has(artifact.id);
+            return (
+              <li key={artifact.id}>
+                <button
+                  type="button"
+                  onClick={() => onArtifactDetected(artifact.id)}
+                  className={`${pillClass} flex w-full items-center justify-between gap-2 py-2 text-left leading-5`}
+                >
+                  <span>{artifact.title}</span>
+                  {found && <span aria-label="already found">✓</span>}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* Test tools for development servers only; the synthetic route answers there and nowhere else. */}
+        {syntheticAvailable && (
+          <div className="mt-4 border-t border-white/20 pt-3">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm leading-5 text-white/74" aria-live="polite">
+                {syntheticActive
+                  ? `Synthetic day on: ${syntheticCount} test journeys in the collective screen.`
+                  : "Synthetic day off: add test journeys to the collective screen."}
+              </p>
+              <button
+                type="button"
+                aria-pressed={syntheticActive}
+                disabled={syntheticBusy}
+                onClick={() => void toggleSyntheticDataset()}
+                className={`${pillClass} shrink-0 ${syntheticActive ? "border-[var(--phosphor)] bg-[var(--phosphor)] text-[var(--abyss)]" : ""}`}
+              >
+                {syntheticActive ? "Turn off" : "Turn on"}
+              </button>
+            </div>
+            {syntheticError && <p className="mt-1 text-sm text-[#ff9e86]" role="alert">{syntheticError}</p>}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => dispatch(resetJourney())} className={pillClass}>
+                Reset journey
+              </button>
+              <button
+                type="button"
+                // The ending page is where the creature is released, once it has enough encounters.
+                onClick={() => router.push("/journey")}
+                disabled={discoveries.length === 0}
+                className={pillClass}
+              >
+                Open the ending
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

@@ -115,7 +115,7 @@ export function ArtworkFeedback({ artifactId }: { artifactId: string }) {
       ) : (
         <>
           <p className="mt-2 text-base leading-6">
-            Step {step + 1} of {STEP_COUNT}. Answer quickly, without thinking too long. You can skip any step.
+            Step {step + 1} of {STEP_COUNT}. Answer on instinct, or skip.
           </p>
 
           <div ref={stepRef} tabIndex={-1} className="mt-5 outline-none">
@@ -225,8 +225,8 @@ export function ArtworkFeedback({ artifactId }: { artifactId: string }) {
           </div>
         </>
       )}
-      <p className="mt-3 text-base leading-6">
-        Your answers are saved on this device and included when you release your creature into the shared tank.
+      <p className="mt-4 text-sm leading-5 text-white/74">
+        Sent anonymously with your creature when you release it.
       </p>
     </section>
   );

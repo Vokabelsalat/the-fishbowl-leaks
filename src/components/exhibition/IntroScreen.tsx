@@ -17,8 +17,8 @@ const worksInExhibitionOrder = artifacts.slice().sort((a, b) => a.exhibitionId -
 const exhibitionThemes = Array.from(new Set(worksInExhibitionOrder.flatMap((work) => work.exhibitionThemes)));
 
 const filterClass = (selected: boolean) =>
-  `min-h-9 px-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--phosphor)] ${
-    selected ? "bg-[var(--phosphor)] text-[var(--abyss)]" : "text-white/80 hover:text-[var(--phosphor)]"
+  `min-h-11 border px-3 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--phosphor)] ${
+    selected ? "border-[var(--phosphor)] bg-[var(--phosphor)] text-[var(--abyss)]" : "border-white/40 text-white hover:border-white/70"
   }`;
 
 /** The radar's markers: the tutorial example first, then the other works in exhibition order. */
@@ -64,7 +64,7 @@ function WorksList() {
 
   return (
     <>
-      <div role="group" aria-label="Filter the artworks by theme" className="-mx-2 mt-5 flex max-w-2xl flex-wrap gap-x-1 gap-y-0.5">
+      <div role="group" aria-label="Filter the artworks by theme" className="mt-5 flex max-w-2xl flex-wrap gap-2">
         <button type="button" aria-pressed={theme === null} onClick={() => setTheme(null)} className={filterClass(theme === null)}>
           All works
         </button>
@@ -105,13 +105,16 @@ function WorkEntry({ work }: { work: ExhibitionArtifact }) {
           onClick={() => setOpen(!open)}
           aria-expanded={open}
           aria-controls={detailsId}
-          className="grid w-full grid-cols-[4.5rem_minmax(0,1fr)_auto] items-center gap-4 py-4 text-left"
+          // Once unfolded, the full picture below replaces the thumbnail.
+          className={`grid w-full items-center gap-4 py-4 text-left ${open ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-[4.5rem_minmax(0,1fr)_auto]"}`}
         >
-          <span className="relative block aspect-square w-full overflow-hidden bg-white/[0.035]">
-            {work.image && (
-              <Image src={encodeURI(work.image.src)} alt="" fill sizes="4.5rem" className="object-cover" />
-            )}
-          </span>
+          {!open && (
+            <span className="relative block aspect-square w-full overflow-hidden bg-white/[0.035]">
+              {work.image && (
+                <Image src={encodeURI(work.image.src)} alt="" fill sizes="4.5rem" className="object-cover" />
+              )}
+            </span>
+          )}
           <span className="min-w-0">
             <span className="font-display block text-xl leading-tight tracking-[-0.02em]">{work.title}</span>
             <span className={`mt-1 block text-sm text-white/58 ${open ? "" : "truncate"}`}>{work.artist}</span>
@@ -163,7 +166,8 @@ export function IntroScreen() {
       <BiomeBackdrop progress={0.26} quiet />
       <div className="safe-top relative z-10 mx-auto flex min-h-dvh w-full max-w-5xl flex-col">
 
-        <section className="grid min-h-0 flex-1 items-center gap-4 py-4 md:grid-cols-[1.25fr_.75fr] md:gap-6 lg:grid-cols-[1.1fr_.9fr] md:py-8" aria-labelledby="intro-title">
+        {/* On phones the title sits at the top and the porthole floats in the space left below it. */}
+        <section className="grid min-h-0 flex-1 grid-rows-[auto_1fr] gap-4 pb-4 pt-1 md:grid-cols-[1.25fr_.75fr] md:grid-rows-1 md:items-center md:gap-6 lg:grid-cols-[1.1fr_.9fr] md:py-8" aria-labelledby="intro-title">
           <div className="relative z-10">
             <h1 id="intro-title" className="font-display max-w-3xl text-[clamp(3.2rem,13vw,9rem)] leading-[0.73] tracking-[-0.075em]">
               The Fishbowl
@@ -182,25 +186,27 @@ export function IntroScreen() {
             </div>
           </div>
 
-          <div className="porthole mx-auto" aria-hidden="true">
-            <div className="porthole-glass">
-              <span className="radar-range radar-range-outer" />
-              <span className="radar-range radar-range-middle" />
-              <span className="radar-range radar-range-inner" />
-              <span className="radar-axis radar-axis-horizontal" />
-              <span className="radar-axis radar-axis-vertical" />
-              <span className="radar-sweep" />
-              <span className="radar-vessel" />
-              <span className="radar-contact radar-contact-one" />
-              <span className="radar-contact radar-contact-two" />
-              <span className="radar-contact radar-contact-three" />
-              <span className="radar-contact radar-contact-four" />
-              <RadarTarget />
-              <span className="theme-echo theme-echo-memory">Memory and afterlives</span>
-              <span className="theme-echo theme-echo-systems">Synthetic systems and constructed authority</span>
-              <span className="theme-echo theme-echo-language">Language across materials</span>
-              <span className="theme-echo theme-echo-dreams">Dreams and simulated worlds</span>
-              <span className="theme-echo theme-echo-embodiment">Embodiment, care, and resistance</span>
+          <div className="porthole-well">
+            <div className="porthole" aria-hidden="true">
+              <div className="porthole-glass">
+                <span className="radar-range radar-range-outer" />
+                <span className="radar-range radar-range-middle" />
+                <span className="radar-range radar-range-inner" />
+                <span className="radar-axis radar-axis-horizontal" />
+                <span className="radar-axis radar-axis-vertical" />
+                <span className="radar-sweep" />
+                <span className="radar-vessel" />
+                <span className="radar-contact radar-contact-one" />
+                <span className="radar-contact radar-contact-two" />
+                <span className="radar-contact radar-contact-three" />
+                <span className="radar-contact radar-contact-four" />
+                <RadarTarget />
+                <span className="theme-echo theme-echo-memory">Memory and afterlives</span>
+                <span className="theme-echo theme-echo-systems">Synthetic systems and constructed authority</span>
+                <span className="theme-echo theme-echo-language">Language across materials</span>
+                <span className="theme-echo theme-echo-dreams">Dreams and simulated worlds</span>
+                <span className="theme-echo theme-echo-embodiment">Embodiment, care, and resistance</span>
+              </div>
             </div>
           </div>
         </section>
@@ -214,7 +220,7 @@ export function IntroScreen() {
             onClick={() => dispatch(startJourney())}
             className="flex min-h-16 w-full items-center justify-between border border-[var(--phosphor)] bg-[var(--phosphor)] px-6 text-base text-[#031015] shadow-[0_0_2rem_rgba(184,255,69,0.2)] transition-transform active:scale-[0.99] md:w-80"
           >
-            <span>Scan an artwork label</span>
+            <span>Scan an artwork marker</span>
             <span aria-hidden="true">→</span>
           </button>
         </div>

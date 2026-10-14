@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { activeVisualizationCopy } from "@/config/visualization";
 import type { AquaticForm } from "@/lib/creature/aquaticForms";
 import type { CreatureColorPalette } from "@/lib/creature/colorPalettes";
@@ -37,6 +37,17 @@ export function ShareContribution({
   const [sendState, setState] = useState<ShareState>("idle");
   const state: ShareState = released ? "shared" : sendState;
   const encountersNeeded = Math.max(0, RELEASE_MINIMUM_ENCOUNTERS - discoveries.length);
+  const blockRef = useRef<HTMLDivElement>(null);
+  const [blockVisible, setBlockVisible] = useState(true);
+
+  // The floating release bar stands in for this block while it is scrolled out of view.
+  useEffect(() => {
+    const block = blockRef.current;
+    if (!block) return;
+    const observer = new IntersectionObserver(([entry]) => setBlockVisible(entry.isIntersecting));
+    observer.observe(block);
+    return () => observer.disconnect();
+  }, []);
 
   async function share() {
     if (!sessionId || encountersNeeded > 0 || state === "sharing" || state === "shared") return;
@@ -57,23 +68,39 @@ export function ShareContribution({
     }
   }
 
+  const releaseButton = (
+    <button
+      type="button"
+      onClick={share}
+      disabled={!sessionId || encountersNeeded > 0 || state === "sharing" || state === "shared"}
+      className="flex min-h-16 w-full items-center justify-between bg-[var(--phosphor)] px-6 text-base text-[#031015] transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <span>
+        {state === "sharing" && `Releasing your ${activeVisualizationCopy.singular}…`}
+        {state === "shared" && `Your ${activeVisualizationCopy.singular} crossed the glass`}
+        {state === "error" && "Try sharing again"}
+        {state === "idle" && (encountersNeeded > 0
+          ? `${encountersNeeded} more ${encountersNeeded === 1 ? "encounter" : "encounters"} before release`
+          : "Release into the shared tank")}
+      </span>
+    </button>
+  );
+
   return (
-    <div className="border-t border-white/20 pt-6">
-      <button
-        type="button"
-        onClick={share}
-        disabled={!sessionId || encountersNeeded > 0 || state === "sharing" || state === "shared"}
-        className="flex min-h-16 w-full items-center justify-between bg-[var(--phosphor)] px-6 text-base text-[#031015] transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <span>
-          {state === "sharing" && `Releasing your ${activeVisualizationCopy.singular}…`}
-          {state === "shared" && `Your ${activeVisualizationCopy.singular} crossed the glass`}
-          {state === "error" && "Try sharing again"}
-          {state === "idle" && (encountersNeeded > 0
-            ? `${encountersNeeded} more ${encountersNeeded === 1 ? "encounter" : "encounters"} before release`
-            : "Release into the shared tank")}
-        </span>
-      </button>
+    <div ref={blockRef} className="border-t border-white/20 pt-6">
+      {releaseButton}
+      {!blockVisible && state !== "shared" && (
+        <div className="safe-bottom fixed inset-x-0 bottom-0 z-40 flex justify-center bg-[var(--abyss)] px-4 pt-3 shadow-[0_-1rem_2rem_rgba(3,16,21,0.9)]">
+          <div className="w-full max-w-xl">
+            {releaseButton}
+            <p className="mt-2 text-center text-sm leading-5 text-white/80">
+              {state === "error"
+                ? "The screen could not be reached. Your story is still safe on this device."
+                : "Anonymous and final. Any artwork ratings you gave are included."}
+            </p>
+          </div>
+        </div>
+      )}
       <p className="mt-3 px-3 text-center text-sm leading-5 text-white/45" role="status" aria-live="polite">
         {state === "shared"
           ? `Your ${activeVisualizationCopy.singular} is now swimming on the shared screen.`

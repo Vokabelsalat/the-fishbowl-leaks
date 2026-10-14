@@ -18,6 +18,7 @@ import { meshQualityPresets, minimumMeshQuality, useMeshQuality } from "@/lib/de
 import { activeVisualizationCopy, collectiveCapacity } from "@/config/visualization";
 import { compartmentLabels, compartmentWalls, holeHalfHeight, tankBreakdown, tankLook, wallOpening } from "@/lib/collective/tankCompartments";
 import { artifacts } from "@/data/artifacts";
+import { useIdleCursor } from "@/lib/collective/useIdleCursor";
 import { aggregateContributionDwellTimes } from "@/lib/contributions/heatmap";
 import type { CollectiveHeatDatum, ExhibitionContribution } from "@/types/contribution";
 
@@ -103,6 +104,7 @@ export function CollectiveWall({ initialView = "collective" }: {
   /** The view the wall opens with; in production it stays there, since the switch exists only during development. */
   initialView?: "collective" | "heatmap";
 }) {
+  const cursorHidden = useIdleCursor();
   const [contributions, setContributions] = useState<ExhibitionContribution[]>([]);
   const [heatmap, setHeatmap] = useState<CollectiveHeatDatum[]>([]);
   // The poll returns a fresh heatmap every time; only a changed one should re-render the wall.
@@ -222,14 +224,17 @@ export function CollectiveWall({ initialView = "collective" }: {
 
         if (data.contributions.length > 0) {
           latestId.current = Math.max(...data.contributions.map((item) => item.id));
+          // The seed creatures are already in the tank when the day begins, so they never arrive.
+          const arrivals = initialized.current ? data.contributions.filter((item) => !item.dailySeed) : [];
+          queueRef.current.push(...arrivals);
+          // Creatures waiting for their arrival do not take a swimming creature's place yet: a batch of
+          // arrivals would otherwise push out that many creatures at once, long before they arrive.
+          const kept = collectiveCapacity + queueRef.current.length + (activeRef.current ? 1 : 0);
           setContributions((current) => {
             const known = new Set(current.map((item) => item.id));
-            return [...current, ...data.contributions.filter((item) => !known.has(item.id))].slice(-collectiveCapacity);
+            return [...current, ...data.contributions.filter((item) => !known.has(item.id))].slice(-kept);
           });
-          // The seed creatures are already in the tank when the day begins, so they never arrive.
-          const arrivals = data.contributions.filter((item) => !item.dailySeed);
-          if (initialized.current && arrivals.length > 0) {
-            queueRef.current.push(...arrivals);
+          if (arrivals.length > 0) {
             if (!activeRef.current) beginArrival(queueRef.current.shift() ?? null);
             else syncWaiting();
           }
@@ -334,7 +339,7 @@ export function CollectiveWall({ initialView = "collective" }: {
   } as CSSProperties;
 
   return (
-    <main className="collective-wall biome-field film-grain relative h-screen overflow-hidden bg-[var(--abyss)] text-[var(--foam)]" style={wallStyle} aria-label={`Collective exhibition ${activeVisualizationCopy.collectivePlace}`}>
+    <main className={`collective-wall biome-field film-grain relative h-screen${cursorHidden ? " cursor-hidden" : ""} overflow-hidden bg-[var(--abyss)] text-[var(--foam)]`} style={wallStyle} aria-label={`Collective exhibition ${activeVisualizationCopy.collectivePlace}`}>
       <div className="tank-open-sea pointer-events-none absolute inset-0" aria-hidden="true" />
       <BiomeBackdrop progress={dayProgress} surfaceRays />
       {/* The separators are drawn flat over the tank, so they fade out while the view circles it. */}

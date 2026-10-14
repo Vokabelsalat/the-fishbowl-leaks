@@ -514,6 +514,12 @@ a:focus-visible {
   }
 }
 
+/* The shared screen hides an idle mouse pointer; !important beats the tank canvas's inline cursor. */
+.cursor-hidden,
+.cursor-hidden * {
+  cursor: none !important;
+}
+
 .safe-top {
   padding-top: max(1rem, env(safe-area-inset-top));
 }

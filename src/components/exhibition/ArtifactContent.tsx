@@ -1,9 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type { ExhibitionArtifact } from "@/types/exhibition";
-import { ScrollNotice } from "@/components/ui/ScrollNotice";
 import { ArtworkFeedback } from "@/components/exhibition/ArtworkFeedback";
 import { ArtworkImageViewer } from "@/components/exhibition/ArtworkImageViewer";
 
@@ -26,7 +25,6 @@ export function ArtifactContent({ artifact, onContinue, mini = false, onEnlarged
   const [viewingImage, setViewingImage] = useState(false);
   // The artists' bios are long, so they start folded away behind their heading.
   const [biosOpen, setBiosOpen] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
   const imageAlt = `${artifact.title} by ${artifact.artist}`;
 
   const toggleExpanded = () => {
@@ -48,14 +46,8 @@ export function ArtifactContent({ artifact, onContinue, mini = false, onEnlarged
         <span aria-hidden="true">{expanded ? "↓" : "↑"}</span>
       </button>
 
-      {/* The notice sits at the bottom of the scroll area, clear of the enlarge button above it. */}
       <div className="relative mx-auto w-full max-w-xl">
-        <ScrollNotice
-          containerRef={contentRef}
-          label="Artwork details and feedback below"
-          placement="container"
-        />
-        <div ref={contentRef} className={`w-full overflow-y-auto overscroll-contain ${expanded ? "max-h-[62dvh]" : mini ? "max-h-[36dvh]" : "max-h-[48dvh]"}`}>
+        <div className={`w-full overflow-y-auto overscroll-contain ${expanded ? "max-h-[62dvh]" : mini ? "max-h-[36dvh]" : "max-h-[48dvh]"}`}>
           <h2 id="artifact-title" className="font-display max-w-lg text-[clamp(2rem,9vw,3.3rem)] leading-[0.94] tracking-[-0.055em]">
             {artifact.title}
           </h2>

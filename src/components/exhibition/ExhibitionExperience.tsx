@@ -111,6 +111,20 @@ export function ExhibitionExperience() {
       />
       <ExhibitionNavigation />
 
+      {/* Once a work is scanned, the way to the ending stays in reach below the camera. */}
+      {phase === "scanning" && discoveries.length > 0 && !simulatorVisible && (
+        <div className="safe-bottom absolute inset-x-0 bottom-0 z-20 flex justify-center px-4">
+          <button
+            type="button"
+            onClick={() => router.push("/journey")}
+            className="flex min-h-14 w-full max-w-sm items-center justify-between gap-4 border border-white/45 bg-[var(--abyss)] px-5 text-left text-base text-white shadow-[0_0_1.5rem_rgba(0,0,0,0.35)] transition-colors hover:border-white"
+          >
+            <span>Before you leave set your creature free.</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      )}
+
       {alreadyDiscovered && (
         <div className="absolute top-28 left-1/2 z-30 -translate-x-1/2 border border-white/25 bg-[var(--abyss)] px-5 py-3 text-center text-sm text-white/70" role="status">
           Already registered. Classification unchanged.

@@ -44,6 +44,10 @@ a:focus-visible {
   color: #050505;
 }
 
+.font-body {
+  font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
+}
+
 .font-display {
   font-family: "Iowan Old Style", Baskerville, "Times New Roman", serif;
 }
@@ -101,11 +105,18 @@ a:focus-visible {
   backdrop-filter: blur(20px);
 }
 
+/* Width and height share one explicit size so the porthole stays a circle wherever aspect-ratio
+   with max sizes is unreliable (older Safari). The vh lines are fallbacks for browsers without dvh. */
 .porthole {
   position: relative;
+  flex-shrink: 0;
+  width: min(48vw, 25rem, 28vh);
+  width: min(48vw, 25rem, 28dvh);
+  height: min(48vw, 25rem, 28vh);
+  height: min(48vw, 25rem, 28dvh);
   padding: clamp(0.8rem, 3vw, 1.45rem);
   border: 1px solid rgba(232, 245, 239, 0.62);
-  border-radius: 999px;
+  border-radius: 50%;
   background: rgba(3, 16, 21, 0.82);
   box-shadow:
     inset 0 0 0 0.34rem var(--abyss),
@@ -134,12 +145,31 @@ a:focus-visible {
   right: 0.28rem;
 }
 
+/* Tablets give the title column more room so the byline beside "Leaks" clears the porthole. */
+@media (width >= 48rem) {
+  .porthole {
+    width: min(34vw, 25rem, 62vh);
+    width: min(34vw, 25rem, 62dvh);
+    height: min(34vw, 25rem, 62vh);
+    height: min(34vw, 25rem, 62dvh);
+  }
+}
+
+@media (width >= 64rem) {
+  .porthole {
+    width: min(48vw, 25rem, 62vh);
+    width: min(48vw, 25rem, 62dvh);
+    height: min(48vw, 25rem, 62vh);
+    height: min(48vw, 25rem, 62dvh);
+  }
+}
+
 .porthole-glass {
   position: relative;
   height: 100%;
   overflow: hidden;
   border: 1px solid rgba(185, 255, 220, 0.5);
-  border-radius: 999px;
+  border-radius: 50%;
   background:
     radial-gradient(
       circle at center,
@@ -186,20 +216,23 @@ a:focus-visible {
 .radar-range {
   top: 50%;
   left: 50%;
-  aspect-ratio: 1;
   border: 1px solid rgba(185, 255, 220, 0.2);
   border-radius: 50%;
   transform: translate(-50%, -50%);
 }
 
+/* The glass is square, so equal percentages keep the rings round without aspect-ratio. */
 .radar-range-outer {
   width: 72%;
+  height: 72%;
 }
 .radar-range-middle {
   width: 48%;
+  height: 48%;
 }
 .radar-range-inner {
   width: 24%;
+  height: 24%;
 }
 
 .radar-axis {

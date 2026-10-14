@@ -726,6 +726,7 @@ const exhibitionSources: ArtifactSource[] = [
       "Caitlin Fisher is an award-winning digital storyteller and poet, working mostly in XR. She directs the art+science Immersive Storytelling Lab and the Augmented Reality Lab at York University in Toronto. At York she is also Chair and a Full Professor in the Department of Film and Media Arts. A co-founder of York’s Future Cinema Lab and former Fulbright and Canada Research Chair, Caitlin has funded research projects in the areas of AI storytelling, co-creation between settler and indigenous artists in VR environments and is bringing the power of storytelling to the global health crisis of antimicrobial resistance through a new XR Museum project. She is immediate past President of the Electronic Literature Organization and is also a Prof. II at the University of Bergen, working with the Centre for Digital Narrative.",
       "Scott Rettberg is director of the Center for Digital Narrative (CDN), a Norwegian Centre of Research Excellence, and professor of digital culture at the University of Bergen. A writer, artist, and scholar, he explores how computational technologies transform storytelling, authorship, and creative practice. He cofounded the Electronic Literature Organization and served as its first executive director. His book Electronic Literature received the 2019 N. Katherine Hayles Award for Criticism of Electronic Literature. His collaborative works include The Unknown, Implementation, and Hearts and Minds: The Interrogations Project, winner of the 2016 Robert Coover Award. Rettberg leads the Extending Digital Narrative project, investigating emerging narrative forms through artistic experimentation with artificial intelligence, games, and extended reality. He is collaborating with Roderick Coover and Caitlin Fisher on the Visitations: The Grand Hotels (of Joseph Cornell) series of immersive narratives.",
     ],
+    image: { src: "/images/galactic-center Medium.jpeg", width: 640, height: 360 },
     narrativeWords: ["orbit", "signal", "navigate", "connect"],
     creaturePart: {
       id: "orbit-ring",
@@ -752,6 +753,7 @@ const exhibitionSources: ArtifactSource[] = [
     links: [],
     contacts: [],
     bios: [],
+    image: { src: "/images/HerNameWasGisberta Medium.jpeg", width: 640, height: 320 },
     narrativeWords: ["witness", "presence", "remember", "resist"],
     creaturePart: {
       id: "heart-plume",
@@ -962,6 +964,7 @@ const exhibitionSources: ArtifactSource[] = [
     bios: [
       "Caitlin Fisher is an award-winning digital storyteller and poet, working mostly in XR. She directs the art+science Immersive Storytelling Lab and the Augmented Reality Lab at York University in Toronto. At York she is also Chair and a Full Professor in the Department of Film and Media Arts. A co-founder of York’s Future Cinema Lab and former Fulbright and Canada Research Chair, Caitlin has funded research projects in the areas of AI storytelling, co-creation between settler and indigenous artists in VR environments and is bringing the power of storytelling to the global health crisis of antimicrobial resistance through a new XR Museum project. She is immediate past President of the Electronic Literature Organization and is also a Prof. II at the University of Bergen, working with the Centre for Digital Narrative.",
     ],
+    image: { src: "/images/earthfortunes Medium.jpeg", width: 570, height: 640 },
     narrativeWords: ["foretell", "deal", "forecast", "diverge"],
     creaturePart: {
       id: "fortune-cards",

@@ -8,15 +8,19 @@ type ScrollNoticeProps = {
   label?: string;
   /**
    * "screen" pins the notice to the top of the screen; "container" sits it at the bottom of the
-   * nearest positioned parent, for scroll areas inside panels that would otherwise cover it.
+   * nearest positioned parent, for scroll areas inside panels that would otherwise cover it;
+   * "inline" sits in the page flow and stays visible, so hiding it never shifts the layout.
    */
-  placement?: "screen" | "container";
+  placement?: "screen" | "container" | "inline";
+  /** Element to scroll to instead of moving one screen forward. */
+  targetId?: string;
 };
 
 export function ScrollNotice({
   containerRef,
   label = "More below — scroll to continue",
   placement = "screen",
+  targetId,
 }: ScrollNoticeProps) {
   const [visible, setVisible] = useState(false);
 
@@ -56,6 +60,11 @@ export function ScrollNotice({
   }, [containerRef, update]);
 
   function moveForward() {
+    const destination = targetId ? document.getElementById(targetId) : null;
+    if (destination) {
+      destination.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     const target = containerRef?.current;
     const amount = (target?.clientHeight ?? window.innerHeight) * 0.72;
     if (target) {
@@ -64,6 +73,19 @@ export function ScrollNotice({
       window.scrollBy({ top: amount, behavior: "smooth" });
     }
   }
+
+  const button = (
+    <button
+      type="button"
+      onClick={moveForward}
+      className="pointer-events-auto flex min-h-11 items-center gap-3 bg-[var(--phosphor)] px-5 text-sm text-[#031015] shadow-[0_0_2rem_rgba(184,255,69,0.22)] transition-transform active:scale-[0.98]"
+    >
+      <span>{label}</span>
+      <span aria-hidden="true">↓</span>
+    </button>
+  );
+
+  if (placement === "inline") return <div className="flex">{button}</div>;
 
   if (!visible) return null;
 
@@ -74,14 +96,7 @@ export function ScrollNotice({
         : "pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center px-4"}
       role="status"
     >
-      <button
-        type="button"
-        onClick={moveForward}
-        className="pointer-events-auto flex min-h-11 items-center gap-3 bg-[var(--phosphor)] px-5 text-sm text-[#031015] shadow-[0_0_2rem_rgba(184,255,69,0.22)] transition-transform active:scale-[0.98]"
-      >
-        <span>{label}</span>
-        <span aria-hidden="true">↓</span>
-      </button>
+      {button}
     </div>
   );
 }

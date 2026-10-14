@@ -82,22 +82,28 @@ export function IntroScreen() {
   return (
     <main className="biome-field biome-screen film-grain relative min-h-dvh overflow-x-hidden bg-[var(--abyss)] px-5 text-[var(--foam)]">
       <BiomeBackdrop progress={0.26} quiet />
-      <div className="safe-top relative z-10 mx-auto flex h-dvh w-full max-w-5xl flex-col">
-        {/* Inside this screen rather than directly in main, where the biome screen would make it scroll along. */}
-        <ScrollNotice label="The works in the exhibition are below" />
+      <div className="safe-top relative z-10 mx-auto flex min-h-dvh w-full max-w-5xl flex-col">
 
-        <section className="grid min-h-0 flex-1 items-center gap-4 py-4 md:grid-cols-[1.1fr_.9fr] md:gap-6 md:py-8" aria-labelledby="intro-title">
+        <section className="grid min-h-0 flex-1 items-center gap-4 py-4 md:grid-cols-[1.25fr_.75fr] md:gap-6 lg:grid-cols-[1.1fr_.9fr] md:py-8" aria-labelledby="intro-title">
           <div className="relative z-10">
             <h1 id="intro-title" className="font-display max-w-3xl text-[clamp(3.2rem,13vw,9rem)] leading-[0.73] tracking-[-0.075em]">
               The Fishbowl
-              <span className="block translate-x-[8vw] italic text-[var(--phosphor)] md:translate-x-20">Leaks</span>
+              <span className="flex translate-x-[8vw] items-end gap-3 md:translate-x-20 md:gap-5">
+                <span className="italic text-[var(--phosphor)]">Leaks</span>
+                <span className="font-body whitespace-nowrap text-base leading-5 tracking-normal text-white/74 md:text-lg md:leading-6">
+                  by Jakob Kusnick
+                </span>
+              </span>
             </h1>
             <p className="mt-5 max-w-md text-base leading-6 text-white/74 md:mt-8 md:text-lg md:leading-7">
               This aquarium is trying to classify the exhibition. Scan the markers, gather fragments of a story, and grow a creature it cannot fully contain.
             </p>
+            <div className="mt-5">
+              <ScrollNotice label="The works in the exhibition are below" placement="inline" targetId="works-title" />
+            </div>
           </div>
 
-          <div className="porthole mx-auto aspect-square w-[min(48vw,25rem)] max-md:max-h-[28dvh] max-md:max-w-[28dvh]" aria-hidden="true">
+          <div className="porthole mx-auto" aria-hidden="true">
             <div className="porthole-glass">
               <span className="radar-range radar-range-outer" />
               <span className="radar-range radar-range-middle" />

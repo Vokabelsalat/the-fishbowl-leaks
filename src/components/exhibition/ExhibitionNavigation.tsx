@@ -1,6 +1,7 @@
 "use client";
 
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setExperiencePhase } from "@/store/journeySlice";
 import {
   selectDiscoveries,
   selectDiscoveryCount,
@@ -19,6 +20,7 @@ import { artifacts } from "@/data/artifacts";
 
 export function ExhibitionNavigation() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const count = useAppSelector(selectDiscoveryCount);
   const discoveries = useAppSelector(selectDiscoveries);
   const creatureForm = useAppSelector(selectCreatureForm);
@@ -36,7 +38,14 @@ export function ExhibitionNavigation() {
   return (
     <header className="safe-top pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between px-4">
       <div>
-        <p className="text-lg leading-none tracking-[-0.04em]">The Fishbowl Leaks</p>
+        {/* The journey is kept; entering the tank again from the title screen resumes it. */}
+        <button
+          type="button"
+          onClick={() => dispatch(setExperiencePhase("intro"))}
+          className="pointer-events-auto -m-2 p-2 text-left text-lg leading-none tracking-[-0.04em] transition-colors hover:text-[var(--phosphor)]"
+        >
+          The Fishbowl Leaks
+        </button>
         <div
           className="mt-2 flex items-baseline gap-2 text-white"
           role="progressbar"

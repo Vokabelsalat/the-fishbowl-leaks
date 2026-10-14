@@ -107,6 +107,7 @@ export function ExhibitionExperience() {
         onTargetLost={() => undefined}
         onUseSimulator={() => setSimulatorVisible(true)}
         simulatorVisible={simulatorVisible}
+        showTargetHint={discoveries.length === 0}
       />
       <ExhibitionNavigation />
 

@@ -16,7 +16,9 @@ import type {
 } from "@/components/ar/MindARAdapter";
 import { artifacts, targetImages } from "@/data/artifacts";
 import { targetBundleVersion } from "@/data/targetBundle";
+import Image from "next/image";
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
+import { exampleTarget, targetExampleCopy } from "@/components/exhibition/targetExample";
 
 const imageTargetSrc = `/api/targets?v=${targetBundleVersion}`;
 
@@ -89,6 +91,8 @@ type ARScannerProps = {
   onTargetLost: (targetIndex: number) => void;
   onUseSimulator: () => void;
   simulatorVisible: boolean;
+  /** Until the first artwork is scanned, the camera view shows a faint example of a marker. */
+  showTargetHint?: boolean;
 };
 
 export type ARScannerHandle = {
@@ -102,6 +106,7 @@ function ARScannerComponent(
     onTargetLost,
     onUseSimulator,
     simulatorVisible,
+    showTargetHint = false,
   }: ARScannerProps,
   ref: ForwardedRef<ARScannerHandle>,
 ) {
@@ -244,9 +249,13 @@ function ARScannerComponent(
           <div className="biome-field absolute inset-0 z-10 flex items-center justify-center bg-[var(--abyss)] px-7">
             <BiomeBackdrop progress={0.42} quiet />
             <div className="relative z-10 w-full max-w-sm text-center flex items-center flex-col">
-              <div className="mb-8 size-24 rounded-full border border-white/40 p-2" aria-hidden="true">
-                <div className="grid size-full place-items-center rounded-full border border-dashed border-[var(--phosphor)] font-mono text-2xl text-[var(--phosphor)]">◎</div>
-              </div>
+              {scannerState === "error" ? (
+                <div className="mb-8 size-24 rounded-full border border-white/40 p-2" aria-hidden="true">
+                  <div className="grid size-full place-items-center rounded-full border border-dashed border-[var(--phosphor)] font-mono text-2xl text-[var(--phosphor)]">◎</div>
+                </div>
+              ) : (
+                <ExampleTargetCard className="mb-7 w-28" />
+              )}
               <h2 className="font-display text-5xl tracking-[-0.04em]">
                 {scannerState === "error" ? "Camera unavailable" : "Scan an artwork marker"}
               </h2>
@@ -255,7 +264,7 @@ function ARScannerComponent(
                   ? errorMessage
                   : scannerState === "paused"
                     ? "The camera paused when the page became hidden. Tap to restart it."
-                    : "Point your camera at the small marker beside an artwork. Hold still while the tank tries to identify it."}
+                    : `${targetExampleCopy} Point your camera at it and hold still while the tank identifies it.`}
               </p>
               <button
                 type="button"
@@ -280,19 +289,34 @@ function ARScannerComponent(
 
       {
         scannerState === "starting" && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/65" role="status">
-            <p className="animate-pulse text-[10px] tracking-[0.25em] text-white/60">
-              Starting camera
-            </p>
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/65 px-7" role="status">
+            <div className="flex w-full max-w-sm flex-col items-center text-center">
+              <ExampleTargetCard className="w-28" />
+              <p className="mt-6 text-base leading-6 text-white/80">{targetExampleCopy}</p>
+              <p className="mt-4 animate-pulse text-sm text-white/80">Starting camera</p>
+            </div>
           </div>
         )
       }
 
       {
         scannerState === "running" && (
-          <p className="absolute inset-x-0 bottom-[9rem] z-10 text-center text-[10px] tracking-[0.22em] text-white/60" role="status">
-            Hold the artwork marker inside the frame
-          </p>
+          <>
+            {showTargetHint && (
+              <div className="target-hint pointer-events-none absolute top-1/2 left-1/2 z-[5] w-[min(46vw,13rem)] -translate-x-1/2 -translate-y-1/2" aria-hidden="true">
+                <Image src={exampleTarget.glow} alt="" width={exampleTarget.width} height={exampleTarget.height} className="h-auto w-full" />
+              </div>
+            )}
+            {showTargetHint ? (
+              <p className="absolute inset-x-0 bottom-[9rem] z-10 px-7 text-center text-base leading-6 text-white/80" role="status">
+                Find a constellation like this beside an artwork
+              </p>
+            ) : (
+              <p className="absolute inset-x-0 bottom-[9rem] z-10 text-center text-[10px] tracking-[0.22em] text-white/60" role="status">
+                Hold the artwork marker inside the frame
+              </p>
+            )}
+          </>
         )
       }
     </div >
@@ -302,3 +326,19 @@ function ARScannerComponent(
 export const ARScanner = forwardRef<ARScannerHandle, ARScannerProps>(
   ARScannerComponent,
 );
+
+/** The white marker card as it hangs beside each artwork. */
+function ExampleTargetCard({ className }: { className?: string }) {
+  return (
+    <div className={`border border-white/40 bg-white p-2 ${className ?? ""}`}>
+      <Image
+        src={exampleTarget.light}
+        alt="Example marker: a constellation of blue dots in the shape of a fish"
+        width={exampleTarget.width}
+        height={exampleTarget.height}
+        className="h-auto w-full"
+        priority
+      />
+    </div>
+  );
+}

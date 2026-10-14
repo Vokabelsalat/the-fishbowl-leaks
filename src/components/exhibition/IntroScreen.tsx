@@ -1,16 +1,95 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { artifacts } from "@/data/artifacts";
 import type { ExhibitionArtifact } from "@/types/exhibition";
 import { useAppDispatch } from "@/store/hooks";
 import { startJourney } from "@/store/journeySlice";
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 import { ScrollNotice } from "@/components/ui/ScrollNotice";
+import { exampleTarget, radarGlowSrc } from "@/components/exhibition/targetExample";
 
 /** The works in exhibition order, as the catalogue lists them. */
 const worksInExhibitionOrder = artifacts.slice().sort((a, b) => a.exhibitionId - b.exhibitionId);
+
+/** The exhibition's themes in the order they first appear, for filtering the works list. */
+const exhibitionThemes = Array.from(new Set(worksInExhibitionOrder.flatMap((work) => work.exhibitionThemes)));
+
+const filterClass = (selected: boolean) =>
+  `min-h-9 px-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--phosphor)] ${
+    selected ? "bg-[var(--phosphor)] text-[var(--abyss)]" : "text-white/80 hover:text-[var(--phosphor)]"
+  }`;
+
+/** The radar's markers: the tutorial example first, then the other works in exhibition order. */
+const radarTargetIds = [
+  exampleTarget.artifactId,
+  ...worksInExhibitionOrder.map((work) => work.id).filter((id) => id !== exampleTarget.artifactId),
+];
+
+/**
+ * A fifth contact that slowly resolves into a marker and condenses back, showing visitors what to look for.
+ * Each cycle of the CSS animation brings the next work's constellation, swapped while it is invisible.
+ */
+function RadarTarget() {
+  const [index, setIndex] = useState(0);
+  const next = radarTargetIds[(index + 1) % radarTargetIds.length];
+
+  // Load the next marker ahead of time, so it is ready when the swap happens.
+  useEffect(() => {
+    new window.Image().src = radarGlowSrc(next);
+  }, [next]);
+
+  return (
+    <>
+      <span className="radar-target-blip" />
+      <span className="radar-target" onAnimationIteration={() => setIndex((current) => (current + 1) % radarTargetIds.length)}>
+        <Image
+          src={radarGlowSrc(radarTargetIds[index])}
+          alt=""
+          width={exampleTarget.width}
+          height={exampleTarget.height}
+          unoptimized
+          className="h-auto w-full"
+        />
+      </span>
+    </>
+  );
+}
+
+/** The works list with the exhibition's themes as filters above it. */
+function WorksList() {
+  const [theme, setTheme] = useState<string | null>(null);
+  const works = theme ? worksInExhibitionOrder.filter((work) => work.exhibitionThemes.includes(theme)) : worksInExhibitionOrder;
+
+  return (
+    <>
+      <div role="group" aria-label="Filter the artworks by theme" className="-mx-2 mt-5 flex max-w-2xl flex-wrap gap-x-1 gap-y-0.5">
+        <button type="button" aria-pressed={theme === null} onClick={() => setTheme(null)} className={filterClass(theme === null)}>
+          All works
+        </button>
+        {exhibitionThemes.map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={theme === option}
+            onClick={() => setTheme(theme === option ? null : option)}
+            className={filterClass(theme === option)}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+      <p className="mt-4 text-base leading-6 text-white/74" role="status">
+        {theme ? `${works.length} works on ${theme.toLowerCase()}` : `All ${works.length} works`}
+      </p>
+      {/* One column, so an unfolded work does not stretch an empty neighbour beside it. */}
+      <ul className="mt-4 max-w-2xl">
+        {works.map((work) => <WorkEntry key={work.id} work={work} />)}
+      </ul>
+    </>
+  );
+}
 
 /** A work in the list: its title, artists and themes, unfolding to its picture and description. */
 function WorkEntry({ work }: { work: ExhibitionArtifact }) {
@@ -99,7 +178,7 @@ export function IntroScreen() {
               This aquarium is trying to classify the exhibition. Scan the markers, gather fragments of a story, and grow a creature it cannot fully contain.
             </p>
             <div className="mt-5">
-              <ScrollNotice label="The works in the exhibition are below" placement="inline" targetId="works-title" />
+              <ScrollNotice label="The exhibition's artworks are below" placement="inline" targetId="works-title" />
             </div>
           </div>
 
@@ -116,6 +195,7 @@ export function IntroScreen() {
               <span className="radar-contact radar-contact-two" />
               <span className="radar-contact radar-contact-three" />
               <span className="radar-contact radar-contact-four" />
+              <RadarTarget />
               <span className="theme-echo theme-echo-memory">Memory and afterlives</span>
               <span className="theme-echo theme-echo-systems">Synthetic systems and constructed authority</span>
               <span className="theme-echo theme-echo-language">Language across materials</span>
@@ -134,7 +214,7 @@ export function IntroScreen() {
             onClick={() => dispatch(startJourney())}
             className="flex min-h-16 w-full items-center justify-between border border-[var(--phosphor)] bg-[var(--phosphor)] px-6 text-base text-[#031015] shadow-[0_0_2rem_rgba(184,255,69,0.2)] transition-transform active:scale-[0.99] md:w-80"
           >
-            <span>Scan an artwork marker</span>
+            <span>Scan an artwork label</span>
             <span aria-hidden="true">→</span>
           </button>
         </div>
@@ -142,16 +222,14 @@ export function IntroScreen() {
 
       <section className="safe-bottom relative z-10 mx-auto w-full max-w-5xl pb-10 pt-12" aria-labelledby="works-title">
         <h2 id="works-title" className="font-display text-[clamp(2rem,7vw,3.3rem)] leading-[0.94] tracking-[-0.055em]">
-          The works in the exhibition
+          The exhibition&apos;s artworks
         </h2>
         <p className="mt-3 max-w-lg text-base leading-6 text-white/74">
           Each one has a marker. Find them in the space, scan them, and let them shape your creature.
         </p>
-        {/* One column, so an unfolded work does not stretch an empty neighbour beside it. */}
-        <ul className="mt-8 max-w-2xl">
-          {worksInExhibitionOrder.map((work) => <WorkEntry key={work.id} work={work} />)}
-        </ul>
+        <WorksList />
       </section>
+
     </main>
   );
 }

@@ -11,12 +11,13 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "targets:build": "npm run targets:export && npm run targets:compile && npm run targets:verify && npm run targets:print",
+    "targets:build": "npm run targets:export && npm run targets:compile && npm run targets:verify && npm run targets:print && npm run targets:radar",
     "targets:export": "node scripts/export-particle-targets.mjs",
     "targets:compile": "node scripts/compile-mind-targets.mjs",
     "targets:verify": "node scripts/verify-mind-targets.mjs",
     "targets:assess": "node scripts/assess-mind-targets.mjs",
-    "targets:print": "node scripts/export-print-targets.mjs"
+    "targets:print": "node scripts/export-print-targets.mjs",
+    "targets:radar": "node scripts/export-radar-glows.mjs"
   },
   "dependencies": {
     "@react-three/drei": "10.7.8",

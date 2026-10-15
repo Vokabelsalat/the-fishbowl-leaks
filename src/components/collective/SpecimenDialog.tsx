@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { ExhibitionContribution } from "@/types/contribution";
-import { NarrativeLine } from "@/components/collective/NarrativeLine";
+import { NarrativeLines } from "@/components/collective/NarrativeLine";
 
 const osloDate = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Oslo",
@@ -74,7 +74,7 @@ export function SpecimenDialog({
             <h3 className="font-display text-xl text-white/85">Story</h3>
             <div className="mt-3 font-display text-xl leading-[1.35] text-white/72">
               {contribution.narrative.length > 0
-                ? contribution.narrative.map((line, index) => <p className="my-1" key={`${index}-${line}`}><NarrativeLine line={line} /></p>)
+                ? <p><NarrativeLines lines={contribution.narrative} /></p>
                 : <p>No story was recorded.</p>}
             </div>
 

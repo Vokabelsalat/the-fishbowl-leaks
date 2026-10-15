@@ -1,0 +1,266 @@
+{
+  "creatures": {
+    "dolphin": {
+      "mesh-1": {
+        "x": -0.38,
+        "y": -0.14,
+        "z": -0.21,
+        "scaleX": 0.46,
+        "scaleY": 0.08,
+        "scaleZ": 0.27,
+        "rotationX": -28,
+        "rotationY": -28.6479,
+        "rotationZ": 0
+      },
+      "mesh-2": {
+        "x": -0.23,
+        "y": 0.13,
+        "z": 0.26,
+        "scaleX": 0.46,
+        "scaleY": 0.08,
+        "scaleZ": 0.27,
+        "rotationX": -31,
+        "rotationY": 28.6479,
+        "rotationZ": 0
+      }
+    },
+    "fish": {
+      "mesh-2": {
+        "x": -0.12,
+        "y": -0.08,
+        "z": 0.1584,
+        "scaleX": 0.8396,
+        "scaleY": 0.5968,
+        "scaleZ": 0.12,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0,
+        "hidden": true
+      }
+    },
+    "narwhal": {
+      "mesh-1": {
+        "x": 0.42,
+        "y": -0.2436,
+        "z": 0.28,
+        "scaleX": 1.022,
+        "scaleY": 0.2436,
+        "scaleZ": 0.3,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0,
+        "hidden": true
+      },
+      "mesh-11": {
+        "x": 2.07,
+        "y": 0.13,
+        "z": 0,
+        "scaleX": 0.11,
+        "scaleY": 1.41,
+        "scaleZ": 0.11,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": -90
+      }
+    },
+    "seal": {
+      "mesh-2": {
+        "x": 1.15,
+        "y": 0.1,
+        "z": 0.31,
+        "scaleX": 0.21,
+        "scaleY": 0.13,
+        "scaleZ": 0.07,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "mesh-8": {
+        "x": 0,
+        "y": 0,
+        "z": -0.14,
+        "scaleX": 0.12,
+        "scaleY": 0.15,
+        "scaleZ": 0.08,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "mesh-9": {
+        "x": 0,
+        "y": 0,
+        "z": -0.08,
+        "scaleX": 0.045,
+        "scaleY": 0.07,
+        "scaleZ": 0.03,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "mesh-10": {
+        "x": 0,
+        "y": 0,
+        "z": -0.14,
+        "scaleX": 0.12,
+        "scaleY": 0.15,
+        "scaleZ": 0.08,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "mesh-11": {
+        "x": 0,
+        "y": 0,
+        "z": -0.08,
+        "scaleX": 0.045,
+        "scaleY": 0.07,
+        "scaleZ": 0.03,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      }
+    },
+    "turtle": {
+      "mesh-9": {
+        "x": 0.08,
+        "y": 0.22,
+        "z": 0,
+        "scaleX": 0.2,
+        "scaleY": 0.1,
+        "scaleZ": 0.075,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "mesh-10": {
+        "x": -0.22,
+        "y": 0.01,
+        "z": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "mesh-11": {
+        "x": 0.05,
+        "y": -0.22,
+        "z": 0,
+        "scaleX": 0.2,
+        "scaleY": 0.1,
+        "scaleZ": 0.075,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "mesh-12": {
+        "x": -0.24,
+        "y": 0.04,
+        "z": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "mesh-15": {
+        "x": -1.04,
+        "y": 0,
+        "z": 0,
+        "scaleX": 0.2,
+        "scaleY": 0.34,
+        "scaleZ": 0.12,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 90
+      }
+    },
+    "whale": {
+      "mesh-0": {
+        "x": 0.16,
+        "y": 0,
+        "z": 0,
+        "scaleX": 1.16,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "mesh-1": {
+        "x": -0.28,
+        "y": -0.15,
+        "z": -0.25,
+        "scaleX": 0.56,
+        "scaleY": 0.1,
+        "scaleZ": 0.32,
+        "rotationX": -29,
+        "rotationY": -27.502,
+        "rotationZ": 0
+      },
+      "mesh-2": {
+        "x": -0.28,
+        "y": 0.16,
+        "z": 0.32,
+        "scaleX": 0.56,
+        "scaleY": 0.1,
+        "scaleZ": 0.32,
+        "rotationX": -26,
+        "rotationY": 27.502,
+        "rotationZ": 0
+      },
+      "mesh-4": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "scaleZ": 1,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      }
+    }
+  },
+  "plants": {},
+  "addons": {
+    "route-tail": {
+      "mesh-0": {
+        "x": 0.07,
+        "y": 0.165,
+        "z": 0,
+        "scaleX": 0.4,
+        "scaleY": 0.4,
+        "scaleZ": 0.4,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "mesh-1": {
+        "x": 0,
+        "y": 0.23,
+        "z": 0,
+        "scaleX": 0.4,
+        "scaleY": 0.4,
+        "scaleZ": 0.4,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      },
+      "mesh-2": {
+        "x": -0.075,
+        "y": 0.285,
+        "z": 0,
+        "scaleX": 0.4,
+        "scaleY": 0.4,
+        "scaleZ": 0.4,
+        "rotationX": 0,
+        "rotationY": 0,
+        "rotationZ": 0
+      }
+    }
+  },
+  "worldEvents": {}
+}

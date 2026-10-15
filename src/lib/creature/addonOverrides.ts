@@ -1,32 +1,27 @@
 import * as THREE from "three";
+import { modelEdits, saveModelEdits } from "@/lib/creature/modelEdits";
 import type { SavedNodeTransform } from "@/lib/creature/modelOverrides";
 import type { CreaturePartId } from "@/types/exhibition";
-
-export const ADDON_MODEL_OVERRIDES_KEY = "after-augmented-reality:addon-model-overrides:v1";
 
 export type AddonModelOverrides = Partial<Record<CreaturePartId, Record<string, SavedNodeTransform>>>;
 
 export function loadAddonModelOverrides(): AddonModelOverrides {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(window.localStorage.getItem(ADDON_MODEL_OVERRIDES_KEY) ?? "{}") as AddonModelOverrides;
-  } catch {
-    return {};
-  }
+  return modelEdits("addons") as AddonModelOverrides;
 }
 
-export function saveAddonModelOverrides(partId: CreaturePartId, changes: Record<string, SavedNodeTransform>) {
-  const current = loadAddonModelOverrides();
-  const next = { ...current, [partId]: { ...current[partId], ...changes } };
-  window.localStorage.setItem(ADDON_MODEL_OVERRIDES_KEY, JSON.stringify(next));
+/** Saves the changes into the project, so every copy of the app draws them. */
+export async function saveAddonModelOverrides(partId: CreaturePartId, changes: Record<string, SavedNodeTransform>) {
+  const saving = saveModelEdits({ addons: { [partId]: changes } });
+  // The edits already apply on this page, so its models update even before the file is written.
   window.dispatchEvent(new CustomEvent("addon-model-overrides-updated", { detail: { partId } }));
+  await saving;
 }
 
-export function clearAddonModelOverrides(partId: CreaturePartId) {
-  const current = loadAddonModelOverrides();
-  delete current[partId];
-  window.localStorage.setItem(ADDON_MODEL_OVERRIDES_KEY, JSON.stringify(current));
+export async function clearAddonModelOverrides(partId: CreaturePartId) {
+  const saving = saveModelEdits({ addons: { [partId]: null } });
+  // The edits already apply on this page, so its models update even before the file is written.
   window.dispatchEvent(new CustomEvent("addon-model-overrides-updated", { detail: { partId } }));
+  await saving;
 }
 
 /** Meshes are counted within the add-on itself, so the same mesh matches on every creature. */

@@ -1,32 +1,27 @@
 import * as THREE from "three";
 import type { PlantKind } from "@/components/collective/AquariumDioramaPlants";
+import { modelEdits, saveModelEdits } from "@/lib/creature/modelEdits";
 import type { SavedNodeTransform } from "@/lib/creature/modelOverrides";
-
-export const PLANT_MODEL_OVERRIDES_KEY = "after-augmented-reality:plant-model-overrides:v1";
 
 export type PlantModelOverrides = Partial<Record<PlantKind, Record<string, SavedNodeTransform>>>;
 
 export function loadPlantModelOverrides(): PlantModelOverrides {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(window.localStorage.getItem(PLANT_MODEL_OVERRIDES_KEY) ?? "{}") as PlantModelOverrides;
-  } catch {
-    return {};
-  }
+  return modelEdits("plants") as PlantModelOverrides;
 }
 
-export function savePlantModelOverrides(kind: PlantKind, changes: Record<string, SavedNodeTransform>) {
-  const current = loadPlantModelOverrides();
-  const next = { ...current, [kind]: { ...current[kind], ...changes } };
-  window.localStorage.setItem(PLANT_MODEL_OVERRIDES_KEY, JSON.stringify(next));
+/** Saves the changes into the project, so every copy of the app draws them. */
+export async function savePlantModelOverrides(kind: PlantKind, changes: Record<string, SavedNodeTransform>) {
+  const saving = saveModelEdits({ plants: { [kind]: changes } });
+  // The edits already apply on this page, so its models update even before the file is written.
   window.dispatchEvent(new CustomEvent("plant-model-overrides-updated", { detail: { kind } }));
+  await saving;
 }
 
-export function clearPlantModelOverrides(kind: PlantKind) {
-  const current = loadPlantModelOverrides();
-  delete current[kind];
-  window.localStorage.setItem(PLANT_MODEL_OVERRIDES_KEY, JSON.stringify(current));
+export async function clearPlantModelOverrides(kind: PlantKind) {
+  const saving = saveModelEdits({ plants: { [kind]: null } });
+  // The edits already apply on this page, so its models update even before the file is written.
   window.dispatchEvent(new CustomEvent("plant-model-overrides-updated", { detail: { kind } }));
+  await saving;
 }
 
 export function applyPlantModelOverrides(root: THREE.Object3D, kind: PlantKind) {

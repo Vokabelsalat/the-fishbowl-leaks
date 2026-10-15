@@ -1,33 +1,29 @@
 import * as THREE from "three";
 import type { WorldEventId } from "@/components/collective/WorldEvents";
+import { modelEdits, saveModelEdits } from "@/lib/creature/modelEdits";
 import type { SavedNodeTransform } from "@/lib/creature/modelOverrides";
 
-export const WORLD_EVENT_OVERRIDES_KEY = "after-augmented-reality:world-event-overrides:v1";
 export const worldEventOverridesUpdated = "world-event-overrides-updated";
 
 export type WorldEventModelOverrides = Partial<Record<WorldEventId, Record<string, SavedNodeTransform>>>;
 
 export function loadWorldEventOverrides(): WorldEventModelOverrides {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(window.localStorage.getItem(WORLD_EVENT_OVERRIDES_KEY) ?? "{}") as WorldEventModelOverrides;
-  } catch {
-    return {};
-  }
+  return modelEdits("worldEvents") as WorldEventModelOverrides;
 }
 
-export function saveWorldEventOverrides(id: WorldEventId, changes: Record<string, SavedNodeTransform>) {
-  const current = loadWorldEventOverrides();
-  const next = { ...current, [id]: { ...current[id], ...changes } };
-  window.localStorage.setItem(WORLD_EVENT_OVERRIDES_KEY, JSON.stringify(next));
+/** Saves the changes into the project, so every copy of the app draws them. */
+export async function saveWorldEventOverrides(id: WorldEventId, changes: Record<string, SavedNodeTransform>) {
+  const saving = saveModelEdits({ worldEvents: { [id]: changes } });
+  // The edits already apply on this page, so its models update even before the file is written.
   window.dispatchEvent(new CustomEvent(worldEventOverridesUpdated, { detail: { id } }));
+  await saving;
 }
 
-export function clearWorldEventOverrides(id: WorldEventId) {
-  const current = loadWorldEventOverrides();
-  delete current[id];
-  window.localStorage.setItem(WORLD_EVENT_OVERRIDES_KEY, JSON.stringify(current));
+export async function clearWorldEventOverrides(id: WorldEventId) {
+  const saving = saveModelEdits({ worldEvents: { [id]: null } });
+  // The edits already apply on this page, so its models update even before the file is written.
   window.dispatchEvent(new CustomEvent(worldEventOverridesUpdated, { detail: { id } }));
+  await saving;
 }
 
 /** The node's transform as the editor saved it, built into a matrix. */

@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { ExportedModelOverrides } from "@/components/poster/ExportedModelOverrides";
 import { PosterTutorialSheet } from "@/components/poster/PosterTutorialSheet";
-import { readExportedOverrides } from "@/lib/poster/exportOverridesFile";
 
 export const metadata: Metadata = {
   title: "Tutorial sheet — The Fishbowl Leaks",
@@ -9,14 +7,11 @@ export const metadata: Metadata = {
 };
 
 export default async function PosterTutorialPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const { seed, pose, overrides } = await searchParams;
+  const { seed, pose } = await searchParams;
   return (
-    // Set by poster exports, whose headless Chrome starts without the editors' saved overrides.
-    <ExportedModelOverrides overrides={await readExportedOverrides(typeof overrides === "string" ? overrides : undefined)}>
-      <PosterTutorialSheet
-        seed={typeof seed === "string" && seed ? seed : "fishbowl"}
-        pose={typeof pose === "string" ? pose : undefined}
-      />
-    </ExportedModelOverrides>
+    <PosterTutorialSheet
+      seed={typeof seed === "string" && seed ? seed : "fishbowl"}
+      pose={typeof pose === "string" ? pose : undefined}
+    />
   );
 }

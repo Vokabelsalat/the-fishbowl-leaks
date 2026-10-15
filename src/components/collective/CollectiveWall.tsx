@@ -10,7 +10,7 @@ import { AquariumAudio } from "@/components/collective/AquariumAudio";
 import { SpecimenDialog } from "@/components/collective/SpecimenDialog";
 import { PathVisualization } from "@/components/visualization/PathVisualization";
 import { FitText } from "@/components/ui/FitText";
-import { NarrativeLine, NarrativeLines } from "@/components/collective/NarrativeLine";
+import { NarrativeLines } from "@/components/collective/NarrativeLine";
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 import { creatureFitMargin } from "@/components/creature/CreatureCanvas";
 import { formatRenderStats, type RenderStatsReport } from "@/components/development/RenderStats";
@@ -526,10 +526,8 @@ export function CollectiveWall({ initialView = "collective" }: {
             {/* A long story shrinks its text to fit the panel's remaining height, like the latest story below. */}
             <div className="collective-story-narrative flex min-h-0 flex-1 flex-col pt-6">
               <FitText className="font-display text-[clamp(1.3rem,1.8vw,2rem)] leading-[1.22] tracking-[-0.025em]">
-                {visibleActive.narrative.map((line, index) => (
-                  // The gap between lines shrinks with the text.
-                  <p key={`${index}-${line}`} className="mb-[0.6em] last:mb-0"><NarrativeLine line={line} /></p>
-                ))}
+                {/* One paragraph, since a story's lines run on into each other. */}
+                <p><NarrativeLines lines={visibleActive.narrative} /></p>
               </FitText>
             </div>
           </div>

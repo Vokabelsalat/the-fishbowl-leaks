@@ -40,7 +40,7 @@ export const sentenceTemplates = [
 ] as const;
 
 /**
- * Words that open each sentence after the first, so the lines read as one passage through the
+ * Words that open a sentence after the first, so the lines read as one passage through the
  * exhibition rather than separate notes. They are grouped by how they tie a sentence to the one
  * before: in time, as its consequence, or against it. Each carries its own punctuation, since short
  * ones like "So" run straight into the sentence. The last sentence of a longer story closes it.
@@ -52,8 +52,41 @@ export const sentenceConnectors = {
   closing: ["Finally,", "At last,", "In the end,", "And in the end,"],
 } as const;
 
-/** The share of sentences after the first that open with a connector; the others simply follow on. */
-export const connectorShare = 0.5;
+/**
+ * Conjunctions that run a sentence on from the one before, which then ends in a comma instead of a
+ * full stop: "…through the kelp forest, until the shell followed…". Grouped like the connectors.
+ */
+export const clauseJoins = {
+  time: ["and then", "until", "and soon", "just as"],
+  cause: ["so", "and so", "and because of it"],
+  contrast: ["but", "yet", "though"],
+  closing: ["until at last", "and in the end"],
+} as const;
+
+/**
+ * Openings that pick up a word from the sentence before, so the story keeps to one thread: the
+ * place it was in, the trace it left, the boundary it passed or the character it met. Only
+ * sentences that open with their subject or a character take one.
+ */
+export const echoConnectors = {
+  place: ["There,", "Back in the {place},", "Deeper in the {place},", "Not far from the {place},"],
+  trace: ["Drawn by the {trace},", "Following the {trace},", "In the wake of the {trace},", "Where the {trace} had been,"],
+  boundary: ["Beyond the {boundary},", "Back at the {boundary},", "Just past the {boundary},"],
+  figure: ["Unseen by {figure},", "Long after {figure} had gone,", "Watched by {figure},"],
+} as const;
+
+/** The share of sentences after the first that link to the one before; the rest stand on their own. */
+export const linkShare = 0.85;
+/**
+ * How often a linked sentence runs on from the one before, where that reads well, and how often one
+ * that does not picks up a word of it; the others open with a connector.
+ */
+export const joinShare = 0.5;
+export const echoShare = 0.4;
+/** The share of artworks that add a second sentence; never two artworks in a row. */
+export const followUpShare = 0.2;
+/** How often a genre's recurring character takes a character slot, rather than one met in passing. */
+export const protagonistShare = 0.6;
 
 /** The kinds of link a sentence in the middle of a story can have to the one before it. */
 export const middleConnectorKinds = ["time", "cause", "contrast"] as const;
@@ -63,9 +96,11 @@ export type PosTag = "NP" | "NN" | "JJ" | "VBD";
  * `subject` and `motion` come from the artwork, so every sentence names the work behind it. The
  * nouns and adjectives come from the story's genre, or for the aquarium genre from the work's
  * exhibition theme. `figure` (a character, NP) and `action` (a transitive verb, VBD) exist only in
- * the other genres.
+ * the other genres. A follow-up sentence can take `REF` slots, which repeat a word its artwork's first
+ * sentence used, like {REF:trace}.
  */
 export type Slot = "subject" | "motion" | "place" | "boundary" | "trace" | "quality" | "figure" | "action";
+export type RefSlot = "place" | "trace" | "boundary" | "figure";
 
 type ThemeBank = {
   NN: { place: readonly string[]; boundary: readonly string[]; trace: readonly string[] };
@@ -140,6 +175,11 @@ export type NarrativeGenre = {
   label: string;
   /** Each template names the artwork's subject; a `{VBD:action}` always takes an object after it. */
   templates: readonly string[];
+  /**
+   * Second sentences an artwork sometimes adds. They take up a word of its first sentence through a
+   * `REF` slot, and at least one needs none, for first sentences without the word asked for.
+   */
+  followUps: readonly string[];
   /** The genre's own words; the aquarium genre has none and uses the works' exhibition themes. */
   bank: GenreBank | null;
 };
@@ -153,6 +193,12 @@ export const narrativeGenres: Record<NarrativeGenreId, NarrativeGenre> = {
   aquarium: {
     label: "Aquarium record",
     templates: sentenceTemplates,
+    followUps: [
+      "The {REF:trace} stayed behind in the {NN:place}.",
+      "Nothing behind the {REF:boundary} was quite the same.",
+      "The {REF:place} kept that shape a little longer.",
+      "Even the {NN:boundary} began to give way.",
+    ],
     bank: null,
   },
   myth: {
@@ -163,6 +209,12 @@ export const narrativeGenres: Record<NarrativeGenreId, NarrativeGenre> = {
       "{NP:subject} {VBD:motion}, and {NP:figure} kept the {NN:trace}.",
       "In the {NN:place}, {NP:figure} {VBD:action} {NP:subject}.",
       "The {NN:trace} of {NP:figure} {VBD:motion} with {NP:subject}.",
+    ],
+    followUps: [
+      "{REF:figure} sang of it for a hundred tides.",
+      "Ever since, the {REF:place} has been {JJ:quality}.",
+      "The {REF:trace} was never found again.",
+      "Some say the {NN:boundary} still remembers it.",
     ],
     bank: {
       NN: {
@@ -184,6 +236,12 @@ export const narrativeGenres: Record<NarrativeGenreId, NarrativeGenre> = {
       "No one saw {NP:subject} again; only the {NN:trace} remained.",
       "{NP:figure} {VBD:action} {NP:subject} in the {NN:place}.",
     ],
+    followUps: [
+      "The {REF:place} has been silent ever since.",
+      "{REF:figure} is still waiting.",
+      "Only the {REF:trace} came back up.",
+      "Something stirred behind the {NN:boundary}.",
+    ],
     bank: {
       NN: {
         place: ["drowned city", "trench", "sunken temple", "black abyss", "cyclopean ruin", "lightless deep", "flooded crypt", "nameless reef", "abyssal plain", "deep vault"],
@@ -203,6 +261,12 @@ export const narrativeGenres: Record<NarrativeGenreId, NarrativeGenre> = {
       "{NP:subject} {VBD:motion}, one {JJ:quality} {NN:trace} at a time.",
       "At the {NN:boundary}, {NP:subject} {VBD:motion} and turned.",
       "{NP:subject} {VBD:motion}; {NP:figure} counted every {NN:trace}.",
+    ],
+    followUps: [
+      "{REF:figure} blew the whistle twice.",
+      "The {REF:place} went still for a moment.",
+      "Every {REF:trace} felt lighter after that.",
+      "Somebody cheered from the {NN:boundary}.",
     ],
     bank: {
       NN: {
@@ -224,6 +288,12 @@ export const narrativeGenres: Record<NarrativeGenreId, NarrativeGenre> = {
       "Out past the {NN:place}, {NP:subject} {VBD:motion}.",
       "{NP:subject} {VBD:motion} on the {JJ:quality} {NN:trace}.",
     ],
+    followUps: [
+      "The {REF:place} went flat for a while.",
+      "{REF:figure} talked about it all evening.",
+      "Nobody saw the {REF:trace} coming.",
+      "The next set was already building at the {NN:boundary}.",
+    ],
     bank: {
       NN: {
         place: ["lineup", "reef break", "point break", "shore break", "barrel", "outside set", "channel", "white water", "beach break", "green face"],
@@ -244,6 +314,12 @@ export const narrativeGenres: Record<NarrativeGenreId, NarrativeGenre> = {
       "At the {NN:place}, {NP:figure} {VBD:action} {NP:subject}.",
       "{NP:subject} {VBD:motion} like the {NN:trace} off the {NN:boundary}.",
     ],
+    followUps: [
+      "{REF:figure} swore it was the biggest yet.",
+      "The {REF:place} smelled of it for days.",
+      "That {REF:trace} still hangs in the {NN:place}.",
+      "Nobody believed it back at the {NN:place}.",
+    ],
     bank: {
       NN: {
         place: ["harbor", "fishing grounds", "trawler deck", "fjord", "jetty", "mooring", "net loft", "fish market", "pier", "herring bank"],
@@ -263,6 +339,12 @@ export const narrativeGenres: Record<NarrativeGenreId, NarrativeGenre> = {
       "{NP:subject} {VBD:motion}; {NP:figure} buried the {NN:trace}.",
       "Under the black flag, {NP:figure} {VBD:action} {NP:subject}.",
       "{NP:subject} {VBD:motion}, and the {NN:trace} led to the {NN:place}.",
+    ],
+    followUps: [
+      "{REF:figure} swore revenge on the spot.",
+      "The {REF:trace} was never seen again.",
+      "To this day, the {REF:place} is said to be cursed.",
+      "Somewhere off the {NN:boundary}, a cannon answered.",
     ],
     bank: {
       NN: {

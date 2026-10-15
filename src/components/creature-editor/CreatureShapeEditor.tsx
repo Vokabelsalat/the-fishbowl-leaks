@@ -2,7 +2,7 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame, type ThreeEvent } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from "react";
 import * as THREE from "three";
 import { AquariumPlant, editorPlantSpecs, plantKindLabels, plantKinds, type PlantKind } from "@/components/collective/AquariumDioramaPlants";
 import { WorldEventModel, worldEventIds, worldEventLabels, worldEventStillAges, type WorldEventId } from "@/components/collective/WorldEvents";
@@ -16,6 +16,7 @@ import { clearCreatureModelOverrides, loadCreatureModelOverrides, meshKey, saveC
 import { clearPlantModelOverrides, savePlantModelOverrides } from "@/lib/creature/plantOverrides";
 import { clearAddonModelOverrides, saveAddonModelOverrides } from "@/lib/creature/addonOverrides";
 import { clearWorldEventOverrides, saveWorldEventOverrides } from "@/lib/creature/worldEventOverrides";
+import { clearLegacyModelEdits, legacyModelEditsSnapshot, saveModelEdits, type ModelEditChanges } from "@/lib/creature/modelEdits";
 import type { CreaturePartId } from "@/types/exhibition";
 
 type ProductionShape = {
@@ -145,13 +146,63 @@ function EditorViewLinks({ current, onShow }: { current: EditorView; onShow: (vi
   );
 }
 
+/** Saves into the project file and reports in the editor's status line whether that worked. */
+function reportSave(saving: Promise<void>, done: string, setStatus: (status: string) => void) {
+  saving
+    .then(() => setStatus(done))
+    .catch((error: unknown) => setStatus(`Not saved to the project: ${error instanceof Error ? error.message : error}. A reload undoes this change.`));
+}
+
+/** The old storage only changes when the bar empties it, which reloads the page anyway. */
+const subscribeToNothing = () => () => {};
+
+/**
+ * Edits used to live in this browser's storage only. Until they are moved into the project file,
+ * a bar offers to do so, since nothing else in the app reads them any more.
+ */
+function LegacyEditsNotice() {
+  // The server has no browser storage, so it renders without the bar and the browser adds it.
+  const snapshot = useSyncExternalStore(subscribeToNothing, legacyModelEditsSnapshot, () => "");
+  const [status, setStatus] = useState("");
+  if (!snapshot) return null;
+  const legacy = JSON.parse(snapshot) as ModelEditChanges;
+
+  const moveIntoProject = async () => {
+    setStatus("Saving…");
+    try {
+      await saveModelEdits(legacy);
+      clearLegacyModelEdits();
+      window.location.reload();
+    } catch (error) {
+      setStatus(`Not saved: ${error instanceof Error ? error.message : error}`);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between gap-6 border-b border-white/15 bg-[var(--abyss)] px-8 py-4 text-sm text-[var(--foam)] lg:px-10" role="status">
+      <p>This browser still holds edits from before they were saved in the project. Only this browser shows them until you move them into src/data/modelEdits.json.</p>
+      <div className="flex shrink-0 items-center gap-4">
+        {status && <p>{status}</p>}
+        <button type="button" className="bg-[var(--phosphor)] px-3 py-2.5 text-sm text-[var(--abyss)]" onClick={() => void moveIntoProject()}>
+          Move into the project
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function CreatureShapeEditor() {
   const [view, setView] = useState<EditorView>("models");
-  if (view === "models") return <AquaticModelEditor onShow={setView} />;
-  if (view === "addons") return <AddonModelEditor onShow={setView} />;
-  if (view === "shapes") return <ProductionShapeEditor onShow={setView} />;
-  if (view === "events") return <WorldEventModelEditor onShow={setView} />;
-  return <PlantModelEditor onShow={setView} />;
+  return (
+    <>
+      <LegacyEditsNotice />
+      {view === "models" && <AquaticModelEditor onShow={setView} />}
+      {view === "addons" && <AddonModelEditor onShow={setView} />}
+      {view === "shapes" && <ProductionShapeEditor onShow={setView} />}
+      {view === "events" && <WorldEventModelEditor onShow={setView} />}
+      {view === "plants" && <PlantModelEditor onShow={setView} />}
+    </>
+  );
 }
 
 function ProductionShapeEditor({ onShow }: { onShow: (view: EditorView) => void }) {
@@ -320,7 +371,7 @@ function AquaticModelEditor({ onShow }: { onShow: (view: EditorView) => void }) 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [transform, setTransform] = useState<NodeTransform | null>(null);
   const [pending, setPending] = useState<Record<string, SavedNodeTransform>>({});
-  const [saveStatus, setSaveStatus] = useState("Saved changes are used by the app in this browser.");
+  const [saveStatus, setSaveStatus] = useState("Saved changes are part of the project and used everywhere.");
   const [hiddenFeatures, setHiddenFeatures] = useState<HiddenFeature[]>([]);
   const [modelRevision, setModelRevision] = useState(0);
   const [traitPreview, setTraitPreview] = useState<{ seed?: string; side?: TraitMount }>({});
@@ -460,7 +511,7 @@ function AquaticModelEditor({ onShow }: { onShow: (view: EditorView) => void }) 
                     setTransform(null);
                     setPending({});
                     setHiddenFeatures([]);
-                    setSaveStatus("Saved changes are used by the app in this browser.");
+                    setSaveStatus("Saved changes are part of the project and used everywhere.");
                     initialTransforms.current.clear();
                   }}
                 >
@@ -560,9 +611,8 @@ function AquaticModelEditor({ onShow }: { onShow: (view: EditorView) => void }) 
                     className="bg-[var(--phosphor)] px-3 py-2.5 text-sm text-[var(--abyss)] disabled:cursor-not-allowed disabled:opacity-35"
                     disabled={Object.keys(pending).length === 0}
                     onClick={() => {
-                      saveCreatureModelOverrides(form, pending);
+                      reportSave(saveCreatureModelOverrides(form, pending), "Saved to the project and active everywhere", setSaveStatus);
                       setPending({});
-                      setSaveStatus("Saved and active in the app");
                     }}
                   >
                     Save to app
@@ -571,7 +621,7 @@ function AquaticModelEditor({ onShow }: { onShow: (view: EditorView) => void }) 
                     type="button"
                     className="border border-white/20 px-3 py-2.5 text-sm text-white/58 hover:border-white/40 hover:text-white"
                     onClick={() => {
-                      clearCreatureModelOverrides(form);
+                      reportSave(clearCreatureModelOverrides(form), "Saved overrides removed for this creature", setSaveStatus);
                       setSelectedObject(null);
                       setSelectedKey(null);
                       setTransform(null);
@@ -579,7 +629,6 @@ function AquaticModelEditor({ onShow }: { onShow: (view: EditorView) => void }) 
                       setHiddenFeatures([]);
                       initialTransforms.current.clear();
                       setModelRevision((current) => current + 1);
-                      setSaveStatus("Saved overrides removed for this creature");
                     }}
                   >
                     Restore original
@@ -786,8 +835,8 @@ function PlantModelEditor({ onShow }: { onShow: (view: EditorView) => void }) {
               </div>
               <div className="space-y-5 py-5">
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" className="bg-[var(--phosphor)] px-3 py-2.5 text-sm text-[var(--abyss)] disabled:cursor-not-allowed disabled:opacity-35" disabled={Object.keys(pending).length === 0} onClick={() => { savePlantModelOverrides(kind, pending); setPending({}); setSaveStatus("Saved and active in the aquarium"); }}>Save to app</button>
-                  <button type="button" className="border border-white/20 px-3 py-2.5 text-sm text-white/58 hover:border-white/40 hover:text-white" onClick={() => { clearPlantModelOverrides(kind); clearSelection(); setPending({}); setHiddenFeatures([]); initialTransforms.current.clear(); setPlantRevision((current) => current + 1); setSaveStatus("Saved overrides removed for this plant"); }}>Restore original</button>
+                  <button type="button" className="bg-[var(--phosphor)] px-3 py-2.5 text-sm text-[var(--abyss)] disabled:cursor-not-allowed disabled:opacity-35" disabled={Object.keys(pending).length === 0} onClick={() => { reportSave(savePlantModelOverrides(kind, pending), "Saved to the project and active in every aquarium", setSaveStatus); setPending({}); }}>Save to app</button>
+                  <button type="button" className="border border-white/20 px-3 py-2.5 text-sm text-white/58 hover:border-white/40 hover:text-white" onClick={() => { reportSave(clearPlantModelOverrides(kind), "Saved overrides removed for this plant", setSaveStatus); clearSelection(); setPending({}); setHiddenFeatures([]); initialTransforms.current.clear(); setPlantRevision((current) => current + 1); }}>Restore original</button>
                 </div>
                 <p className="text-xs leading-relaxed text-white/40">{saveStatus}</p>
                 <ModelControl label="Translate X" value={transform.x} min={-4} max={4} step={0.01} onChange={(x) => updateTransform({ x })} />
@@ -1001,8 +1050,8 @@ function WorldEventModelEditor({ onShow }: { onShow: (view: EditorView) => void 
               </div>
               <div className="space-y-5 py-5">
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" className="bg-[var(--phosphor)] px-3 py-2.5 text-sm text-[var(--abyss)] disabled:cursor-not-allowed disabled:opacity-35" disabled={Object.keys(pending).length === 0} onClick={() => { saveWorldEventOverrides(eventId, pending); setPending({}); setSaveStatus("Saved and active in the aquarium"); }}>Save to app</button>
-                  <button type="button" className="border border-white/20 px-3 py-2.5 text-sm text-white/58 hover:border-white/40 hover:text-white" onClick={() => { clearWorldEventOverrides(eventId); clearSelection(); setPending({}); setHiddenFeatures([]); initialTransforms.current.clear(); setModelRevision((current) => current + 1); setSaveStatus("Saved overrides removed for this event"); }}>Restore original</button>
+                  <button type="button" className="bg-[var(--phosphor)] px-3 py-2.5 text-sm text-[var(--abyss)] disabled:cursor-not-allowed disabled:opacity-35" disabled={Object.keys(pending).length === 0} onClick={() => { reportSave(saveWorldEventOverrides(eventId, pending), "Saved to the project and active in every aquarium", setSaveStatus); setPending({}); }}>Save to app</button>
+                  <button type="button" className="border border-white/20 px-3 py-2.5 text-sm text-white/58 hover:border-white/40 hover:text-white" onClick={() => { reportSave(clearWorldEventOverrides(eventId), "Saved overrides removed for this event", setSaveStatus); clearSelection(); setPending({}); setHiddenFeatures([]); initialTransforms.current.clear(); setModelRevision((current) => current + 1); }}>Restore original</button>
                 </div>
                 <p className="text-xs leading-relaxed text-white/40">{saveStatus}</p>
                 <ModelControl label="Translate X" value={transform.x} min={-6} max={6} step={0.01} onChange={(x) => updateTransform({ x })} />
@@ -1211,8 +1260,8 @@ function AddonModelEditor({ onShow }: { onShow: (view: EditorView) => void }) {
               </div>
               <div className="space-y-5 py-5">
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" className="bg-[var(--phosphor)] px-3 py-2.5 text-sm text-[var(--abyss)] disabled:cursor-not-allowed disabled:opacity-35" disabled={Object.keys(pending).length === 0} onClick={() => { saveAddonModelOverrides(partId, pending); setPending({}); setSaveStatus("Saved and active on every creature"); }}>Save to app</button>
-                  <button type="button" className="border border-white/20 px-3 py-2.5 text-sm text-white/58 hover:border-white/40 hover:text-white" onClick={() => { clearAddonModelOverrides(partId); clearSelection(); setPending({}); setHiddenFeatures([]); initialTransforms.current.clear(); setAddonRevision((current) => current + 1); setSaveStatus("Saved overrides removed for this add-on"); }}>Restore original</button>
+                  <button type="button" className="bg-[var(--phosphor)] px-3 py-2.5 text-sm text-[var(--abyss)] disabled:cursor-not-allowed disabled:opacity-35" disabled={Object.keys(pending).length === 0} onClick={() => { reportSave(saveAddonModelOverrides(partId, pending), "Saved to the project and active on every creature", setSaveStatus); setPending({}); }}>Save to app</button>
+                  <button type="button" className="border border-white/20 px-3 py-2.5 text-sm text-white/58 hover:border-white/40 hover:text-white" onClick={() => { reportSave(clearAddonModelOverrides(partId), "Saved overrides removed for this add-on", setSaveStatus); clearSelection(); setPending({}); setHiddenFeatures([]); initialTransforms.current.clear(); setAddonRevision((current) => current + 1); }}>Restore original</button>
                 </div>
                 <p className="text-xs leading-relaxed text-white/40">{saveStatus}</p>
                 <ModelControl label="Translate X" value={transform.x} min={-1.5} max={1.5} step={0.005} onChange={(x) => updateTransform({ x })} />

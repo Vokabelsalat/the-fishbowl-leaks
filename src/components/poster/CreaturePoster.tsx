@@ -9,7 +9,6 @@ import type { CreaturePiece } from "@/components/creature/CreatureModel";
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 import { artifacts } from "@/data/artifacts";
 import { creaturePattern, patternForTraitCount } from "@/lib/creature/patterns";
-import { collectModelOverrides } from "@/lib/poster/exportOverrides";
 import { cast } from "@/components/poster/posterCast";
 import { posterTagline } from "@/components/poster/tutorialCopy";
 
@@ -313,11 +312,7 @@ export function CreaturePoster({ seed, width, pose, landscape = false, bare = fa
   const exportFile = async (kind: ExportKind) => {
     setExporting(kind);
     try {
-      const response = await fetch(exportHref(kind), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(collectModelOverrides()),
-      });
+      const response = await fetch(exportHref(kind), { method: "POST" });
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? response.statusText);
       const name = response.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1] ?? "poster";
       const link = document.createElement("a");

@@ -40,3 +40,6 @@ have the mating scale up when less contributions occurr
 Update the heat map with the current plan
 check the color settings of the tv
 fix up the naming of the rating scales
+
+
+rotate the creature towards where the addon is appearing. Sometimes it spaws on its back and then the user can't see it.

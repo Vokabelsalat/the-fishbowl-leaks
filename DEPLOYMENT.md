@@ -69,6 +69,20 @@ NEXT_PUBLIC_VISUALIZATION_DESIGN=fish
 
 `NEXT_PUBLIC_VISUALIZATION_DESIGN` is baked into the client bundle at build time. Set it to `fish`, `creature` or `constellation` before building; changing it later requires a rebuild.
 
+### Exhibition opening time
+
+The shared tank keeps every creature from day to day. To start it at a given moment, so that creatures from earlier tests stay out of it, add the opening time with its time zone offset:
+
+```ini
+EXHIBITION_OPENED_AT=2026-10-15T17:00:00+02:00
+```
+
+Only creatures released from then on swim in the tank, count towards breaking its walls and appear in the activity map. Earlier ones stay in the database untouched, so removing or changing the line brings them back. When the tank has no seed creatures since the opening, ten are added, timed at the opening. Oslo is at `+02:00` in summer time and `+01:00` from the last Sunday in October. The setting is read at runtime, so restarting the service is enough:
+
+```bash
+sudo systemctl restart after-augmented-reality
+```
+
 ### Test dataset on the server
 
 To try the collective screen with the synthetic exhibition day before opening, add this line to the environment file:

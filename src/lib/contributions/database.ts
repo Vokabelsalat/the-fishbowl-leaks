@@ -93,6 +93,29 @@ export function getCycleStartIso(now = new Date()) {
   return cycleStartIso(now);
 }
 
+let openingWarned = false;
+
+/**
+ * When the exhibition opened, from EXHIBITION_OPENED_AT: a date with its time zone, like
+ * `2026-10-15T17:00:00+02:00`. The tank holds only creatures released from then on, and only they
+ * break its walls; earlier ones stay in the database, left out. It is read on every request, so a
+ * restart is enough to change it. Without it, the tank holds every creature. Returned as the stored
+ * dates are written, in UTC, so it compares with them directly; "" lets everything through.
+ */
+function exhibitionOpenedAt() {
+  const setting = process.env.EXHIBITION_OPENED_AT?.trim();
+  if (!setting) return "";
+  const opened = new Date(setting);
+  if (Number.isNaN(opened.getTime())) {
+    if (!openingWarned) {
+      console.error(`EXHIBITION_OPENED_AT is not a date: "${setting}". The tank holds every creature until it is fixed.`);
+      openingWarned = true;
+    }
+    return "";
+  }
+  return opened.toISOString();
+}
+
 function openDatabase() {
   let database = globalForDatabase.exhibitionDatabase;
   if (!database) {
@@ -231,9 +254,11 @@ let seedsChecked = false;
 let syntheticNarrativesRefreshed = false;
 
 /**
- * The tank keeps every creature, so it is seeded only once: when it has no seed creatures at all,
- * as after a fresh install, ten are put in before any visitor's creature. Seeds from the days when
- * the tank was emptied every morning stay, like everything else in it.
+ * The tank keeps every creature, so it is seeded only once: when it has no seed creatures since the
+ * exhibition opened, as after a fresh install or a new opening time, ten are put in before any
+ * visitor's creature. With an opening time they are timed at it, and named after it, so they never
+ * clash with seeds from the days when the tank was emptied every morning. Those stay in the
+ * database, like everything else.
  */
 function ensureDailySeeds() {
   if (!syntheticNarrativesRefreshed) {
@@ -241,13 +266,15 @@ function ensureDailySeeds() {
     syntheticNarrativesRefreshed = true;
   }
   if (seedsChecked) return;
+  const openedAt = exhibitionOpenedAt();
   const seeded = openDatabase()
-    .prepare("SELECT 1 FROM contributions WHERE synthetic_kind = 'daily-seed' LIMIT 1")
-    .get();
+    .prepare("SELECT 1 FROM contributions WHERE synthetic_kind = 'daily-seed' AND created_at >= ? LIMIT 1")
+    .get(openedAt);
   if (!seeded) {
-    for (const seed of createDailySeeds(cycleStartIso(), getCycleDate())) {
-      createContribution({ ...seed, synthetic: "daily-seed" });
-    }
+    const seeds = openedAt
+      ? createDailySeeds(openedAt, getCycleDate(new Date(openedAt)), openedAt.replace(/[-:]|\.\d+/g, ""))
+      : createDailySeeds(cycleStartIso(), getCycleDate());
+    for (const seed of seeds) createContribution({ ...seed, synthetic: "daily-seed" });
   }
   seedsChecked = true;
 }
@@ -286,11 +313,11 @@ export function listContributions(afterId = 0, limit = 80) {
     .prepare(
       `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, synthetic_kind, created_at
        FROM contributions
-       WHERE id > ?
+       WHERE id > ? AND created_at >= ?
        ORDER BY id ASC
        LIMIT ?`,
     )
-    .all(afterId, limit) as unknown as ContributionRow[];
+    .all(afterId, exhibitionOpenedAt(), limit) as unknown as ContributionRow[];
 
   return rows.map(deserialize);
 }
@@ -301,10 +328,10 @@ export function getCollectiveHeatmap() {
     .prepare(
       `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, synthetic_kind, created_at
        FROM contributions
-       WHERE synthetic_kind IS NOT 'daily-seed'
+       WHERE synthetic_kind IS NOT 'daily-seed' AND created_at >= ?
        ORDER BY id ASC`,
     )
-    .all() as unknown as ContributionRow[];
+    .all(exhibitionOpenedAt()) as unknown as ContributionRow[];
 
   return aggregateContributionDwellTimes(
     rows.map(deserialize),
@@ -369,9 +396,9 @@ export function getContributionCount() {
     .prepare(
       `SELECT COUNT(*) AS count
        FROM contributions
-       WHERE synthetic_kind IS NOT 'daily-seed'`,
+       WHERE synthetic_kind IS NOT 'daily-seed' AND created_at >= ?`,
     )
-    .get() as unknown as { count: number };
+    .get(exhibitionOpenedAt()) as unknown as { count: number };
   return row.count;
 }
 
@@ -380,9 +407,9 @@ export function getSyntheticContributionCount() {
     .prepare(
       `SELECT COUNT(*) AS count
        FROM contributions
-       WHERE synthetic_kind = 'test-dataset'`,
+       WHERE synthetic_kind = 'test-dataset' AND created_at >= ?`,
     )
-    .get() as unknown as { count: number };
+    .get(exhibitionOpenedAt()) as unknown as { count: number };
   return row.count;
 }
 

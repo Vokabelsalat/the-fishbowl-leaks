@@ -339,7 +339,7 @@ export function CollectiveWall({ initialView = "collective" }: {
   } as CSSProperties;
 
   return (
-    <main className={`collective-wall biome-field film-grain relative h-screen${cursorHidden ? " cursor-hidden" : ""} overflow-hidden bg-[var(--abyss)] text-[var(--foam)]`} style={wallStyle} aria-label={`Collective exhibition ${activeVisualizationCopy.collectivePlace}`}>
+    <main className={`collective-wall biome-field film-grain relative h-screen overflow-hidden bg-[var(--abyss)] text-[var(--foam)] ${cursorHidden ? "cursor-hidden" : ""}`} style={wallStyle} aria-label={`Collective exhibition ${activeVisualizationCopy.collectivePlace}`}>
       <div className="tank-open-sea pointer-events-none absolute inset-0" aria-hidden="true" />
       <BiomeBackdrop progress={dayProgress} surfaceRays />
       {/* The separators are drawn flat over the tank, so they fade out while the view circles it. */}

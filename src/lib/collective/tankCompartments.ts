@@ -6,7 +6,7 @@
  */
 
 /** How many creatures of the day it takes to break every wall open. */
-export const fullBreakdownCreatures = 60;
+export const fullBreakdownCreatures = 100;
 
 export type CompartmentWall = {
   /** Where the wall stands, as a share of the tank's width from the left. */
@@ -45,7 +45,7 @@ export function tankBreakdown(creatureCount: number) {
 }
 
 /** By this many creatures the tank's green-tinted water has turned into a blue aquarium's. */
-export const blueAquariumCreatures = 30;
+export const blueAquariumCreatures = 50;
 
 /**
  * Where the tank's look stands for a breakdown: `blue` runs from the green-tinted aquarium (0) to

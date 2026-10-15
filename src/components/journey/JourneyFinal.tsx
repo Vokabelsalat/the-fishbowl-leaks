@@ -14,6 +14,9 @@ import { activeVisualizationCopy } from "@/config/visualization";
 import dynamic from "next/dynamic";
 import { BiomeBackdrop } from "@/components/visualization/BiomeBackdrop";
 
+/** The exhibition's visitor survey, hosted on Youform. */
+const exhibitionSurveyUrl = "https://app.youform.com/forms/yhzbihem";
+
 const GeneratedNarrative = dynamic(() =>
   import("@/components/journey/GeneratedNarrative").then(
     (module) => module.GeneratedNarrative,
@@ -98,6 +101,28 @@ export function JourneyFinal() {
             creaturePattern={journey.creaturePattern}
             creatureProportions={journey.creatureProportions}
           />
+        </div>
+
+        {/* The survey asks about the exhibition, apart from the creature. Once the creature is released,
+            it is the page's next step; before that, releasing comes first. */}
+        <div className="mt-8 border-t border-white/20 pt-6">
+          <h2 className="font-display text-2xl leading-tight tracking-[-0.03em]">How was the exhibition?</h2>
+          <p className="mt-2 text-base leading-6 text-white/74">
+            A short survey helps the artists and curators. It opens in a new tab, so your story stays here.
+          </p>
+          <a
+            href={exhibitionSurveyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`mt-4 flex min-h-14 items-center justify-between px-5 text-base transition-colors ${
+              journey.released
+                ? "bg-[var(--phosphor)] text-[#031015] hover:opacity-85"
+                : "border border-white/45 text-white hover:border-white"
+            }`}
+          >
+            <span>Take the exhibition survey</span>
+            <span aria-hidden="true">↗</span>
+          </a>
         </div>
 
         <div className="mt-8 border-t border-white/20 pt-6">

@@ -1,10 +1,10 @@
-// Step 1: overall connection to the piece.
+// No longer asked in the form (see ArtworkFeedback.tsx), but answers already given stay valid.
 export const connectionQuestion = {
   dimension: "connection",
   statement: "I felt connected to this experience.",
 } as const;
 
-// Step 2: what contributed. Keys are the analytical poles; labels are what visitors see.
+// Step 1: what contributed. Keys are the analytical poles; labels are what visitors see.
 export const contributionQuestions = [
   {
     dimension: "ludic",
@@ -23,7 +23,7 @@ export const contributionQuestions = [
   },
 ] as const;
 
-// Step 3: up to three words, grouped by tone. Order is the display order.
+// Step 2: up to three words, grouped by tone. Order is the display order.
 export const feelingGroups = [
   {
     tone: "positive",

@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import {
-  connectionQuestion,
   contributionQuestions,
   feedbackScale,
   feelingGroups,
@@ -14,15 +13,14 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { feedbackRated, feelingToggled } from "@/store/journeySlice";
 
-const STEP_COUNT = 3;
+// The questionnaire's opening question, whether visitors felt connected to the work, is no longer
+// asked. Answers already given to it stay valid and are still submitted with the creature.
+const STEP_COUNT = 2;
 const DONE = STEP_COUNT;
-// Long enough to see the chosen value before step 1 moves on by itself.
-const AUTO_ADVANCE_MS = 350;
 
 function firstOpenStep(feedback: Feedback | undefined) {
-  if (feedback?.connection === undefined) return 0;
-  if (contributionQuestions.some(({ dimension }) => feedback[dimension] === undefined)) return 1;
-  if (!feedback.feelings?.length) return 2;
+  if (contributionQuestions.some(({ dimension }) => feedback?.[dimension] === undefined)) return 0;
+  if (!feedback?.feelings?.length) return 1;
   return DONE;
 }
 
@@ -66,20 +64,17 @@ export function ArtworkFeedback({ artifactId }: { artifactId: string }) {
   );
   const [step, setStep] = useState(() => firstOpenStep(feedback));
   const stepRef = useRef<HTMLDivElement>(null);
-  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigated = useRef(false);
 
-  useEffect(() => () => {
-    if (advanceTimer.current) clearTimeout(advanceTimer.current);
-  }, []);
-
-  // Move focus to each new step after the visitor moves on, but not on first render.
+  // After the visitor moves on, but not on first render, bring the new step's question to the top
+  // of the panel, since they left the last one at its bottom, and move focus to it.
   useEffect(() => {
-    if (navigated.current) stepRef.current?.focus({ preventScroll: true });
+    if (!navigated.current) return;
+    stepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    stepRef.current?.focus({ preventScroll: true });
   }, [step]);
 
   function goTo(next: number) {
-    if (advanceTimer.current) clearTimeout(advanceTimer.current);
     navigated.current = true;
     setStep(next);
   }
@@ -92,17 +87,15 @@ export function ArtworkFeedback({ artifactId }: { artifactId: string }) {
   const feelings = feedback?.feelings ?? [];
   const stepAnswered =
     step === 0
-      ? feedback?.connection !== undefined
-      : step === 1
-        ? contributionQuestions.some(({ dimension }) => feedback?.[dimension] !== undefined)
-        : feelings.length > 0;
+      ? contributionQuestions.some(({ dimension }) => feedback?.[dimension] !== undefined)
+      : feelings.length > 0;
 
   return (
     <section className="mt-6 border-t border-white/25 pt-5" aria-labelledby={`${id}-title`}>
       <h3 id={`${id}-title`} className="font-display text-2xl">How was this piece for you?</h3>
 
       {step === DONE ? (
-        <div ref={stepRef} tabIndex={-1} className="mt-2 outline-none">
+        <div ref={stepRef} tabIndex={-1} className="mt-2 scroll-mt-4 outline-none">
           <p className="text-base leading-6">Thank you for your answers.</p>
           <button
             type="button"
@@ -118,23 +111,8 @@ export function ArtworkFeedback({ artifactId }: { artifactId: string }) {
             Step {step + 1} of {STEP_COUNT}. Answer on instinct, or skip.
           </p>
 
-          <div ref={stepRef} tabIndex={-1} className="mt-5 outline-none">
+          <div ref={stepRef} tabIndex={-1} className="mt-5 scroll-mt-4 outline-none">
             {step === 0 && (
-              <fieldset aria-describedby={scaleId}>
-                <legend className="text-base font-bold leading-6">{connectionQuestion.statement}</legend>
-                <RatingRow
-                  name={`${id}-connection`}
-                  value={feedback?.connection}
-                  onRate={(rating) => {
-                    rate("connection", rating);
-                    if (advanceTimer.current) clearTimeout(advanceTimer.current);
-                    advanceTimer.current = setTimeout(() => goTo(1), AUTO_ADVANCE_MS);
-                  }}
-                />
-              </fieldset>
-            )}
-
-            {step === 1 && (
               <div className="space-y-5">
                 <p className="text-base font-bold leading-6">What contributed to your experience?</p>
                 {contributionQuestions.map(({ dimension, label, statement }) => (
@@ -153,13 +131,13 @@ export function ArtworkFeedback({ artifactId }: { artifactId: string }) {
               </div>
             )}
 
-            {step !== 2 && (
+            {step === 0 && (
               <p id={scaleId} className="mt-2 flex justify-between gap-4 text-sm">
                 <span>1 · Strongly disagree</span><span>5 · Strongly agree</span>
               </p>
             )}
 
-            {step === 2 && (
+            {step === 1 && (
               <fieldset>
                 <legend className="text-base leading-6">
                   <span className="block font-bold">How did it make you feel?</span>

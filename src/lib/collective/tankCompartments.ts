@@ -1,11 +1,11 @@
 /**
  * The collective tank starts out divided into five classified compartments. Each creature released
  * into the tank cracks the walls between them a little further, until, with
- * `fullBreakdownCreatures` creatures in the day's tank, every wall has burst open and they all swim
- * together.
+ * `fullBreakdownCreatures` creatures released since the exhibition opened, every wall has burst open
+ * and they all swim together. The tank keeps its creatures from day to day, so it stays open.
  */
 
-/** How many creatures of the day it takes to break every wall open. */
+/** How many visitors' creatures it takes to break every wall open. */
 export const fullBreakdownCreatures = 100;
 
 export type CompartmentWall = {
@@ -34,7 +34,7 @@ export const compartmentWalls: readonly CompartmentWall[] = [
 
 const wallOpeningSpan = 0.16;
 
-/** Whether a tank with this many of the day's creatures has become the open sea, with every wall gone. */
+/** Whether a tank with this many visitors' creatures has become the open sea, with every wall gone. */
 export function isOpenSea(creatureCount: number) {
   return creatureCount >= fullBreakdownCreatures;
 }

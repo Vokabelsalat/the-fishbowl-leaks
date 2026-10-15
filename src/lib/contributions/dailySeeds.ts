@@ -6,14 +6,15 @@ import { creaturePattern } from "@/lib/creature/patterns";
 import { creatureProportions } from "@/lib/creature/proportions";
 import { createSyntheticDataset, type SyntheticContribution } from "@/lib/development/syntheticDataset";
 
-/** How many creatures already swim in the tank when a day begins, so it never stands empty. */
+/** How many creatures already swim in the tank when it starts out empty, so it never stands empty. */
 export const DAILY_SEED_COUNT = 10;
 
 /**
- * The synthetic creatures that open a day's tank: one each of ten different forms, with the
- * selection moving on by one form every day. Whales belong to the open sea, not the aquarium the
- * day begins with, so there are none. The seeds are timed at the very start of the day, so they
- * come before every visitor, and their ids name them as daily seeds.
+ * The synthetic creatures a new, empty tank starts with: one each of ten different forms, with the
+ * selection depending on the day it starts. Whales belong to the open sea, not the aquarium the tank
+ * begins as, so there are none. The seeds are timed at the very start of that day, so they come
+ * before every visitor, and their ids name them as seeds. The tank used to start over every day with
+ * a fresh set; it now keeps its creatures, so these are added only once.
  */
 export function createDailySeeds(cycleStartIso: string, cycleDate: string): SyntheticContribution[] {
   const cycleStart = new Date(cycleStartIso).getTime();

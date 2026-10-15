@@ -4,7 +4,6 @@ import {
   createContribution,
   getCollectiveHeatmap,
   getContributionCount,
-  getCycleDate,
   getSyntheticContributionCount,
   listContributions,
 } from "@/lib/contributions/database";
@@ -121,7 +120,6 @@ export async function GET(request: Request) {
     {
       contributions: listContributions(after, limit),
       heatmap: getCollectiveHeatmap(),
-      cycleDate: getCycleDate(),
       syntheticCount: getSyntheticContributionCount(),
       contributionCount: getContributionCount(),
     },
@@ -163,7 +161,7 @@ export async function POST(request: Request) {
       ...(discovery.feedback !== undefined ? { feedback: discovery.feedback } : {}),
     };
   });
-  // The walls have broken as far as this creature, counted with the day's others, takes them.
+  // The walls have broken as far as this creature, counted with every one released before it, takes them.
   const breakdown = tankBreakdown(getContributionCount() + 1);
   const narrative = generateJourneyNarrative(submission.discoveries, artifacts, { breakdown, seed: submission.sessionId });
   const contribution = createContribution({

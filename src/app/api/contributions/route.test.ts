@@ -5,7 +5,6 @@ vi.mock("@/lib/contributions/database", () => ({
   createContribution: vi.fn((input) => ({ id: 1, ...input })),
   getCollectiveHeatmap: vi.fn(() => []),
   getContributionCount: vi.fn(() => 0),
-  getCycleDate: vi.fn(() => "2026-10-11"),
   getSyntheticContributionCount: vi.fn(() => 0),
   listContributions: vi.fn(() => []),
 }));

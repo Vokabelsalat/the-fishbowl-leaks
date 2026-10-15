@@ -37,8 +37,9 @@ type ContributionRow = {
  * Why a synthetic contribution exists; visitors' own contributions have none. Every synthetic row
  * also has `is_synthetic = 1`.
  * - `test-dataset`: a full test day, switched on and off during development.
- * - `daily-seed`: one of the creatures that open every day's tank, so it never stands empty. They
- *   stay out of the heatmap and the walls' breakdown, and belong in no analysis of visitors.
+ * - `daily-seed`: one of the creatures the tank starts with, so it never stands empty. Until the tank
+ *   kept its creatures, ten were added every day. They stay out of the heatmap and the walls'
+ *   breakdown, and belong in no analysis of visitors.
  */
 export type SyntheticKind = "test-dataset" | "daily-seed";
 
@@ -226,21 +227,29 @@ function deserialize(row: ContributionRow): ExhibitionContribution {
   };
 }
 
-let seededCycleStart: string | null = null;
+let seedsChecked = false;
 let syntheticNarrativesRefreshed = false;
 
-/** Puts the day's seed creatures into the tank once a day, before any visitor's creature. */
+/**
+ * The tank keeps every creature, so it is seeded only once: when it has no seed creatures at all,
+ * as after a fresh install, ten are put in before any visitor's creature. Seeds from the days when
+ * the tank was emptied every morning stay, like everything else in it.
+ */
 function ensureDailySeeds() {
   if (!syntheticNarrativesRefreshed) {
     refreshSyntheticNarratives();
     syntheticNarrativesRefreshed = true;
   }
-  const cycleStart = cycleStartIso();
-  if (seededCycleStart === cycleStart) return;
-  for (const seed of createDailySeeds(cycleStart, getCycleDate())) {
-    createContribution({ ...seed, synthetic: "daily-seed" });
+  if (seedsChecked) return;
+  const seeded = openDatabase()
+    .prepare("SELECT 1 FROM contributions WHERE synthetic_kind = 'daily-seed' LIMIT 1")
+    .get();
+  if (!seeded) {
+    for (const seed of createDailySeeds(cycleStartIso(), getCycleDate())) {
+      createContribution({ ...seed, synthetic: "daily-seed" });
+    }
   }
-  seededCycleStart = cycleStart;
+  seedsChecked = true;
 }
 
 /**
@@ -277,24 +286,25 @@ export function listContributions(afterId = 0, limit = 80) {
     .prepare(
       `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, synthetic_kind, created_at
        FROM contributions
-       WHERE id > ? AND created_at >= ?
+       WHERE id > ?
        ORDER BY id ASC
        LIMIT ?`,
     )
-    .all(afterId, cycleStartIso(), limit) as unknown as ContributionRow[];
+    .all(afterId, limit) as unknown as ContributionRow[];
 
   return rows.map(deserialize);
 }
 
+/** Where visitors lingered, over every visitor's journey since the exhibition opened. */
 export function getCollectiveHeatmap() {
   const rows = openDatabase()
     .prepare(
       `SELECT id, public_id, session_id, creature_form, creature_palette_json, creature_pattern_json, creature_proportions_json, glyphs_json, narrative_json, tank_breakdown, synthetic_kind, created_at
        FROM contributions
-       WHERE created_at >= ? AND synthetic_kind IS NOT 'daily-seed'
+       WHERE synthetic_kind IS NOT 'daily-seed'
        ORDER BY id ASC`,
     )
-    .all(cycleStartIso()) as unknown as ContributionRow[];
+    .all() as unknown as ContributionRow[];
 
   return aggregateContributionDwellTimes(
     rows.map(deserialize),
@@ -350,15 +360,18 @@ export function createContribution(input: {
   return deserialize(row);
 }
 
-/** How many creatures were released into today's tank, not counting the seed creatures it opened with. */
+/**
+ * How many creatures have been released into the tank since the exhibition opened, not counting the
+ * seed creatures it started with. The walls break, and the tank becomes the open sea, with this count.
+ */
 export function getContributionCount() {
   const row = openDatabase()
     .prepare(
       `SELECT COUNT(*) AS count
        FROM contributions
-       WHERE created_at >= ? AND synthetic_kind IS NOT 'daily-seed'`,
+       WHERE synthetic_kind IS NOT 'daily-seed'`,
     )
-    .get(cycleStartIso()) as unknown as { count: number };
+    .get() as unknown as { count: number };
   return row.count;
 }
 
@@ -367,9 +380,9 @@ export function getSyntheticContributionCount() {
     .prepare(
       `SELECT COUNT(*) AS count
        FROM contributions
-       WHERE synthetic_kind = 'test-dataset' AND created_at >= ?`,
+       WHERE synthetic_kind = 'test-dataset'`,
     )
-    .get(cycleStartIso()) as unknown as { count: number };
+    .get() as unknown as { count: number };
   return row.count;
 }
 

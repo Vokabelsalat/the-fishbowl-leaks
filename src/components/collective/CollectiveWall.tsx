@@ -54,6 +54,13 @@ function minuteOfDay(value: Date | string) {
   return Number(parts.hour) * 60 + Number(parts.minute);
 }
 
+const osloDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Oslo" });
+
+/** Whether the creature was released on the current exhibition day, as the Oslo clock counts days. */
+function releasedToday(value: string) {
+  return osloDate.format(new Date(value)) === osloDate.format(new Date());
+}
+
 function formatMinute(value: number) {
   const hours = Math.floor(value / 60);
   const minutes = value % 60;
@@ -122,7 +129,7 @@ export function CollectiveWall({ initialView = "collective" }: {
   // Development only: which world event the debug controls fire next, and the last request.
   const [chosenWorldEvent, setChosenWorldEvent] = useState<WorldEventId>(worldEventIds[0]);
   const [worldEventRequest, setWorldEventRequest] = useState<WorldEventRequest | null>(null);
-  const [dayCreatureCount, setDayCreatureCount] = useState(0);
+  const [visitorCreatureCount, setVisitorCreatureCount] = useState(0);
   const latestId = useRef(0);
   const initialized = useRef(false);
   const activeRef = useRef<ExhibitionContribution | null>(null);
@@ -130,7 +137,6 @@ export function CollectiveWall({ initialView = "collective" }: {
   // Creatures waiting for their arrival stay out of the tank, the recent stories and the count until their turn.
   const [waitingIds, setWaitingIds] = useState<ReadonlySet<number>>(() => new Set());
   const [arrivalDurationMs, setArrivalDurationMs] = useState(ARRIVAL_DURATION_MS);
-  const cycleDateRef = useRef<string | null>(null);
   const syntheticCountRef = useRef<number | null>(null);
   const arrivalCreatureRef = useRef<HTMLDivElement>(null);
   const [releasedArrival, setReleasedArrival] = useState<CreatureArrival | null>(null);
@@ -184,7 +190,6 @@ export function CollectiveWall({ initialView = "collective" }: {
       return (await response.json()) as {
         contributions: ExhibitionContribution[];
         heatmap: CollectiveHeatDatum[];
-        cycleDate: string;
         syntheticCount: number;
         contributionCount: number;
       };
@@ -193,7 +198,7 @@ export function CollectiveWall({ initialView = "collective" }: {
     async function refresh() {
       try {
         const data = await fetchPage(latestId.current);
-        // The first load reads the whole day, so only later contributions arrive as new creatures.
+        // The first load reads the whole tank, so only later contributions arrive as new creatures.
         let page = data;
         while (!initialized.current && page.contributions.length === pageSize && !cancelled) {
           page = await fetchPage(page.contributions[page.contributions.length - 1].id);
@@ -201,13 +206,8 @@ export function CollectiveWall({ initialView = "collective" }: {
         }
         if (cancelled) return;
 
-        if (cycleDateRef.current && cycleDateRef.current !== data.cycleDate) {
-          latestId.current = 0;
-          clearArrivals();
-          setContributions([]);
-        }
-        cycleDateRef.current = data.cycleDate;
-        setDayCreatureCount(data.contributionCount);
+        // The tank keeps every creature from day to day, so a new day changes nothing here.
+        setVisitorCreatureCount(data.contributionCount);
 
         const syntheticDatasetWasRemoved =
           syntheticCountRef.current !== null &&
@@ -291,13 +291,16 @@ export function CollectiveWall({ initialView = "collective" }: {
     };
   }, [active, arrivalDurationMs, beginArrival]);
 
+  // At live time every creature is in the tank. A test time replays today up to that minute, on top of
+  // every creature from earlier days, which stay in the tank.
   const visibleContributions = useMemo(
     () => contributions.filter(
-      (contribution) => !waitingIds.has(contribution.id) && minuteOfDay(contribution.createdAt) <= clockMinutes,
+      (contribution) => !waitingIds.has(contribution.id)
+        && (liveTime || !releasedToday(contribution.createdAt) || minuteOfDay(contribution.createdAt) <= clockMinutes),
     ),
-    [clockMinutes, contributions, waitingIds],
+    [clockMinutes, contributions, liveTime, waitingIds],
   );
-  const visibleActive = liveTime && active && minuteOfDay(active.createdAt) <= clockMinutes ? active : null;
+  const visibleActive = liveTime ? active : null;
   const habitatCreatures = useMemo(
     () => visibleContributions.filter(
       (contribution) => contribution.id !== visibleActive?.id || contribution.id === releasedArrival?.id,
@@ -321,13 +324,13 @@ export function CollectiveWall({ initialView = "collective" }: {
   const latestContribution = recentContributions[0];
   const previousContributions = recentContributions.slice(1);
   const dayProgress = clockMinutes / MINUTES_IN_DAY;
-  // The walls break with every visitor's creature of the day; the seed creatures the tank opens with
-  // break nothing. Only the latest are loaded, and the ones left out are older than all of them, so
+  // The walls break with every visitor's creature since the exhibition opened; the seed creatures the
+  // tank started with break nothing. Only the latest are loaded, and the ones left out are older than all of them, so
   // they count as released once the oldest loaded one is, and not at an earlier test time.
   const loadedVisitorCreatures = contributions.filter((contribution) => !contribution.dailySeed);
   const visibleVisitorCreatures = visibleContributions.filter((contribution) => !contribution.dailySeed);
   const leftOutVisitorCount = visibleVisitorCreatures[0] && visibleVisitorCreatures[0].id === loadedVisitorCreatures[0]?.id
-    ? Math.max(0, dayCreatureCount - loadedVisitorCreatures.length)
+    ? Math.max(0, visitorCreatureCount - loadedVisitorCreatures.length)
     : 0;
   const breakdown = tankBreakdown(visibleVisitorCreatures.length + leftOutVisitorCount);
   const look = tankLook(breakdown);

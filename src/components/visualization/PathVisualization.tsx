@@ -28,6 +28,7 @@ export function PathVisualization({
   creatureProportions,
   emergingArtifactId,
   emerging = false,
+  faceViewer = false,
   label,
   interactive = false,
 }: {
@@ -46,6 +47,8 @@ export function PathVisualization({
   /** A newly found trait that is held back until `emerging` turns true, then grows in. */
   emergingArtifactId?: string;
   emerging?: boolean;
+  /** Keeps the creature's front, with its eyes, toward the viewer while the trait grows. */
+  faceViewer?: boolean;
   label?: string;
   interactive?: boolean;
 }) {
@@ -88,6 +91,7 @@ export function PathVisualization({
       creatureProportions={contribution?.creatureProportions ?? creatureProportions}
       emergingArtifactId={emergingArtifactId}
       emerging={emerging}
+      faceViewer={faceViewer}
       label={label}
       interactive={interactive}
     />

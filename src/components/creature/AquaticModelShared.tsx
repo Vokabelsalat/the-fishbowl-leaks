@@ -91,6 +91,8 @@ const mouthPartIds = new Set<CreaturePartId>(["cockatoo-beak"]);
 // Volumetric traits stand off the flanks; flat ones fold down so their face turns toward the viewer.
 const volumetricPartIds = new Set<CreaturePartId>(["inner-eye", "heart-plume", "helping-arms"]);
 const traitSides: TraitMount[] = ["top", "bottom", "left", "right"];
+// The left flank faces away from the viewer.
+const frontSides: TraitMount[] = ["top", "bottom", "right"];
 
 // Lets the creature editor reshuffle trait positions or pin every trait to one side.
 export const TraitPreviewContext = createContext<{ seed?: string; side?: TraitMount }>({});
@@ -120,7 +122,9 @@ function assignMounts(pieces: CreaturePiece[], signature: string, forcedSide?: T
     let best: { mount: TraitMount; along: number; room: number } | null = null;
     for (let attempt = 0; attempt < mountAttempts; attempt += 1) {
       const draw = `${signature}:${piece.artifactId}:${attempt}`;
-      const mount = forcedSide ?? traitSides[Math.floor(hashUnit(`${draw}:side`) * traitSides.length) % traitSides.length];
+      // The first trait grows on a side in view from the front, since the first reveal never turns the creature round.
+      const sides = taken.length === 0 ? frontSides : traitSides;
+      const mount = forcedSide ?? sides[Math.floor(hashUnit(`${draw}:side`) * sides.length) % sides.length];
       const along = (hashUnit(`${draw}:along`) * 2 - 1) * limit;
       const spotRoom = room(mount, along);
       if (!best || spotRoom > best.room) best = { mount, along, room: spotRoom };

@@ -96,6 +96,8 @@ function ArtifactRevealSequence({
               highlightedPart={isGrowing ? artifact.creaturePart.id : undefined}
               emergingArtifactId={artifact.id}
               emerging={traitEmerged}
+              // The first reveal introduces the specimen, so it shows its face rather than turning to the trait.
+              faceViewer={isFirstSpecimen}
               label={`${artifact.marineType} altering your ${activeVisualizationCopy.singular}`}
             />
           </div>

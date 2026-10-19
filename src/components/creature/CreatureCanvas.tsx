@@ -85,8 +85,9 @@ const worldUp = new THREE.Vector3(0, 1, 0);
  * Turns the creature around its centre so a trait growing on its far side, top or underside comes
  * round to face the viewer. The aim follows the trait's measured spot on the skin until it starts
  * growing, then stays put, so it never fights a visitor dragging the model afterwards.
+ * `faceViewer` keeps the creature's front, with its eyes, toward the viewer: it only tips, never turns round.
  */
-function TurnTowardGrowingTrait({ growing, children }: { growing: boolean; children: ReactNode }) {
+function TurnTowardGrowingTrait({ growing, faceViewer, children }: { growing: boolean; faceViewer: boolean; children: ReactNode }) {
   const ref = useRef<THREE.Group>(null);
   const camera = useThree((state) => state.camera);
   const pivot = useRef<THREE.Vector3 | null>(null);
@@ -117,7 +118,7 @@ function TurnTowardGrowingTrait({ growing, children }: { growing: boolean; child
       // A trait on the far flank brings the creature round to show that flank instead. A half turn
       // keeps the clean side view, now facing the other way, which reads as the creature turning round.
       const depth = offset.x * toViewer.x + offset.z * toViewer.z;
-      const yaw = depth < -FAR_SIDE_SHARE * offset.length() ? Math.PI : 0;
+      const yaw = !faceViewer && depth < -FAR_SIDE_SHARE * offset.length() ? Math.PI : 0;
 
       // Tip the creature so a trait on its top or underside leans toward the viewer.
       const elevation = Math.atan2(offset.y, Math.hypot(offset.x, offset.z));
@@ -154,6 +155,7 @@ export function CreatureCanvas({
   creatureProportions,
   emergingArtifactId,
   emerging = false,
+  faceViewer = false,
   label,
   interactive = false,
 }: {
@@ -172,6 +174,8 @@ export function CreatureCanvas({
   /** A trait that stays collapsed until `emerging` turns true, then grows in. */
   emergingArtifactId?: string;
   emerging?: boolean;
+  /** Keeps the creature's front toward the viewer while the trait grows, so its eyes stay in sight. */
+  faceViewer?: boolean;
   label?: string;
   interactive?: boolean;
 }) {
@@ -209,7 +213,7 @@ export function CreatureCanvas({
         <group ref={creatureRootRef}>
           <TraitGrowthContext.Provider value={growth}>
             {emergingArtifactId ? (
-              <TurnTowardGrowingTrait growing={emerging}>{model}</TurnTowardGrowingTrait>
+              <TurnTowardGrowingTrait growing={emerging} faceViewer={faceViewer}>{model}</TurnTowardGrowingTrait>
             ) : model}
           </TraitGrowthContext.Provider>
         </group>

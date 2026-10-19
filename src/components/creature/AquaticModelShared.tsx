@@ -95,31 +95,40 @@ const traitSides: TraitMount[] = ["top", "bottom", "left", "right"];
 // Lets the creature editor reshuffle trait positions or pin every trait to one side.
 export const TraitPreviewContext = createContext<{ seed?: string; side?: TraitMount }>({});
 
-// Each creature spreads its traits over the four sides, starting from a seeded preference
-// and moving to the least crowded side, then spaces the traits on each side from tail to head.
-function assignMounts(pieces: CreaturePiece[], signature: string, forcedSide?: TraitMount) {
-  const bySide = new Map<TraitMount, CreaturePiece[]>(traitSides.map((side) => [side, []]));
-  const ordered = pieces
-    .filter((piece) => !mouthPartIds.has(piece.partId))
-    .sort((a, b) => hashUnit(`${signature}:${a.artifactId}:order`) - hashUnit(`${signature}:${b.artifactId}:order`));
-  for (const piece of ordered) {
-    const preferred = Math.floor(hashUnit(`${signature}:${piece.artifactId}:side`) * traitSides.length);
-    let side = forcedSide ?? traitSides[preferred];
-    for (let offset = 1; !forcedSide && offset < traitSides.length; offset += 1) {
-      const candidate = traitSides[(preferred + offset) % traitSides.length];
-      if (bySide.get(candidate)!.length < bySide.get(side)!.length) side = candidate;
-    }
-    bySide.get(side)!.push(piece);
-  }
+// How far along a side traits may sit, from tail to head, and how far apart two traits on one side stay.
+const alongLimit = { mixed: 0.45, forced: 0.8 };
+const alongGap = 0.22;
+const mountAttempts = 24;
+
+/**
+ * Each trait keeps the spot it first grew on: traits are placed in the order they were found, and a
+ * new one draws a seeded random side and spot, drawing again while that spot is already taken. The
+ * traits found before it never move.
+ */
+function assignMounts(pieces: CreaturePiece[], signature: string, forcedSide?: TraitMount, radial = false) {
+  const limit = forcedSide ? alongLimit.forced : alongLimit.mixed;
   const mounts: Record<string, { mount: TraitMount; along: number }> = {};
-  for (const [mount, sidePieces] of bySide) {
-    sidePieces.forEach((piece, index) => {
-      const spread = forcedSide ? 1.6 : 1;
-      const along = sidePieces.length === 1
-        ? (hashUnit(`${signature}:${piece.artifactId}:along`) - 0.5) * 0.6
-        : spread * (-0.5 + ((index + 0.5) / sidePieces.length));
-      mounts[piece.artifactId] = { mount, along };
-    });
+  const taken: Array<{ mount: TraitMount; along: number }> = [];
+  // How much room a spot leaves to the nearest trait on the same side; a face arm of a radial body holds one trait.
+  const room = (mount: TraitMount, along: number) => taken.reduce((nearest, other) => {
+    if (other.mount !== mount) return nearest;
+    if (radial && (mount === "left" || mount === "right")) return radialArm(mount, other.along) === radialArm(mount, along) ? 0 : nearest;
+    return Math.min(nearest, Math.abs(other.along - along));
+  }, Infinity);
+  for (const piece of pieces) {
+    if (mouthPartIds.has(piece.partId)) continue;
+    let best: { mount: TraitMount; along: number; room: number } | null = null;
+    for (let attempt = 0; attempt < mountAttempts; attempt += 1) {
+      const draw = `${signature}:${piece.artifactId}:${attempt}`;
+      const mount = forcedSide ?? traitSides[Math.floor(hashUnit(`${draw}:side`) * traitSides.length) % traitSides.length];
+      const along = (hashUnit(`${draw}:along`) * 2 - 1) * limit;
+      const spotRoom = room(mount, along);
+      if (!best || spotRoom > best.room) best = { mount, along, room: spotRoom };
+      if (spotRoom >= alongGap) break;
+    }
+    // When every side is crowded, the trait takes the roomiest spot it drew.
+    mounts[piece.artifactId] = { mount: best!.mount, along: best!.along };
+    taken.push(mounts[piece.artifactId]);
   }
   return mounts;
 }
@@ -607,9 +616,13 @@ const flankTilt = { flat: 1.1, volumetric: 0.35 };
 function radialAngle(mount: TraitMount, along: number) {
   if (mount === "top") return Math.PI / 2 - along * Math.PI * 0.9;
   if (mount === "bottom") return -Math.PI / 2 + along * Math.PI * 0.9;
+  return Math.PI / 2 + (radialArm(mount, along) / 5) * Math.PI * 2;
+}
+
+/** The arm a face trait sits on; the front skips the top arm, which holds the eyes. */
+function radialArm(mount: TraitMount, along: number) {
   const arms = mount === "right" ? [1, 2, 3, 4] : [0, 1, 2, 3, 4];
-  const arm = arms[THREE.MathUtils.clamp(Math.floor((along + 0.5) * arms.length), 0, arms.length - 1)];
-  return Math.PI / 2 + (arm / 5) * Math.PI * 2;
+  return arms[THREE.MathUtils.clamp(Math.floor((along + 0.5) * arms.length), 0, arms.length - 1)];
 }
 
 /** How far out along an arm face traits sit, as a share of the rim's reach. */
@@ -744,7 +757,7 @@ export function TraitMarks({
   const layout = layoutOverride ?? (form === "fish" ? traitLayouts.seal : traitLayouts[form]);
   const pieceKey = pieces.map((piece) => `${piece.artifactId}/${piece.partId}`).join(",");
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const mounts = useMemo(() => assignMounts(pieces, traitSignature, preview.side), [pieceKey, traitSignature, preview.side]);
+  const mounts = useMemo(() => assignMounts(pieces, traitSignature, preview.side, layout.radial), [pieceKey, traitSignature, preview.side, layout.radial]);
   const placementKey = `${form}:${traitSignature}:${preview.side ?? "mixed"}:${JSON.stringify(layout)}:${pieceKey}`;
 
   // Measure where the creature's skin actually is, so each trait grows out of it.

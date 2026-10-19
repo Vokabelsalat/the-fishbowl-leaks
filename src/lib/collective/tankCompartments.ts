@@ -6,13 +6,15 @@
  */
 
 /** How many visitors' creatures it takes to break every wall open. */
-export const fullBreakdownCreatures = 100;
+export const fullBreakdownCreatures = 75;
 
 export type CompartmentWall = {
   /** Where the wall stands, as a share of the tank's width from the left. */
   position: number;
-  /** The breakdown at which the wall starts to crack; it is fully open `wallOpeningSpan` later. */
+  /** The breakdown at which the wall starts to crack. */
   crackAt: number;
+  /** The breakdown at which the wall has burst fully open. */
+  openAt: number;
   /** Height of the hole's centre, as a share of the tank's height from the top. */
   hole: number;
 };
@@ -25,14 +27,17 @@ export const compartmentLabels = [
   "irregular organisms",
 ] as const;
 
-export const compartmentWalls: readonly CompartmentWall[] = [
-  { position: 0.18, crackAt: 0.14, hole: 0.34 },
-  { position: 0.46, crackAt: 0.32, hole: 0.66 },
-  { position: 0.6, crackAt: 0.5, hole: 0.43 },
-  { position: 0.84, crackAt: 0.68, hole: 0.72 },
-];
+/** The breakdown this many creatures bring the tank to. */
+const afterCreatures = (count: number) => count / fullBreakdownCreatures;
 
-const wallOpeningSpan = 0.16;
+// The walls crack out of order, and every one has started to crack by 30 creatures. Each then
+// opens slowly, and the last of them bursts just before the open sea.
+export const compartmentWalls: readonly CompartmentWall[] = [
+  { position: 0.18, crackAt: afterCreatures(12), openAt: afterCreatures(55), hole: 0.34 },
+  { position: 0.46, crackAt: afterCreatures(28), openAt: afterCreatures(72), hole: 0.66 },
+  { position: 0.6, crackAt: afterCreatures(5), openAt: afterCreatures(45), hole: 0.43 },
+  { position: 0.84, crackAt: afterCreatures(20), openAt: afterCreatures(65), hole: 0.72 },
+];
 
 /** Whether a tank with this many visitors' creatures has become the open sea, with every wall gone. */
 export function isOpenSea(creatureCount: number) {
@@ -62,7 +67,8 @@ export function tankLook(breakdown: number) {
 
 /** How far one wall's hole has opened, from 0 (sealed) to 1 (burst). */
 export function wallOpening(breakdown: number, wallIndex: number) {
-  return Math.min(1, Math.max(0, (breakdown - compartmentWalls[wallIndex].crackAt) / wallOpeningSpan));
+  const { crackAt, openAt } = compartmentWalls[wallIndex];
+  return Math.min(1, Math.max(0, (breakdown - crackAt) / (openAt - crackAt)));
 }
 
 /** Half the hole's height as a share of the tank's height; a burst wall leaves a gap of 62% of the height around its centre. */

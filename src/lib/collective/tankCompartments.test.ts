@@ -15,11 +15,13 @@ describe("tank compartments", () => {
     expect(tankBreakdown(fullBreakdownCreatures * 3)).toBe(1);
   });
 
-  it("opens the walls one after another", () => {
+  it("cracks every wall by 30 creatures, out of order, and opens them all by the full count", () => {
     const openings = (count: number) => [0, 1, 2, 3].map((wall) => wallOpening(tankBreakdown(count), wall));
     expect(openings(0)).toEqual([0, 0, 0, 0]);
-    expect(openings(fullBreakdownCreatures * 0.3)[0]).toBeGreaterThan(0);
-    expect(openings(fullBreakdownCreatures * 0.3)[3]).toBe(0);
+    expect(openings(10)).toEqual([0, 0, expect.any(Number), 0]);
+    expect(openings(10)[2]).toBeGreaterThan(0);
+    expect(openings(30).every((opening) => opening > 0)).toBe(true);
+    expect(openings(fullBreakdownCreatures - 1).some((opening) => opening < 1)).toBe(false);
     expect(openings(fullBreakdownCreatures)).toEqual([1, 1, 1, 1]);
   });
 

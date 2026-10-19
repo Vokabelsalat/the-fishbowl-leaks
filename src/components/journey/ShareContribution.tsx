@@ -11,7 +11,7 @@ import type { Discovery } from "@/store/journeySlice";
 type ShareState = "idle" | "sharing" | "shared" | "error";
 
 /** How many artworks a visitor has to encounter before their creature may be released. */
-export const RELEASE_MINIMUM_ENCOUNTERS = 3;
+export const RELEASE_MINIMUM_ENCOUNTERS = 1;
 
 export function ShareContribution({
   sessionId,
@@ -90,7 +90,7 @@ export function ShareContribution({
       <div className="border-t border-white/20 pt-6">
         <p className="text-base leading-6">
           Scan {encountersNeeded} more {encountersNeeded === 1 ? "artwork" : "artworks"} to release your {activeVisualizationCopy.singular} into
-          the shared tank. It needs at least {RELEASE_MINIMUM_ENCOUNTERS} encounters to hold together outside the glass.
+          the shared tank. It needs at least {RELEASE_MINIMUM_ENCOUNTERS} {RELEASE_MINIMUM_ENCOUNTERS === 1 ? "encounter" : "encounters"} to hold together outside the glass.
         </p>
       </div>
     );

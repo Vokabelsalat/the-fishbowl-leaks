@@ -595,7 +595,7 @@ export function CollectiveWall({ initialView = "collective" }: {
           rel="noopener noreferrer"
           aria-label="Scan to open the exhibition on your phone at aar.kusnick.com"
         >
-          <span className="text-center text-sm leading-5">Contribute your own story creature!</span>
+          <span className="text-center text-sm leading-5">Create your own story creature!</span>
           <Image src="/images/exhibition-qr.svg" alt="QR code linking to https://aar.kusnick.com" width={164} height={164} className="block h-auto w-full" unoptimized />
           <span className="whitespace-nowrap text-sm leading-5">aar.kusnick.com</span>
         </a>

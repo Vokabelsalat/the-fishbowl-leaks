@@ -3,6 +3,8 @@ import {
   canPassWall,
   compartmentAt,
   fullBreakdownCreatures,
+  isOpenSea,
+  openSeaCreatures,
   separatedByWall,
   tankBreakdown,
   wallOpening,
@@ -15,14 +17,16 @@ describe("tank compartments", () => {
     expect(tankBreakdown(fullBreakdownCreatures * 3)).toBe(1);
   });
 
-  it("cracks every wall by 30 creatures, out of order, and opens them all by the full count", () => {
+  it("cracks every wall by 30 creatures, out of order, and opens them all by the open sea", () => {
     const openings = (count: number) => [0, 1, 2, 3].map((wall) => wallOpening(tankBreakdown(count), wall));
     expect(openings(0)).toEqual([0, 0, 0, 0]);
     expect(openings(10)).toEqual([0, 0, expect.any(Number), 0]);
     expect(openings(10)[2]).toBeGreaterThan(0);
     expect(openings(30).every((opening) => opening > 0)).toBe(true);
-    expect(openings(fullBreakdownCreatures - 1).some((opening) => opening < 1)).toBe(false);
-    expect(openings(fullBreakdownCreatures)).toEqual([1, 1, 1, 1]);
+    expect(openings(openSeaCreatures)).toEqual([1, 1, 1, 1]);
+    expect(isOpenSea(openSeaCreatures - 1)).toBe(false);
+    expect(isOpenSea(openSeaCreatures)).toBe(true);
+    expect(tankBreakdown(openSeaCreatures)).toBeLessThan(1);
   });
 
   it("lets creatures through a wall only at the height of its hole", () => {

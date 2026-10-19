@@ -1,12 +1,16 @@
 /**
  * The collective tank starts out divided into five classified compartments. Each creature released
- * into the tank cracks the walls between them a little further, until, with
- * `fullBreakdownCreatures` creatures released since the exhibition opened, every wall has burst open
- * and they all swim together. The tank keeps its creatures from day to day, so it stays open.
+ * into the tank cracks the walls between them a little further, until, with `openSeaCreatures`
+ * creatures released since the exhibition opened, every wall has burst open and they all swim
+ * together in the open sea. The breakdown itself, which also unsettles the creatures' stories, keeps
+ * growing until `fullBreakdownCreatures`. The tank keeps its creatures from day to day, so it stays open.
  */
 
-/** How many visitors' creatures it takes to break every wall open. */
-export const fullBreakdownCreatures = 75;
+/** How many visitors' creatures it takes for the breakdown to reach its top. */
+export const fullBreakdownCreatures = 100;
+
+/** How many visitors' creatures it takes for the tank to become the open sea, with every wall gone. */
+export const openSeaCreatures = 75;
 
 export type CompartmentWall = {
   /** Where the wall stands, as a share of the tank's width from the left. */
@@ -31,7 +35,7 @@ export const compartmentLabels = [
 const afterCreatures = (count: number) => count / fullBreakdownCreatures;
 
 // The walls crack out of order, and every one has started to crack by 30 creatures. Each then
-// opens slowly, and the last of them bursts just before the open sea.
+// opens slowly, and the last of them bursts just before the open sea at 75.
 export const compartmentWalls: readonly CompartmentWall[] = [
   { position: 0.18, crackAt: afterCreatures(12), openAt: afterCreatures(55), hole: 0.34 },
   { position: 0.46, crackAt: afterCreatures(28), openAt: afterCreatures(72), hole: 0.66 },
@@ -41,7 +45,7 @@ export const compartmentWalls: readonly CompartmentWall[] = [
 
 /** Whether a tank with this many visitors' creatures has become the open sea, with every wall gone. */
 export function isOpenSea(creatureCount: number) {
-  return creatureCount >= fullBreakdownCreatures;
+  return creatureCount >= openSeaCreatures;
 }
 
 /** How far the walls have broken down for this many creatures, from 0 (sealed) to 1 (gone). */
@@ -55,13 +59,14 @@ export const blueAquariumCreatures = 50;
 /**
  * Where the tank's look stands for a breakdown: `blue` runs from the green-tinted aquarium (0) to
  * the blue one (1) over the first `blueAquariumCreatures`, then `sea` from the blue aquarium (0) to
- * the open sea (1) as the last walls break.
+ * the open sea (1) as the last walls break, by `openSeaCreatures`.
  */
 export function tankLook(breakdown: number) {
   const blueAt = tankBreakdown(blueAquariumCreatures);
+  const seaAt = tankBreakdown(openSeaCreatures);
   return {
     blue: Math.min(1, Math.max(0, breakdown / blueAt)),
-    sea: Math.min(1, Math.max(0, (breakdown - blueAt) / (1 - blueAt))),
+    sea: Math.min(1, Math.max(0, (breakdown - blueAt) / (seaAt - blueAt))),
   };
 }
 

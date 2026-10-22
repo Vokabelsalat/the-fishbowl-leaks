@@ -992,7 +992,11 @@ export function WorldEventModel({ id, ...props }: EventProps & { id: WorldEventI
  * Starts a random world event every `shortestPause` to `longestPause` seconds, and the requested one
  * whenever `request` changes; only one happens at a time, and a request takes over a running one.
  */
-export function WorldEvents({ request }: { request?: WorldEventRequest | null }) {
+export function WorldEvents({ request, pauses = [shortestPause, longestPause] }: {
+  request?: WorldEventRequest | null;
+  /** The shortest and longest wait between two events, in seconds. */
+  pauses?: readonly [number, number];
+}) {
   const [active, setActive] = useState<{ id: WorldEventId; seed: number; key: number } | null>(null);
   const nextAt = useRef<number | null>(null);
   const handledNonce = useRef(request?.nonce ?? 0);
@@ -1011,7 +1015,7 @@ export function WorldEvents({ request }: { request?: WorldEventRequest | null })
       return;
     }
     if (active) return;
-    nextAt.current ??= elapsed + THREE.MathUtils.lerp(shortestPause, longestPause, Math.random());
+    nextAt.current ??= elapsed + THREE.MathUtils.lerp(pauses[0], pauses[1], Math.random());
     if (elapsed >= nextAt.current) start(worldEventIds[Math.floor(Math.random() * worldEventIds.length)]);
   });
 

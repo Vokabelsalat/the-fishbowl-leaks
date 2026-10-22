@@ -127,6 +127,7 @@ function VisualizationField({
   meshQuality = 1,
   orbitRequest,
   worldEventRequest,
+  worldEventPauses,
 }: {
   contributions: ExhibitionContribution[];
   progress?: number;
@@ -137,6 +138,8 @@ function VisualizationField({
   orbitRequest?: number;
   /** Each change starts the requested world event in the 3D aquarium. */
   worldEventRequest?: WorldEventRequest | null;
+  /** The shortest and longest wait between two world events of their own in the 3D aquarium, in seconds. */
+  worldEventPauses?: readonly [number, number];
   onSelectContribution?: (contribution: ExhibitionContribution) => void;
   /** Merges each creature's still parts into a few meshes in the 3D aquarium. */
   mergeStaticMeshes?: boolean;
@@ -168,6 +171,7 @@ function VisualizationField({
       meshQuality={meshQuality}
       orbitRequest={orbitRequest}
       worldEventRequest={worldEventRequest}
+      worldEventPauses={worldEventPauses}
     />
   );
 }

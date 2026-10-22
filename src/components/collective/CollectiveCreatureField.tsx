@@ -397,7 +397,8 @@ type BabyCreature = {
 
 type FloatingCreatureProps = {
   contribution: ExhibitionContribution;
-  progress: number;
+  /** How far the day has come, read every frame, so the clock moving on never re-renders the creature. */
+  progressRef: MutableRefObject<number>;
   actorRegistry?: MutableRefObject<Map<number, MutableRefObject<CreatureMotion>>>;
   /** Each whale's half thickness at unit depth scale, so every whale gets a depth lane of its own. */
   whaleLanes?: MutableRefObject<Map<number, number>>;
@@ -420,7 +421,7 @@ type FloatingCreatureProps = {
 // Re-renders only when its own props change, not whenever a baby joins or the field updates.
 const FloatingCreature = memo(function FloatingCreature({
   contribution,
-  progress,
+  progressRef,
   actorRegistry,
   whaleLanes,
   breakdownRef,
@@ -488,7 +489,7 @@ const FloatingCreature = memo(function FloatingCreature({
     vy: isBottomDweller || isWhale ? 0 : Math.sin(placement.heading) * placement.speed,
     vz: placement.depthDirection * placement.depthSpeed,
   });
-  const previousProgress = useRef(progress);
+  const previousProgress = useRef<number | null>(null);
 
   const aimTowardVelocity = (vx: number, vy: number, vz: number) => {
     const horizontalSpeed = Math.hypot(vx, vz);
@@ -555,8 +556,12 @@ const FloatingCreature = memo(function FloatingCreature({
     const floorYAt = (z: number) => aquariumFloorY + (floorOffsetRef.current ?? 0.3) * depthScaleAt(z);
     const floorY = floorYAt(state.z);
     const turnZone = 0.48;
+    const progress = progressRef.current;
+    previousProgress.current ??= progress;
 
-    if (!state.initialized || progress < previousProgress.current - 0.025) {
+    // Turning the test time back starts the creature afresh; the clock passing midnight moves on, so it keeps swimming.
+    const passedMidnight = previousProgress.current > 0.75 && progress < 0.25;
+    if (!state.initialized || (progress < previousProgress.current - 0.025 && !passedMidnight)) {
       state.x = isWhale
         ? placement.xUnit * whaleTravelEdge
         : spawnPosition?.[0] ?? spawnX();
@@ -1306,6 +1311,7 @@ export function CollectiveCreatureField({
   meshQuality = 1,
   orbitRequest = 0,
   worldEventRequest,
+  worldEventPauses,
 }: {
   contributions: ExhibitionContribution[];
   progress?: number;
@@ -1327,6 +1333,8 @@ export function CollectiveCreatureField({
   orbitRequest?: number;
   /** Each change starts the requested world event at once; others also happen on their own. */
   worldEventRequest?: WorldEventRequest | null;
+  /** The shortest and longest wait between two world events of their own, in seconds. */
+  worldEventPauses?: readonly [number, number];
 }) {
   const [babies, setBabies] = useState<BabyCreature[]>([]);
   // Starts sharp; the monitor lowers the resolution while the frame rate stays low, and raises it again once it recovers.
@@ -1336,6 +1344,10 @@ export function CollectiveCreatureField({
   const actorRegistry = useRef(new Map<number, MutableRefObject<CreatureMotion>>());
   const whaleLanes = useRef(new Map<number, number>());
   const breakdownRef = useRef(breakdown);
+  const progressRef = useRef(progress);
+  useLayoutEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
   const pairingRef = useRef<PairingEvent | null>(null);
   const schoolingRef = useRef<Schooling>({ places: new Map(), schools: [], cooldownUntil: new Map() });
   const adults = useMemo(() => contributions.slice(-collectiveCapacity), [contributions]);
@@ -1397,7 +1409,7 @@ export function CollectiveCreatureField({
             <FloatingCreature
               key={contribution.id}
               contribution={contribution}
-              progress={progress}
+              progressRef={progressRef}
               whaleLanes={whaleLanes}
               departing={departingIds.has(contribution.id)}
               onDeparted={handleDeparted}
@@ -1430,7 +1442,7 @@ export function CollectiveCreatureField({
             <FloatingCreature
               key={contribution.id}
               contribution={contribution}
-              progress={progress}
+              progressRef={progressRef}
               breakdownRef={breakdownRef}
               departing={departingIds.has(contribution.id)}
               onDeparted={handleDeparted}
@@ -1448,7 +1460,7 @@ export function CollectiveCreatureField({
             <FloatingCreature
               key={baby.contribution.id}
               contribution={baby.contribution}
-              progress={progress}
+              progressRef={progressRef}
               breakdownRef={breakdownRef}
               mergeStaticMeshes={mergeStaticMeshes}
               reduceGeometryDetail={reduceGeometryDetail}
@@ -1459,7 +1471,7 @@ export function CollectiveCreatureField({
           ))}
           <AquariumDioramaPlants layer="front" />
         </TankMeshBatches>
-        <WorldEvents request={worldEventRequest} />
+        <WorldEvents request={worldEventRequest} pauses={worldEventPauses} />
       </TankOrbit>
     </Canvas>
   );

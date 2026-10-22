@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { CollectiveVisualizationField } from "@/components/collective/CollectiveVisualizationField";
 import { tankOrbitMilliseconds, type CreatureArrival } from "@/components/collective/CollectiveCreatureField";
 import { worldEventIds, worldEventLabels, type WorldEventId, type WorldEventRequest } from "@/components/collective/WorldEvents";
@@ -20,6 +20,7 @@ import { compartmentLabels, compartmentWalls, holeHalfHeight, tankBreakdown, tan
 import { artifacts } from "@/data/artifacts";
 import { useIdleCursor } from "@/lib/collective/useIdleCursor";
 import { aggregateContributionDwellTimes } from "@/lib/contributions/heatmap";
+import { planReplay, replayLeadInMs } from "@/lib/collective/exhibitionReplay";
 import type { CollectiveHeatDatum, ExhibitionContribution } from "@/types/contribution";
 
 const ARRIVAL_DURATION_MS = 17_000;
@@ -55,6 +56,19 @@ function minuteOfDay(value: Date | string) {
 }
 
 const osloDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Oslo" });
+const osloReplayDate = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Oslo",
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+/** The replay keeps world events coming, this many seconds apart, so a few minutes still see several. */
+const replayWorldEventPauses = [4, 10] as const;
+/** While the replay races, the recent stories change at most this often: each change draws their creatures anew. */
+const replayRecentsIntervalMs = 2_500;
 
 /** Whether the creature was released on the current exhibition day, as the Oslo clock counts days. */
 function releasedToday(value: string) {
@@ -65,6 +79,17 @@ function formatMinute(value: number) {
   const hours = Math.floor(value / 60);
   const minutes = value % 60;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+async function fetchContributionPage(after: number) {
+  const response = await fetch(`/api/contributions?after=${after}&limit=${pageSize}`, { cache: "no-store" });
+  if (!response.ok) throw new Error("Collective aquarium unavailable");
+  return (await response.json()) as {
+    contributions: ExhibitionContribution[];
+    heatmap: CollectiveHeatDatum[];
+    syntheticCount: number;
+    contributionCount: number;
+  };
 }
 
 function MeshQualityControl({ quality, onChange }: { quality: number; onChange: (quality: number) => void }) {
@@ -107,9 +132,89 @@ function MeshQualityControl({ quality, onChange }: { quality: number; onChange: 
   );
 }
 
-export function CollectiveWall({ initialView = "collective" }: {
+/** The value, taking up a changed one (as `key` tells) at most every `intervalMs`, so a fast-changing value settles on screen. */
+function useThrottledValue<T>(value: T, key: string, intervalMs: number) {
+  const [shown, setShown] = useState({ value, key });
+  const shownAt = useRef(0);
+  useEffect(() => {
+    if (key === shown.key) return;
+    const wait = Math.max(0, shownAt.current + intervalMs - performance.now());
+    const timeout = window.setTimeout(() => {
+      shownAt.current = performance.now();
+      setShown({ value, key });
+    }, wait);
+    return () => window.clearTimeout(timeout);
+  }, [intervalMs, key, shown.key, value]);
+  return shown.value;
+}
+
+const contributionIds = (contributions: ExhibitionContribution[]) => contributions.map((contribution) => contribution.id).join(",");
+
+/**
+ * The latest story and the ones before it, newest first. Each creature is drawn in a canvas of its own,
+ * so it renders again only when the stories change, not with every tick of the wall's clock.
+ */
+const RecentStories = memo(function RecentStories({ contributions }: { contributions: ExhibitionContribution[] }) {
+  const [latestContribution, ...previousContributions] = contributions;
+  return (
+    <aside
+      className="collective-recents absolute inset-x-0 bottom-0 z-30 pb-6 lg:pb-7"
+      aria-label={`Most recently shared stories and ${activeVisualizationCopy.plural}`}
+    >
+      <div className="collective-recents-grid grid h-full grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] grid-rows-[minmax(0,1fr)] pt-4">
+        <article className="collective-recents-latest grid h-full min-h-0 min-w-0 grid-cols-[clamp(7rem,9vw,9rem)_1fr] grid-rows-[minmax(0,1fr)] items-center gap-5 border-r border-white/12 pr-8">
+          <div className="aspect-square w-full">
+            <PathVisualization
+              artifactIds={latestContribution.parts.map((part) => part.artifactId)}
+              contribution={latestContribution}
+              compact
+              zoom={34}
+              label={`Latest ${activeVisualizationCopy.singular} with ${latestContribution.parts.length} parts`}
+            />
+          </div>
+          {/* A long story shrinks its text to fit instead of growing past the panel. */}
+          <div className="flex h-full min-h-0 min-w-0 flex-col justify-center">
+            <p className="mb-3 shrink-0 text-sm text-white/40">Latest released story</p>
+            <FitText className="font-display text-[clamp(1.15rem,1.45vw,1.75rem)] leading-[1.12] tracking-[-0.025em] text-white/82">
+              {/* One flowing paragraph uses the panel's width, so long stories need fewer lines and keep a larger size. */}
+              <p><NarrativeLines lines={latestContribution.narrative} /></p>
+            </FitText>
+            <p className="mt-4 shrink-0 text-[10px] tracking-[0.2em] text-white/30">
+              {latestContribution.parts.length} {latestContribution.parts.length === 1 ? "encounter" : "encounters"}
+            </p>
+          </div>
+        </article>
+
+        <div className="collective-recents-previous grid min-h-0 min-w-0 grid-cols-2 grid-rows-2 gap-x-5 gap-y-2 pl-8">
+          {previousContributions.map((contribution, index) => (
+            <article key={contribution.id} className="grid min-w-0 grid-cols-[minmax(0,4.5rem)_1fr] items-center gap-3">
+              <div className="aspect-square w-full opacity-75">
+                <PathVisualization
+                  artifactIds={contribution.parts.map((part) => part.artifactId)}
+                  contribution={contribution}
+                  compact
+                  label={`Recent ${activeVisualizationCopy.singular} ${index + 2} with ${contribution.parts.length} parts`}
+                />
+              </div>
+              <p className="line-clamp-4 font-display text-sm leading-[1.15] tracking-[-0.015em] text-white/60">
+                <NarrativeLines lines={contribution.narrative} />
+              </p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </aside>
+  );
+}, (previous, next) => contributionIds(previous.contributions) === contributionIds(next.contributions));
+
+export function CollectiveWall({ initialView = "collective", replay }: {
   /** The view the wall opens with; in production it stays there, since the switch exists only during development. */
   initialView?: "collective" | "heatmap";
+  /**
+   * Replays the tank from the opening of the exhibition until now over `durationMs`, instead of
+   * listening for new creatures, with up to `featuredCount` of them arriving in full.
+   */
+  replay?: { durationMs: number; featuredCount: number };
 }) {
   const cursorHidden = useIdleCursor();
   const [contributions, setContributions] = useState<ExhibitionContribution[]>([]);
@@ -130,6 +235,10 @@ export function CollectiveWall({ initialView = "collective" }: {
   const [chosenWorldEvent, setChosenWorldEvent] = useState<WorldEventId>(worldEventIds[0]);
   const [worldEventRequest, setWorldEventRequest] = useState<WorldEventRequest | null>(null);
   const [visitorCreatureCount, setVisitorCreatureCount] = useState(0);
+  // The replayed date and time, shown under the title while the replay runs.
+  const [replayTime, setReplayTime] = useState<number | null>(null);
+  const replayDurationMs = replay?.durationMs;
+  const replayFeaturedCount = replay?.featuredCount;
   const latestId = useRef(0);
   const initialized = useRef(false);
   const activeRef = useRef<ExhibitionContribution | null>(null);
@@ -148,7 +257,7 @@ export function CollectiveWall({ initialView = "collective" }: {
   }, []);
   const showRenderStats = useSyncExternalStore(
     noSubscription,
-    () => isDevelopment || new URLSearchParams(window.location.search).has("stats"),
+    () => (isDevelopment && !replay) || new URLSearchParams(window.location.search).has("stats"),
     () => false,
   );
 
@@ -157,10 +266,10 @@ export function CollectiveWall({ initialView = "collective" }: {
   }, []);
 
   /** Starts the next creature's arrival, or ends the arrivals; the more visitors are waiting, the shorter it is. */
-  const beginArrival = useCallback((next: ExhibitionContribution | null) => {
+  const beginArrival = useCallback((next: ExhibitionContribution | null, durationMs = arrivalDurationFor(queueRef.current.length)) => {
     activeRef.current = next;
     setActive(next);
-    setArrivalDurationMs(arrivalDurationFor(queueRef.current.length));
+    setArrivalDurationMs(durationMs);
     syncWaiting();
   }, [syncWaiting]);
 
@@ -182,26 +291,16 @@ export function CollectiveWall({ initialView = "collective" }: {
   }, [beginArrival, contributions, syncWaiting]);
 
   useEffect(() => {
+    if (replayDurationMs) return;
     let cancelled = false;
-
-    async function fetchPage(after: number) {
-      const response = await fetch(`/api/contributions?after=${after}&limit=${pageSize}`, { cache: "no-store" });
-      if (!response.ok) throw new Error("Collective aquarium unavailable");
-      return (await response.json()) as {
-        contributions: ExhibitionContribution[];
-        heatmap: CollectiveHeatDatum[];
-        syntheticCount: number;
-        contributionCount: number;
-      };
-    }
 
     async function refresh() {
       try {
-        const data = await fetchPage(latestId.current);
+        const data = await fetchContributionPage(latestId.current);
         // The first load reads the whole tank, so only later contributions arrive as new creatures.
         let page = data;
         while (!initialized.current && page.contributions.length === pageSize && !cancelled) {
-          page = await fetchPage(page.contributions[page.contributions.length - 1].id);
+          page = await fetchContributionPage(page.contributions[page.contributions.length - 1].id);
           data.contributions.push(...page.contributions);
         }
         if (cancelled) return;
@@ -261,7 +360,88 @@ export function CollectiveWall({ initialView = "collective" }: {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [beginArrival, clearArrivals, syncWaiting]);
+  }, [beginArrival, clearArrivals, replayDurationMs, syncWaiting]);
+
+  // The replay loads the whole tank once, starts with only its seed creatures, and lets the visitors'
+  // creatures come in as they did, with the clock racing from the opening until now. It holds while a
+  // featured creature arrives, and carries on once its arrival is over.
+  useEffect(() => {
+    if (!replayDurationMs || !replayFeaturedCount) return;
+    let cancelled = false;
+    let interval = 0;
+
+    async function start() {
+      let all: ExhibitionContribution[] = [];
+      try {
+        let page = await fetchContributionPage(0);
+        all = page.contributions;
+        while (page.contributions.length === pageSize && !cancelled) {
+          page = await fetchContributionPage(page.contributions[page.contributions.length - 1].id);
+          all = [...all, ...page.contributions];
+        }
+      } catch {
+        if (!cancelled) {
+          setConnected(false);
+          setReady(true);
+        }
+        return;
+      }
+      if (cancelled) return;
+
+      const seeds = all.filter((contribution) => contribution.dailySeed);
+      const visitors = all.filter((contribution) => !contribution.dailySeed);
+      const endAt = Date.now();
+      // The seed creatures were put in at the opening.
+      const openedAt = Math.min(
+        ...seeds.map((contribution) => Date.parse(contribution.createdAt)),
+        ...visitors.slice(0, 1).map((contribution) => Date.parse(contribution.createdAt)),
+        endAt,
+      );
+      const plan = planReplay(visitors, { openedAt, endAt, durationMs: replayDurationMs!, featuredCount: replayFeaturedCount! });
+      setContributions(seeds.slice(-collectiveCapacity));
+      setReplayTime(openedAt);
+      setClockMinutes(minuteOfDay(new Date(openedAt)));
+      setReady(true);
+
+      let playedMs = -replayLeadInMs;
+      let nextStep = 0;
+      let lastTick = performance.now();
+      interval = window.setInterval(() => {
+        const now = performance.now();
+        const elapsed = Math.min(250, now - lastTick);
+        lastTick = now;
+        if (activeRef.current) return;
+        playedMs = Math.min(plan.fastForwardMs, playedMs + elapsed);
+        const progress = Math.max(0, playedMs / plan.fastForwardMs);
+
+        let entered: ExhibitionContribution | null = null;
+        let featured: (typeof plan.steps)[number] | null = null;
+        // One creature a tick at most: building its model takes a while, so a busy hour would drop frames.
+        if (nextStep < plan.steps.length && plan.steps[nextStep].at <= progress) {
+          const step = plan.steps[nextStep];
+          nextStep += 1;
+          entered = step.contribution;
+          if (step.arrivalMs) featured = step;
+          // The clock waits at a featured creature's release while it arrives, and for the creatures still to come.
+          const behind = nextStep < plan.steps.length && plan.steps[nextStep].at <= progress;
+          if (featured || behind) playedMs = step.at * plan.fastForwardMs;
+        }
+        const time = plan.timeAt(Math.max(0, playedMs / plan.fastForwardMs));
+        const clock = new Date(time);
+        setReplayTime(time);
+        setClockMinutes(minuteOfDay(clock) + clock.getSeconds() / 60);
+        if (entered) setContributions((current) => [...current, entered].slice(-collectiveCapacity));
+        if (featured) beginArrival(featured.contribution, featured.arrivalMs);
+        if (playedMs >= plan.fastForwardMs && nextStep >= plan.steps.length) window.clearInterval(interval);
+      }, 50);
+    }
+
+    start();
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [beginArrival, replayDurationMs, replayFeaturedCount]);
 
   useEffect(() => {
     if (!orbiting) return;
@@ -270,12 +450,12 @@ export function CollectiveWall({ initialView = "collective" }: {
   }, [orbiting]);
 
   useEffect(() => {
-    if (!liveTime) return;
+    if (!liveTime || replayDurationMs) return;
     const updateClock = () => setClockMinutes(minuteOfDay(new Date()));
     updateClock();
     const interval = window.setInterval(updateClock, 30_000);
     return () => window.clearInterval(interval);
-  }, [liveTime]);
+  }, [liveTime, replayDurationMs]);
 
   useEffect(() => {
     if (!active) return;
@@ -321,8 +501,9 @@ export function CollectiveWall({ initialView = "collective" }: {
       ),
     [heatmap, liveTime, visibleContributions],
   );
-  const latestContribution = recentContributions[0];
-  const previousContributions = recentContributions.slice(1);
+  const throttledRecentContributions = useThrottledValue(recentContributions, contributionIds(recentContributions), replayRecentsIntervalMs);
+  const shownRecentContributions = replay ? throttledRecentContributions : recentContributions;
+  const latestContribution = shownRecentContributions[0];
   const dayProgress = clockMinutes / MINUTES_IN_DAY;
   // The walls break with every visitor's creature since the exhibition opened; the seed creatures the
   // tank started with break nothing. Only the latest are loaded, and the ones left out are older than all of them, so
@@ -390,6 +571,7 @@ export function CollectiveWall({ initialView = "collective" }: {
             meshQuality={meshQuality}
             orbitRequest={orbitRequest}
             worldEventRequest={worldEventRequest}
+            worldEventPauses={replay ? replayWorldEventPauses : undefined}
           />
         </div>
       ) : (
@@ -400,11 +582,14 @@ export function CollectiveWall({ initialView = "collective" }: {
       <header className="absolute inset-x-0 top-0 z-50 flex items-center justify-between">
         <div className="p-8">
           <h1 className="font-display text-xl tracking-[-0.03em] lg:text-2xl">The Fishbowl Leaks</h1>
+          {replayTime !== null && (
+            <p className="mt-1 font-display text-xl tabular-nums tracking-[-0.03em] lg:text-2xl">{osloReplayDate.format(replayTime)}</p>
+          )}
           {/* The heatmap page stays silent, so it never plays over the aquarium beside it. */}
           {initialView === "collective" && <AquariumAudio />}
           {/* <p className="mt-1 text-sm text-white/45">Shared aquarium · daily cycle</p> */}
         </div>
-        {isDevelopment && <div className="absolute left-1/2 flex -translate-x-1/2 rounded-full border border-white/12 bg-black/20 p-1 text-[10px] tracking-[0.18em] backdrop-blur-md" role="group" aria-label="Collective view">
+        {isDevelopment && !replay && <div className="absolute left-1/2 flex -translate-x-1/2 rounded-full border border-white/12 bg-black/20 p-1 text-[10px] tracking-[0.18em] backdrop-blur-md" role="group" aria-label="Collective view">
           <button
             type="button"
             className={`rounded-full px-4 py-2 transition-colors ${view === "collective" ? "bg-white/12 text-white/85" : "text-white/35 hover:text-white/60"}`}
@@ -426,7 +611,7 @@ export function CollectiveWall({ initialView = "collective" }: {
           {/* Debug controls sit on their own row, so they never run into the view switch. */}
           {showRenderStats && view === "collective" && (
             <div className="absolute right-8 top-20 flex items-center gap-6">
-              {isDevelopment && (
+              {isDevelopment && !replay && (
                 <button
                   type="button"
                   className="transition-colors hover:text-white/70 disabled:cursor-wait disabled:text-white/25"
@@ -439,7 +624,7 @@ export function CollectiveWall({ initialView = "collective" }: {
                   Circle the tank
                 </button>
               )}
-              {isDevelopment && (
+              {isDevelopment && !replay && (
                 <button
                   type="button"
                   className="transition-colors hover:text-white/70 disabled:text-white/25"
@@ -449,7 +634,7 @@ export function CollectiveWall({ initialView = "collective" }: {
                   Test an arrival
                 </button>
               )}
-              {isDevelopment && (
+              {isDevelopment && !replay && (
                 <span className="flex items-center gap-3">
                   <select
                     aria-label="World event to fire"
@@ -482,7 +667,7 @@ export function CollectiveWall({ initialView = "collective" }: {
         </div>
       </header>
 
-      {isDevelopment && !visibleActive && <input
+      {isDevelopment && !replay && !visibleActive && <input
         className="tank-time-slider absolute inset-x-0 bottom-[var(--collective-recents-height)] z-40 w-full translate-y-1/2"
         type="range"
         aria-label="Test time of day"
@@ -538,53 +723,7 @@ export function CollectiveWall({ initialView = "collective" }: {
       )}
 
       {view === "collective" && latestContribution && (
-        <aside
-          className="collective-recents absolute inset-x-0 bottom-0 z-30 pb-6 lg:pb-7"
-          aria-label={`Most recently shared stories and ${activeVisualizationCopy.plural}`}
-        >
-          <div className="collective-recents-grid grid h-full grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] grid-rows-[minmax(0,1fr)] pt-4">
-            <article className="collective-recents-latest grid h-full min-h-0 min-w-0 grid-cols-[clamp(7rem,9vw,9rem)_1fr] grid-rows-[minmax(0,1fr)] items-center gap-5 border-r border-white/12 pr-8">
-              <div className="aspect-square w-full">
-                <PathVisualization
-                  artifactIds={latestContribution.parts.map((part) => part.artifactId)}
-                  contribution={latestContribution}
-                  compact
-                  zoom={34}
-                  label={`Latest ${activeVisualizationCopy.singular} with ${latestContribution.parts.length} parts`}
-                />
-              </div>
-              {/* A long story shrinks its text to fit instead of growing past the panel. */}
-              <div className="flex h-full min-h-0 min-w-0 flex-col justify-center">
-                <p className="mb-3 shrink-0 text-sm text-white/40">Latest released story</p>
-                <FitText className="font-display text-[clamp(1.15rem,1.45vw,1.75rem)] leading-[1.12] tracking-[-0.025em] text-white/82">
-                  {/* One flowing paragraph uses the panel's width, so long stories need fewer lines and keep a larger size. */}
-                  <p><NarrativeLines lines={latestContribution.narrative} /></p>
-                </FitText>
-                <p className="mt-4 shrink-0 text-[10px] tracking-[0.2em] text-white/30">
-                  {latestContribution.parts.length} {latestContribution.parts.length === 1 ? "encounter" : "encounters"}
-                </p>
-              </div>
-            </article>
-
-            <div className="collective-recents-previous grid min-h-0 min-w-0 grid-cols-2 grid-rows-2 gap-x-5 gap-y-2 pl-8">
-              {previousContributions.map((contribution, index) => (
-                <article key={contribution.id} className="grid min-w-0 grid-cols-[minmax(0,4.5rem)_1fr] items-center gap-3">
-                  <div className="aspect-square w-full opacity-75">
-                    <PathVisualization
-                      artifactIds={contribution.parts.map((part) => part.artifactId)}
-                      contribution={contribution}
-                      compact
-                      label={`Recent ${activeVisualizationCopy.singular} ${index + 2} with ${contribution.parts.length} parts`}
-                    />
-                  </div>
-                  <p className="line-clamp-4 font-display text-sm leading-[1.15] tracking-[-0.015em] text-white/60">
-                    <NarrativeLines lines={contribution.narrative} />
-                  </p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </aside>
+        <RecentStories contributions={shownRecentContributions} />
       )}
 
       {view === "collective" && (

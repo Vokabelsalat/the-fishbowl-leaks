@@ -60,7 +60,10 @@ export function CollectiveHeatmap({ data }: { data: CollectiveHeatDatum[] }) {
   }, [data]);
 
   const stationByPlanLabel = useMemo(
-    () => new Map(stations.map((station) => [station.planLabel, station])),
+    () => new Map(stations.flatMap((station) => [
+      [station.artifact.id, station],
+      [station.planLabel, station],
+    ] as const)),
     [stations],
   );
 
